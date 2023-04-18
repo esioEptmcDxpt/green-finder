@@ -9,6 +9,7 @@
 ├── src
 │   ├── __init__.py                 # 読み込み用初期化ファイル
 │   ├── kalman_calc.py              # カルマンフィルタ計算用のラッパーファイル
+│   ├── similar_pixel_calc.py       # 類似ピクセル計算用のラッパーファイル
 │   ├── trolley.py                  # トロリ線パラメータ用クラス用ファイル
 │   └── visualize.py                # 可視化用ファイル
 │   ├── config.py                   # 設定パラメータ処理用ファイル
