@@ -1,0 +1,10 @@
+default:
+  image_dir: imgs
+  output_dir: output
+  camera_types: ['HD11', 'HD12', 'HD21', 'HD22', 'HD31', 'HD32']
+
+measurement:
+  missing_threshold: 5
+  brightness_diff_threshold: 255
+  sharpness_threshold: 1
+  missing_count_limit: 100
