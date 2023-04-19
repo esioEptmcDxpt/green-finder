@@ -33,7 +33,7 @@ def main(config):
         camera_num = st.sidebar.selectbox("解析対象のカメラを選択してください", (config.camera_types))
 
         # 解析対象の画像フォルダを指定
-        target_dir = config.image_dir + "/" + dir_area
+        target_dir = config.image_dir + "/" + dir_area + "/" + camera_num
 
         # outputディレクトリの準備
         outpath = config.output_dir + "/" + dir_area + "/" + camera_num

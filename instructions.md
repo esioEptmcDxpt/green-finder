@@ -7,7 +7,7 @@
 
 　
 
-#### 疑問？ コメント？
+#### ◆疑問？ コメント？
 
 疑問・コメントがありましたら、[Yammerコミュニティ](https://web.yammer.com/main/groups/eyJfdHlwZSI6Ikdyb3VwIiwiaWQiOiIxMjM0NzEzNjQwOTYifQ)へお願いします。
 

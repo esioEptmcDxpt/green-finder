@@ -6,7 +6,9 @@ import numpy as np
 import datetime
 import src.helpers as helpers
 import src.visualize as vis
-import src.similar_pixel_calc as sim_pix    # 摩耗判定システム機能
+from src.kalman_calc import track_kalman
+from src.similar_pixel_calc import track_pixel
+# import src.similar_pixel_calc as sim_pix    # 摩耗判定システム機能
 import src.utilsST_01 as utlst    # 移行が完了したら削除する
 from src.config import appProperties
 
@@ -82,15 +84,22 @@ def ohc_wear_analysis(config):
         ("ピクセルトレース", "カルマンフィルタ")
     )
     
+    # ピクセルトレースを実行
     if trace_method == "ピクセルトレース":
         form_px = st.sidebar.form(key="similar_pixel_init")
         xin = form_px.number_input("トロリ線の中心位置を入力(0～2048)", 0, 2048, 1024)
         submit = form_px.form_submit_button("ピクセルトレース実行")
-
         if submit:
             with st.spinner("ピクセルトレース実行中"):
-                time.sleep(5)
-        rail.close()
+                track_pixel(
+                    rail,
+                    camera_num,
+                    base_images,
+                    idx,
+                    trolley_id,
+                    xin,
+                )
+    # カルマンフィルタを実行
     elif trace_method == "カルマンフィルタ":
         # カルマンフィルタの初期値設定
         form = st.sidebar.form(key="kalman_init")
@@ -112,12 +121,10 @@ def ohc_wear_analysis(config):
                     y_init_u,
                     y_init_l,
                 )
-        rail.close()
 
-    
-    st.stop()
-    
-    
+    rail.close()
+
+    st.stop()    # (編集中)強制ストップ
     '''
     以下、以前のコード
     '''
@@ -126,7 +133,7 @@ def ohc_wear_analysis(config):
 
     if st.session_state.rail_set:
         # メインページに設定した線区等の情報を表示する
-        rail_name, st_name, updown_name, measurement_date, measurement_time = helpers.rail_message(st.session_state.dir_area, config)
+        rail_name, st_name, updown_name, measurement_date, measurement_time = helpers.rail_message(dir_area, config)
         with main_view.container():
             st.markdown(f"### 現在の線区：{rail_name} {st_name}({updown_name})")
             st.markdown(f"### 　　測定日：{measurement_date} ＜{measurement_time}＞")
@@ -160,22 +167,22 @@ def ohc_wear_analysis(config):
             file = [s for s in st.session_state.rail["inpath"] if st.session_state.camera_num_mem in s][file_idx]
             if file_idx == st.session_state.initial_idx:
                 # トロリ線情報の作成
-                st.session_state.trolley1 = sim_pix.get_trolley(trolleyID=1, isInFrame=True)
-                st.session_state.trolley2 = sim_pix.get_trolley(trolleyID=2, isInFrame=False)
-                st.session_state.trolley3 = sim_pix.get_trolley(trolleyID=3, isInFrame=False)
+                trolley1 = sim_pix.get_trolley(trolleyID=1, isInFrame=True)
+                trolley2 = sim_pix.get_trolley(trolleyID=2, isInFrame=False)
+                trolley3 = sim_pix.get_trolley(trolleyID=3, isInFrame=False)
 
                 # 画像ファイルを読み込む
-                sim_pix.load_picture(st.session_state.trolley1, file)
-                sim_pix.load_picture(st.session_state.trolley2, file)
-                sim_pix.load_picture(st.session_state.trolley3, file)
+                sim_pix.load_picture(trolley1, file)
+                sim_pix.load_picture(trolley2, file)
+                sim_pix.load_picture(trolley3, file)
 
                 # 初期画像を表示
-                img = st.session_state.trolley1["picture"]["im_org"]
+                img = trolley1["picture"]["im_org"]
                 fig = sim_pix.plot_fig(img)
                 st.session_state.analysis_message = "画像左端でのトロリ線中心位置を指定します"
 
                 # 画像左端のエッジを自動検出
-                search_list = sim_pix.search_trolley_init(st.session_state.trolley1, 0, img)
+                search_list = sim_pix.search_trolley_init(trolley1, 0, img)
                 if len(search_list) != 0:
                     center = np.sum(search_list[0][0:2]) // 2
 
@@ -201,29 +208,29 @@ def ohc_wear_analysis(config):
                     st.sidebar.write("解析ログ👇")
                     st.session_state.xin = xin
                     st.sidebar.write(f"トロリ線中心を{st.session_state.xin}に設定しました")
-                    sim_pix.set_init_val(st.session_state.rail, st.session_state.trolley1, 0, img, search_list, st.session_state.auto_edge_set)
+                    sim_pix.set_init_val(st.session_state.rail, trolley1, 0, img, search_list, st.session_state.auto_edge_set)
                     main_view.write("## 解析実行🔍")
                 elif st.session_state.auto_edge_set:
                     st.sidebar.write("解析ログ👇")
                     st.sidebar.write("自動検出位置で設定しました")
                     st.sidebar.write(f"自動検出位置: {search_list[0][0:2]}")
-                    sim_pix.set_init_val(st.session_state.rail, st.session_state.trolley1, 0, img, search_list, st.session_state.auto_edge_set)
+                    sim_pix.set_init_val(st.session_state.rail, trolley1, 0, img, search_list, st.session_state.auto_edge_set)
                     main_view.write("## 解析実行📈")
                 else:
                     st.sidebar.success("💡画像左端のトロリ線位置を指定")
 
             elif file_idx == len(image_list) - 1:
                 # 画像ファイルを読み込む
-                sim_pix.load_picture(st.session_state.trolley1, file)
-                sim_pix.load_picture(st.session_state.trolley2, file)
-                sim_pix.load_picture(st.session_state.trolley3, file)
-                img = st.session_state.trolley1["picture"]["im_org"]
+                sim_pix.load_picture(trolley1, file)
+                sim_pix.load_picture(trolley2, file)
+                sim_pix.load_picture(trolley3, file)
+                img = trolley1["picture"]["im_org"]
                 fig = sim_pix.plot_fig(img)
             else:
                 # 画像ファイルを読み込む
-                sim_pix.load_picture(st.session_state.trolley1, file)
-                sim_pix.load_picture(st.session_state.trolley2, file)
-                sim_pix.load_picture(st.session_state.trolley3, file)
+                sim_pix.load_picture(trolley1, file)
+                sim_pix.load_picture(trolley2, file)
+                sim_pix.load_picture(trolley3, file)
 
             # 画像左端でのトロリ線の初期位置を指定したら実行
             if st.session_state.center_set or st.session_state.auto_edge_set:
@@ -240,24 +247,24 @@ def ohc_wear_analysis(config):
                 # st.write(f'Next image loaded(file_idx:{file_idx})')
 
                 # 画像の平均画素を算出（背景画素と同等とみなす）
-                sim_pix.mean_brightness(st.session_state.trolley1, img)
+                sim_pix.mean_brightness(trolley1, img)
                 
                 # pixel_bar = st.progress(0)
                 with st.spinner(f'{file_idx + 1}枚目の画像を解析中'):
                     for ix in range(1000):
-                        sim_pix.search_trolley(st.session_state.rail, st.session_state.trolley1, file_idx, ix)
+                        sim_pix.search_trolley(st.session_state.rail, trolley1, file_idx, ix)
 
-                        sim_pix.search_second_trolley(st.session_state.rail, st.session_state.trolley1, st.session_state.trolley2, file_idx, ix)
-                        sim_pix.search_second_trolley(st.session_state.rail, st.session_state.trolley1, st.session_state.trolley3, file_idx, ix)
+                        sim_pix.search_second_trolley(st.session_state.rail, trolley1, trolley2, file_idx, ix)
+                        sim_pix.search_second_trolley(st.session_state.rail, trolley1, trolley3, file_idx, ix)
 
-                        sim_pix.search_trolley(st.session_state.rail, st.session_state.trolley2, file_idx, ix)
-                        sim_pix.search_trolley(st.session_state.rail, st.session_state.trolley3, file_idx, ix)
+                        sim_pix.search_trolley(st.session_state.rail, trolley2, file_idx, ix)
+                        sim_pix.search_trolley(st.session_state.rail, trolley3, file_idx, ix)
 
                         # 出力ファイルへの書き込み
-                        sim_pix.update_result_dic(st.session_state.rail, st.session_state.trolley1, st.session_state.trolley2, st.session_state.trolley3, file, outpath, file_idx, ix)
-                    sim_pix.change_trolley(st.session_state.trolley1, st.session_state.trolley2, st.session_state.trolley3)
+                        sim_pix.update_result_dic(st.session_state.rail, trolley1, trolley2, trolley3, file, outpath, file_idx, ix)
+                    sim_pix.change_trolley(trolley1, trolley2, trolley3)
 
-                    result_img_path = sim_pix.write_picture(st.session_state.trolley1, st.session_state.trolley2, st.session_state.trolley3,)
+                    result_img_path = sim_pix.write_picture(trolley1, trolley2, trolley3,)
 
                     dt02 = datetime.datetime.now()
                     prc_time = dt02 - dt01
@@ -266,9 +273,9 @@ def ohc_wear_analysis(config):
 
                 # トロリ線が検出できなかった場合
                 if (
-                    not st.session_state.trolley1["isInFrame"]
-                    and not st.session_state.trolley2["isInFrame"]
-                    and not st.session_state.trolley3["isInFrame"]
+                    not trolley1["isInFrame"]
+                    and not trolley2["isInFrame"]
+                    and not trolley3["isInFrame"]
                 ):
                     st.session_state.error_flag = True
                     if file_idx != len(image_list) - 1:
