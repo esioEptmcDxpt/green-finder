@@ -17,18 +17,10 @@ def ohc_wear_analysis(config):
     # マルチページの設定
     st.set_page_config(page_title="トロリ線摩耗検出システム")
     st.sidebar.header("トロリ線摩耗検出システム")
-    
-    # # 変数宣言＆session_state初期化
-    # if "rail_set" not in st.session_state:
-    #     utlst.session_state_init()
         
     # メインページのコンテナを配置する
     main_view = st.container()
     camera_view = st.empty()
-    
-    '''
-    以下追加したコード
-    '''
     
     # フォルダ直下の画像保管用ディレクトリのリスト
     images_path = helpers.list_imagespath(config.image_dir)
@@ -56,7 +48,7 @@ def ohc_wear_analysis(config):
     # imagesフォルダ内の画像一覧取得
     base_images = helpers.list_images(target_dir)
     
-    # base_imagesと同じ長さの空のdictionaryを作成して初期化
+    # base_imagesと同じ長さの空のdictionaryを作成してrailを初期化
     blankdict_size = [{}] * len(base_images)
     rail[camera_num] = dict(zip(base_images, blankdict_size))
     
@@ -67,7 +59,7 @@ def ohc_wear_analysis(config):
                                   max_value=len(base_images) - 1)
     
     # メインページにカメラ画像を表示する
-    col1, col2 = camera_view.columns(2)
+    col1, col2, col3 = camera_view.columns(3)
     
     with col1:
         st.header("📸カメラ画像")
@@ -78,6 +70,10 @@ def ohc_wear_analysis(config):
         st.header("🖥️解析結果")
         st.write("解析結果を表示しています")
         # to be implemented
+    with col3:
+        st.header("📈メモリ付画像")
+        fig = vis.plot_fig(base_images, idx)
+        st.pyplot(fig)
     
     trace_method = st.sidebar.radio(
         "システムを選択", 
@@ -121,12 +117,11 @@ def ohc_wear_analysis(config):
                     y_init_u,
                     y_init_l,
                 )
-
     rail.close()
 
     st.stop()    # (編集中)強制ストップ
     '''
-    以下、以前のコード
+    以下、以前のコード　いずれ削除する
     '''
     # 線区セットフォームを表示（線区決定後に線区のメタデータcsvを生成する）
     rail_set_form(config, main_view)

@@ -1,5 +1,3 @@
-import streamlit as st
-import boto3
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
@@ -11,41 +9,35 @@ import ipywidgets as widgets
 from IPython import __version__ as ipython_version
 from pandas import __version__ as pandas_version
 from bokeh import __version__ as bokeh_version
+
 from bokeh.io import output_notebook, output_file, show
 from bokeh.plotting import figure, ColumnDataSource, output_file, reset_output, show
 from bokeh.models import RangeTool
 from bokeh.sampledata.iris import flowers
 from bokeh.layouts import column, row, gridplot
-# import src.utilsS3_01 as utls3
-import src.utilsST_01 as utlst
-
-
-'''
-トロリ線摩耗判定システム用の機能をまとめたモジュール
-'''
 
 #---------------------------------------
-# 画像
+# 目盛り付き画像表示
 #---------------------------------------
-### visualize.pyに移行
-# def plot_fig(img):
-#     dpi = 200
-#     margin = 0.05 # (5% of the width/height of the figur...)
-#     xpixels, ypixels = 1000, 2200
-#     mag = 2
-#     # Make a figure big enough to accomodate an axis of xpixels by ypixels
-#     # as well as the ticklabels, etc...
-#     figsize = mag*(1 + margin) * ypixels / dpi, mag*(1 + margin) * xpixels / dpi
-#     fig = plt.figure(figsize=figsize, dpi=dpi)
-#     # Make the axis the right size...
-#     ax = fig.add_axes([margin, margin, 1 - 2*margin, 1 - 2*margin])
-#     ax.set_yticks(range(0,2200,50))
-#     ax.minorticks_on()
-#     ax.imshow(img, interpolation='none')
-#     return fig
+def plot_fig(img):
+    dpi = 200
+    margin = 0.05 # (5% of the width/height of the figur...)
+    xpixels, ypixels = 1000, 2200
+    mag = 2
+    
+    # Make a figure big enough to accomodate an axis of xpixels by ypixels
+    # as well as the ticklabels, etc...
+    figsize = mag*(1 + margin) * ypixels / dpi, mag*(1 + margin) * xpixels / dpi
 
-# def plot_fig_bokeh(img):
-#     ### 画像の左端での輝度グラフ
+    fig = plt.figure(figsize=figsize, dpi=dpi)
+    # Make the axis the right size...
+    ax = fig.add_axes([margin, margin, 1 - 2*margin, 1 - 2*margin])
+    ax.set_yticks(range(0,2200,50))
+    ax.minorticks_on()
+    ax.imshow(img, interpolation='none')
+    plt.show()
+    
+    ### 画像の左端での輝度グラフ
 #     graph_width = 1000
 #     graph_height = 2048
     
@@ -64,8 +56,139 @@ import src.utilsST_01 as utlst
 #     brightness_graph.line(x, y, color='blue', line_width=1)
 #     show(brightness_graph)
     
-#     return
+    return
 
+#---------------------------------------
+# メタデータ作成
+#---------------------------------------
+def print_files(dir_name, csvname, cam):
+    dict = {
+        "dirname":[],
+        "filename":[],
+        "camera_num":[],
+        "upper_boundary1":[],
+        "lower_boundary1":[],
+        "upper_diff1":[],
+        "lower_diff1":[],
+        "upper_boundary2":[],
+        "lower_boundary2":[],
+        "upper_diff2":[],
+        "lower_diff2":[],
+        "upper_boundary3":[],
+        "lower_boundary3":[],
+        "upper_diff3":[],
+        "lower_diff3":[]
+    }
+    files = sorted(glob.glob(f"{dir_name}/{cam}/*.jpg"))
+    for file in files:
+        dict["dirname"].append(os.path.dirname(file))
+        dict["filename"].append(os.path.basename(file))
+        dict["camera_num"].append(cam)
+        dict["upper_boundary1"].append(None)
+        dict["lower_boundary1"].append(None)
+        dict["upper_diff1"].append(None)
+        dict["lower_diff1"].append(None)
+        dict["upper_boundary2"].append(None)
+        dict["lower_boundary2"].append(None)
+        dict["upper_diff2"].append(None)
+        dict["lower_diff2"].append(None)
+        dict["upper_boundary3"].append(None)
+        dict["lower_boundary3"].append(None)
+        dict["upper_diff3"].append(None)
+        dict["lower_diff3"].append(None)
+    df=pd.DataFrame.from_dict(dict)
+    print(f"output file is: {dir_name}temp_meta.csv")
+    df.to_csv(f"{dir_name}/{csvname}_temp_meta.csv", index=False)
+    return
+
+
+#---------------------------------------
+# 線区の情報
+#---------------------------------------
+def get_rail(metadatafile, dir_area, camera_num):
+    rail = { #線区ごとの情報
+        'metadata_name':None,
+        'upper_boundary1':[], #線区の開始点のトロリ線の上端
+        'lower_boundary1':[], #線区の開始点のトロリ線の下端
+        'upper_boundary2':[],
+        'lower_boundary2':[],
+        'upper_boundary3':[],
+        'lower_boundary3':[],
+        
+        'df':pd.DataFrame()
+    }
+    df = pd.read_csv(metadatafile, header=0, dtype={'camera_num':str})
+    rail['df'] = df
+    rail['metadata_name']=metadatafile
+    rail['metadata_length']=len(df)
+    rail['camera_num'] = camera_num
+    rail['inpath'] = [f'{x[0]}/{x[1]}' for x in zip(df['dirname'].tolist(), df['filename'].tolist())]
+    rail['infile'] = df['filename']
+    rail['outpath'] = f'output/{dir_area}/{camera_num}/'
+    rail['upper_boundary1'] = df['upper_boundary1'].tolist()
+    rail['lower_boundary1'] = df['lower_boundary1'].tolist()
+    rail['upper_boundary2'] = df['upper_boundary2'].tolist()
+    rail['lower_boundary2'] = df['lower_boundary2'].tolist()
+    rail['upper_boundary3'] = df['upper_boundary3'].tolist()
+    rail['lower_boundary3'] = df['lower_boundary3'].tolist()
+    return rail.copy()
+
+
+#---------------------------------------
+# トロリ線情報
+#---------------------------------------
+def get_trolley(trolleyID, isInFrame):
+    picture = get_picture()
+    result_dict = get_result_dic()
+    trolley = { #トロリ線ごとの情報
+        'trolleyID':trolleyID,
+        'global_ix':[],
+        'ix':[],
+        'file':[],
+        'isInFrame':isInFrame,
+        'last_state': [],
+        # 'last_state_covariance': [],
+        'upper_line': [],
+        'lower_line': [],
+        'last_upper_line': [],
+        'last_lower_line': [],
+        'brightness': [], #摺面の輝度
+        # 'new_measurement':np.zeros(2),
+        # 'mask': [False,False],
+        # 'center': 0,
+        # 'last_boundary_expectation': [],
+        # 'last_brightness':[0,0],
+        # 'mxn_slope_iy':[0,0],
+        # 'value_iy':[0,0],
+        # 'box_width': 7,
+        # 'color': [[0, 0, 0],[0, 0, 0]],
+        'avg_brightness':0,
+        'sigmoid_edge_u':None,
+        'sigmoid_edge_l':None,
+        'slope_dir':None,
+        'edge_std_list_u':[],
+        'edge_std_list_l':[],
+        'edge_std_u':None,
+        'edge_std_l':None,
+        'err_log_u':[],              # エラー記録　[err_skip, err_diff, err_edge, err_width(small), err_width(latge)]
+        'err_log_l':[],              # エラー記録　[err_skip, err_diff, err_edge, err_width(small), err_width(latge)]
+        'err_skip':[0, 0, 0, 0],     # ピクセル飛びエラー  [upper_state(0 or 1), lower_state(0 or 1), upper_count, lower_count]
+        'err_diff':[0, 0, 0, 0],     # 差分大エラー        [upper_state(0 or 1), lower_state(0 or 1), upper_count, lower_count]
+        'err_edge':[0, 0, 0, 0],     # エッジなしエラー    [upper_state(0 or 1), lower_state(0 or 1), upper_count, lower_count]
+        'err_width':[0, 0, 0, 0],    # トロリ線幅エラー    [small_state(0 or 1), large_state(0 or 1), small_count, large_count]
+        'err_nan':[0, 0],            # np.nan [tate(0 or 1), count]
+        'upper_diff':[],
+        'lower_diff':[],
+        'w-ear':0,
+        'as_aj':0,
+        'picture': picture,
+        'result_dict':result_dict,
+    }
+    return trolley.copy()
+
+#---------------------------------------
+# 画像
+#---------------------------------------
 def get_picture():
     picture = { #ファイル名、画像の情報
         'file': None,
@@ -81,8 +204,7 @@ def load_picture(trolley, file):
     画像ファイルを読み込んで辞書にセットする
     '''
     trolley['picture']['file'] = file
-    # trolley['picture']['im_org'] = np.array(utls3.get_image(file))    # S3の場合
-    trolley['picture']['im_org'] = np.array(Image.open(file))    # EBSの場合
+    trolley['picture']['im_org'] = np.array(Image.open(file))
     trolley['brightness'] = [] #摺面の輝度
     trolley['picture']['im_trolley'] = np.zeros_like(
         trolley['picture']['im_org']).astype(int)
@@ -114,167 +236,10 @@ def write_picture(trolley1, trolley2, trolley3):
     
     path = os.path.dirname(trolley1['result_dict']['outpath'][-1])
     fullpath = trolley1['result_dict']['outpath'][-1]   # ピクセル毎にパスがあるため最新のパスを入手
-    
-    # パスが存在しなければフォルダ作成
-    # utls3.put_s3_dir(path + '/')    # S3の場合
-    st.sidebar.text(f'write_picture path:{path + "/"}')
-    if not os.path.exists(path + '/'):
-        os.makedirs(path + '/')    # EBSの場合
-    
-    # 画像ファイル出力
-    # img = Image.fromarray(im)    # S3の場合
-    # utls3.put_s3_img(img, fullpath)    # S3の場合
-    Image.fromarray(im).save(fullpath, "PNG")    # EBSの場合
-    
-#     if os.path.exists(path) == False : os.mkdir(path)  # パスが存在しなければフォルダ作成
-# #     Image.fromarray(im).save(fullpath, "JPEG")  # 画像ファイル出力
-#     Image.fromarray(im).save(fullpath, "PNG")  # 画像ファイル出力
-    return fullpath
-
-
-
-#---------------------------------------
-# メタデータ作成
-#---------------------------------------
-def print_files(dir_base, dir_area, CAMERA_NUMS):
-    dict = {
-        "dirname":[],
-        "filename":[],
-        "camera_num":[],
-        "upper_boundary1":[],
-        "lower_boundary1":[],
-        "upper_diff1":[],
-        "lower_diff1":[],
-        "upper_boundary2":[],
-        "lower_boundary2":[],
-        "upper_diff2":[],
-        "lower_diff2":[],
-        "upper_boundary3":[],
-        "lower_boundary3":[],
-        "upper_diff3":[],
-        "lower_diff3":[]
-    }
-    dir_name = dir_base + dir_area
-    for camera_num in CAMERA_NUMS:
-        # image_list = utls3.get_s3_image_list(dir_name + '/' + camera_num + '/')    # S3の場合
-        image_list = utlst.get_file_list(dir_name + '/' + camera_num + '/')    # EBSの場合
-        for file in image_list:
-            dict["dirname"].append(os.path.dirname(dir_name + '/' + camera_num + '/' + file))
-            dict["filename"].append(os.path.basename(file))
-            dict["camera_num"].append(camera_num)
-            dict["upper_boundary1"].append(None)
-            dict["lower_boundary1"].append(None)
-            dict["upper_diff1"].append(None)
-            dict["lower_diff1"].append(None)
-            dict["upper_boundary2"].append(None)
-            dict["lower_boundary2"].append(None)
-            dict["upper_diff2"].append(None)
-            dict["lower_diff2"].append(None)
-            dict["upper_boundary3"].append(None)
-            dict["lower_boundary3"].append(None)
-            dict["upper_diff3"].append(None)
-            dict["lower_diff3"].append(None)
-    df=pd.DataFrame.from_dict(dict)
-    
-    # S3にCSVファイルを保存する
-    # csv_data = df.to_csv(index=False)
-    # utls3.put_s3_csv(csv_data, f"{dir_name}/{dir_area}_temp_meta.csv")
-    # csv_path = f"{dir_name}/{dir_area}_temp_meta.csv"
-    
-    # EBSにCSVファイルを保存する
-    df.to_csv(f"{dir_name}/{dir_area}_temp_meta.csv", index=False)
-    csv_path = f"{dir_name}/{dir_area}_temp_meta.csv"
-
-    return csv_path
-
-
-#---------------------------------------
-# 線区の情報
-#---------------------------------------
-def get_rail(metadatafile, dir_area, CAMERA_NUMS):
-    rail = { #線区ごとの情報
-        'metadata_name':None,
-        'upper_boundary1':[], #線区の開始点のトロリ線の上端
-        'lower_boundary1':[], #線区の開始点のトロリ線の下端
-        'upper_boundary2':[],
-        'lower_boundary2':[],
-        'upper_boundary3':[],
-        'lower_boundary3':[],
-        'df':pd.DataFrame()
-    }
-    # df = utls3.get_s3_csv_asDf(metadatafile)    # S3の場合
-    df = pd.read_csv(metadatafile, header=0, dtype={'camera_num':str})    # EBSの場合
-    rail['df'] = df
-    rail['metadata_name']=metadatafile
-    rail['metadata_length']=len(df)
-    rail['camera_num'] = df['camera_num'].unique()
-    rail['inpath'] = [f'{x[0]}/{x[1]}' for x in zip(df['dirname'].tolist(), df['filename'].tolist())]
-    rail['infile'] = df['filename']
-    outpath_list = []
-    for camera_num in CAMERA_NUMS:
-        # outpath_list.append(f'OHCImages/output/{dir_area}/{camera_num}/')    # S3の場合
-        outpath_list.append(f'output/{dir_area}/{camera_num}/')    # EBSの場合
-    rail['outpath'] = outpath_list
-    rail['upper_boundary1'] = df['upper_boundary1'].tolist()
-    rail['lower_boundary1'] = df['lower_boundary1'].tolist()
-    rail['upper_boundary2'] = df['upper_boundary2'].tolist()
-    rail['lower_boundary2'] = df['lower_boundary2'].tolist()
-    rail['upper_boundary3'] = df['upper_boundary3'].tolist()
-    rail['lower_boundary3'] = df['lower_boundary3'].tolist()
-    return rail.copy()
-
-
-#---------------------------------------
-# トロリ線情報
-#---------------------------------------
-def get_trolley(trolleyID, isInFrame):
-    picture = get_picture()
-    result_dict = get_result_dic()
-    trolley = { #トロリ線ごとの情報
-        'trolleyID':trolleyID,    # trolley_idに変更
-        'global_ix':[],        # 不要？
-        'ix':[],               # 不要？
-        'file':[],             # 不要？
-        'isInFrame':isInFrame,
-        'last_state': [],
-        # 'last_state_covariance': [],    # 不要？
-        'upper_line': [],
-        'lower_line': [],
-        'last_upper_line': [],
-        'last_lower_line': [],
-        'brightness': [], #摺面の輝度
-        # 'new_measurement':np.zeros(2),    # 不要？
-        # 'mask': [False,False],            # 不要？
-        # 'center': 0,                      # 不要？
-        # 'last_boundary_expectation': [],  # 不要？
-        # 'last_brightness':[0,0],          # 不要？
-        # 'mxn_slope_iy':[0,0],             # 不要？
-        # 'value_iy':[0,0],                 # 不要？
-        # 'box_width': 7,                   # 不要？
-        # 'color': [[0, 0, 0],[0, 0, 0]],   # 不要？
-        'avg_brightness':0,
-        'sigmoid_edge_u':None,
-        'sigmoid_edge_l':None,
-        'slope_dir':None,
-        'edge_std_list_u':[],
-        'edge_std_list_l':[],
-        'edge_std_u':None,
-        'edge_std_l':None,
-        'err_log_u':[],              # エラー記録　[err_skip, err_diff, err_edge, err_width(small), err_width(latge)]
-        'err_log_l':[],              # エラー記録　[err_skip, err_diff, err_edge, err_width(small), err_width(latge)]
-        'err_skip':[0, 0, 0, 0],     # ピクセル飛びエラー  [upper_state(0 or 1), lower_state(0 or 1), upper_count, lower_count]
-        'err_diff':[0, 0, 0, 0],     # 差分大エラー        [upper_state(0 or 1), lower_state(0 or 1), upper_count, lower_count]
-        'err_edge':[0, 0, 0, 0],     # エッジなしエラー    [upper_state(0 or 1), lower_state(0 or 1), upper_count, lower_count]
-        'err_width':[0, 0, 0, 0],    # トロリ線幅エラー    [small_state(0 or 1), large_state(0 or 1), small_count, large_count]
-        'err_nan':[0, 0],            # np.nan [tate(0 or 1), count]
-        'upper_diff':[],
-        'lower_diff':[],
-        'w-ear':0,
-        'as_aj':0,
-        'picture': picture,
-        'result_dict':result_dict,
-    }
-    return trolley.copy()
+    if os.path.exists(path) == False : os.mkdir(path)  # パスが存在しなければフォルダ作成
+#     Image.fromarray(im).save(fullpath, "JPEG")  # 画像ファイル出力
+    Image.fromarray(im).save(fullpath, "PNG")  # 画像ファイル出力
+    return
 
 #---------------------------------------
 # トロリ線消失リセット
@@ -292,22 +257,39 @@ def reset_trolley(trolley):
     trolley['w-ear'] = 0
     trolley['as_aj'] = 0
     trolley['isInFrame'] = False
-    return
 
 #---------------------------------------
 # 初期画像の初期設定
 #--------------------------------------- 
-def set_init_val(rail, trolley, ix, img, search_list, auto_edge):
-    if auto_edge:
+def set_init_val(rail, trolley, ix):
+    # 初期位置の自動サーチ
+    search_list = search_trolley_init(rail, trolley, ix)
+    
+    # 初期画像表示
+    img = trolley['picture']['im_org']
+#     plot_fig(img)
+#     time.sleep(1) # 1秒待ち
+    
+    if len(search_list) != 0:
+        center = np.sum(search_list[0][0:2]) // 2
+        # コメント及び入力ボックス
+        print(f'摩耗エッジ自動検出：{search_list[0][0:2]}\n'
+              '・値が問題なければ空欄でエンター\n'
+              '・値を変更する場合は入力してエンター'
+             )
+
+    xin = input("トロリ線摩耗中心点 : ")
+    
+    if xin == '':
         rail['upper_boundary1'][ix] = search_list[0][0]
         rail['lower_boundary1'][ix] = search_list[0][1]
         trolley['last_state'] = search_list[0][0:2]
         trolley['slope_dir'] = search_list[0][2]
-    elif st.session_state.xin != '':
+    elif xin != '':
         # 画像1の中心点設定と輝度の立上り／立下りサーチ範囲の設定
         width = 34
-        start = int(st.session_state.xin)  - width // 2
-        end = int(st.session_state.xin)  + width // 2
+        start = int(xin)  - width // 2
+        end = int(xin)  + width // 2
         # 画像1のトロリ線境界位置の初期値
         im_slice = np.copy(img[:, 0, 0])
         # 傾きから初期値算出
@@ -321,18 +303,37 @@ def set_init_val(rail, trolley, ix, img, search_list, auto_edge):
         trolley['last_state'] = [upper, lower]
         # 初期値から輝度の向きを確認
         trolley['slope_dir'] = 1 if slope_max < slope_min else -1
-    else:
-        st.warning('トロリ線の初期値が正しく設定できませんでした。\nやり直してください。')
-    return 
+        
+    print("初期値 : " + str(trolley['last_state']))
+    
+#     # widgets設定
+#     global ent_flag
+#     ent_flag = False
+#     w0 = widgets.BoundedIntText(min=0,max=2048,step=1,value=center,description="摺面中心")
+#     ent_btn = widgets.Button(description="初期位置確定")
+    
+#     def on_ent_clicked(b):
+#         global ent_flag
+#         ent_flag = True
+#         print(ent_flag)
+#         return ent_flag
 
-
+#     # ボタン押下時にの動作指定
+#     ent_btn.on_click(on_ent_clicked)
+#     # widgets配置
+#     display(w0, ent_btn)
+#     while(1):
+#         if ent_flag == True:
+#             print("初期値 : " + str(trolley['slope_dir']))
+#             break 
+    return
 
 #---------------------------------------
 # 摺面エッジ初期位置の自動サーチ
 #--------------------------------------- 
-def search_trolley_init(trolley, ix, img):
+def search_trolley_init(rail, trolley, ix):
     # 横1ピクセル、縦全ピクセル切り出し
-    # img = trolley['picture']['im_org']
+    img = trolley['picture']['im_org']
     im_slice_org = np.copy(img[:, ix, 0])
     im_slice = np.copy(img[:, ix, 0])
     
@@ -342,8 +343,6 @@ def search_trolley_init(trolley, ix, img):
 
     # 切り出した縦ピクセルのノイズを除去
     im_slice[st:ed] = [round(np.mean(im_slice_org[i-1:i+2])) for i in range(st, ed)]
-    
-    # st.write(f'im_slice:{im_slice}')
 
     # 理想的なエッジ配列に近い場所をサーチ
     slope_val_u, slope_val_l, slope_idx_u, slope_idx_l  = [], [], [], []
@@ -367,14 +366,14 @@ def search_trolley_init(trolley, ix, img):
                 0 <= (idx_u - idx_u) <= 35 and            # 摺面幅が明らかにあり得ない場合を除外
                 (val_u + val_l) <= 400                    # 誤差が大きい場合は除外
             ):
-                list_idx.append([idx_u+st, idx_l+st, 1])  # 摺面が立上り→立下りの場合
+                list_idx.append([idx_u+st, idx_l+st, 1])  # 摺面が立ち上があり→立下りの場合
                 list_val.append(val_u + val_l)
             elif (
                 idx_l < idx_u and                          # ピクセル位置は lower < upperであること
                 0 <= (idx_u - idx_l) <= 35 and             # 摺面幅が明らかにあり得ない場合を除外
                 (val_u + val_l) <= 400                     # 誤差が大きい場合は除外
             ):
-                list_idx.append([idx_l+st, idx_u+st, -1])  # 摺面が立下り→立上りの場合
+                list_idx.append([idx_l+st, idx_u+st, -1])  # 摺面が立ち下があり→立上りの場合
                 list_val.append(val_u + val_l)
           
     search_list = []
@@ -408,8 +407,8 @@ def search_trolley_init(trolley, ix, img):
 #-----------------------------------------------
 # 画像の平均画素を算出（背景画素と同等とみなす）
 #-----------------------------------------------
-def mean_brightness(trolley, img):
-    # img = trolley['picture']['im_org']
+def mean_brightness(trolley):
+    img = trolley['picture']['im_org']
     im_r = img[:, :, 0].flatten()
     im_random = []
     for i in range(1000): #全画素の平均は処理時間かかるのでランダム1000画素の平均
@@ -821,7 +820,6 @@ def change_trolley(trolley1, trolley2, trolley3):
         trolley1['isInFrame'] = True
         reset_trolley(trolley3)
         print('Change Trolley -> 3')
-    return
         
 
 # 並行区間検出用データの保存先初期設定
@@ -873,11 +871,10 @@ def get_result_dic():
     }
     return dic.copy()
 
-
 # ------------------------------------------------------------
 # 出力データフレーム
 # ------------------------------------------------------------
-def update_result_dic(rail, trolley1, trolley2, trolley3, file, outpath, file_idx, ix):
+def update_result_dic(rail, trolley1, trolley2, trolley3, file_idx, ix):
     img1 = trolley1['picture']['im_org']
     img2 = trolley2['picture']['im_org']
     img3 = trolley2['picture']['im_org']
@@ -896,9 +893,9 @@ def update_result_dic(rail, trolley1, trolley2, trolley3, file, outpath, file_id
     
     dic = trolley1['result_dict']
     dic['inpath'].append(rail['inpath'][file_idx])
-    dic['outpath'].append(outpath + 'out_' + [s for s in rail['infile'] if st.session_state.camera_num_mem in s][file_idx])
+    dic['outpath'].append(rail['outpath'] + 'out_' + rail['infile'][file_idx])
     dic['infile'].append(rail['infile'][file_idx])
-    dic['camera_num'].append(st.session_state.camera_num_mem)
+    dic['camera_num'].append(rail['camera_num'])
     dic['global_ix'].append(file_idx * 1000 + ix)
     dic['ix'].append(ix)
     dic['upper_edge1'].append(upper_edge1)
@@ -921,16 +918,12 @@ def update_result_dic(rail, trolley1, trolley2, trolley3, file, outpath, file_id
     dic['blightness_std3'].append(np.std(img3[upper_edge3:lower_edge3+1, ix, 0]))
     return 
 
-def write_result_dic_to_csv(rail, trolley, dir_area, main_view):
+def write_result_dic_to_csv(rail, trolley, dir_area, camera_num):
     dic = trolley['result_dict']
     df = pd.DataFrame.from_dict(dic)
-    # カメラ番号が一致するoutpathを取得する
-    # outpath = rail['outpath']
-    outpath = [s for s in rail['outpath'] if st.session_state.camera_num_mem in s][0]
-    # main_view.write(f'outpath:{outpath}')
-    # main_view.write(f'df.to_csv path: {outpath}result_{dir_area}_{st.session_state.camera_num_mem}.csv')
-    df.to_csv(f'{outpath}result_{dir_area}_{st.session_state.camera_num_mem}.csv', index=False)
-    main_view.success(f'CSVファイルが出力されました 保存場所☞{outpath}result_{dir_area}_{st.session_state.camera_num_mem}.csv')
+    outpath = rail['outpath']
+    df.to_csv(f'{outpath}result_{dir_area}_{camera_num}.csv', index=False)
+    print(f'{outpath}result_{dir_area}_{camera_num}.csv')
     return
 
 

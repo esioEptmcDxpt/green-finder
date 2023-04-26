@@ -3,6 +3,9 @@ default:
   output_dir: output
   readme_md: 'instructions.md'
   camera_types: ['HD11', 'HD12', 'HD21', 'HD22', 'HD31', 'HD32']
+
+
+format_func:
   camera_names:
     HD11: 高(左)
     HD12: 高(右)
@@ -38,6 +41,7 @@ default:
   time_band_names:
     day: 昼間
     knight: 夜間
+
 
 measurement:
   missing_threshold: 5

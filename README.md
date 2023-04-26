@@ -5,7 +5,7 @@
 ├── README.md                          # Readme
 ├── README_forStreamlit.ipynb          # 使い方の説明＆実行用　　　　※不要であれば削除する
 ├── app.py                             # Streamlit スタートページ
-├── pages                              # Streamlit マルチページ
+├── pages                              # Streamlit 各コードのメインファイル
 │   ├── 1_⚡_摩耗判定システム.py       # 摩耗判定メインファイル
 │   ├── 2_📸_出力画像をチェックする.py # 結果画像を表示
 │   ├── 3_📈_グラフをチェックする.py   # 結果グラフを表示　　　　　　※未実装

@@ -4,7 +4,7 @@ import src.visualize as vis
 from src.config import appProperties
 
 
-def main():
+def main(config):
     st.set_page_config(page_title="Hello",page_icon="🖐",)
     readme_text = st.markdown(helpers.read_markdown_file(config.readme_md))
     st.sidebar.title("何をしますか？")
@@ -13,4 +13,4 @@ def main():
 
 if __name__ == "__main__":
     config = appProperties('config.yml')
-    main()
+    main(config)

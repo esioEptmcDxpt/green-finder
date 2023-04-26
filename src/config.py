@@ -43,23 +43,23 @@ class appProperties:
     
     @property
     def camera_names(self):
-        return self.config['default']['camera_names']
+        return self.config['format_func']['camera_names']
     
     @property
     def rail_names(self):
-        return self.config['default']['rail_names']
+        return self.config['format_func']['rail_names']
     
     @property
     def station_names(self):
-        return self.config['default']['station_names']
+        return self.config['format_func']['station_names']
     
     @property
     def rail_type_names(self):
-        return self.config['default']['rail_type_names']
+        return self.config['format_func']['rail_type_names']
     
     @property
     def time_band_names(self):
-        return self.config['default']['time_band_names']
+        return self.config['format_func']['time_band_names']
 
 
 if __name__ == "__main__":

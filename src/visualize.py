@@ -4,7 +4,7 @@ from PIL import Image
 import src.helpers as helpers
 
 
-@st.cache(hash_funcs={matplotlib.figure.Figure: lambda _: None})
+# @st.cache(hash_funcs={matplotlib.figure.Figure: lambda _: None})
 def plot_fig(base_images, idx):
     im_base = Image.open(base_images[idx])
     dpi = 200
