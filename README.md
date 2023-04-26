@@ -8,12 +8,15 @@
 ├── config.yml                      # appの各種設定値格納ファイル
 ├── src
 │   ├── __init__.py                 # 読み込み用初期化ファイル
-│   ├── kalman_calc.py              # カルマンフィルタ計算用のラッパーファイル
 │   ├── trolley.py                  # トロリ線パラメータ用クラス用ファイル
-│   └── visualize.py                # 可視化用ファイル
+│   ├── visualize.py                # 可視化用ファイル
 │   ├── config.py                   # 設定パラメータ処理用ファイル
 │   ├── helpers.py                  # 読み込み・リストなどのUtil処理用ファイル
-│   └── kalman.py                   # カルマンフィルタの計算用コアクラス用ファイル
+│   ├── kalman_calc.py              # カルマンフィルタ計算用のラッパーファイル
+│   ├── kalman.py                   # カルマンフィルタの計算用コアクラス用ファイル
+│   ├── similar_pixel_calc.py       # ピクセルエッジ検出の計算用のラッパーファイル
+│   └── similar_pixel.py            # ピクセルエッジ検出の計算用コアクラス用ファイル
+│   └── utilsST_01.py               # 旧Streamlit用ファイル（後日削除予定）
 ├── images                          # 画像ファイル
 ├── output                          # 出力ファイル
 └── test                            # テスト用ディレクトリ
