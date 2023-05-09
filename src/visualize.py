@@ -67,12 +67,11 @@ def ohc_image_load(base_images, idx):
         im_base = []
     return im_base
 
-@st.cache
+@st.cache()
 def out_image_load(rail, camera_num, base_images, idx):
     image_path = base_images[idx]
     try:
         out_image = rail[camera_num][image_path]['out_image']
     except Exception as e:
-        st.write('結果画像無し')
         out_image = []
     return out_image
