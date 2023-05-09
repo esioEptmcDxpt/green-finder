@@ -923,7 +923,7 @@ def update_result_dic(rail, trolley1, trolley2, trolley3, file, outpath, file_id
 
 def write_result_dic_to_csv(rail, trolley, dir_area, main_view):
     dic = trolley['result_dict']
-    df = pd.DataFrame.from_dict(dic)
+    df = pd.DataFrame.from_d　ict(dic)
     # カメラ番号が一致するoutpathを取得する
     # outpath = rail['outpath']
     outpath = [s for s in rail['outpath'] if st.session_state.camera_num_mem in s][0]

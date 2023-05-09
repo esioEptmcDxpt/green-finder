@@ -1,10 +1,12 @@
 import matplotlib
+import numpy as np
+from bokeh.plotting import figure, show
 import streamlit as st
 from PIL import Image
 import src.helpers as helpers
 
 
-# @st.cache(hash_funcs={matplotlib.figure.Figure: lambda _: None})
+@st.cache(hash_funcs={matplotlib.figure.Figure: lambda _: None})
 def plot_fig(base_images, idx):
     im_base = Image.open(base_images[idx])
     dpi = 200
@@ -21,41 +23,56 @@ def plot_fig(base_images, idx):
     ax.imshow(im_base, interpolation="none")
     return fig
 
-# @st.cache(hash_funcs={streamlit.delta_generator.DeltaGenerator: my_hash_func})
-def ohc_image_load(path, main_view):
+    
+@st.cache
+def plot_fig_bokeh(base_images, idx):
+    ### 画像の左端での輝度グラフ
+
+    # PILイメージとして読み込む
+    pil_im = Image.open(base_images[idx])
+    # RGBからRGBAに変換
+    pil_im_rgba = pil_im.convert('RGBA')
+    # PILイメージからndarrayに変換
+    im_rgba = np.asarray(pil_im_rgba)
+
+    # (高さ, 幅, [R,G,B,A]）の配列から（高さ, 幅, RGBA）の配列に変換
+    im_uint32 = im_rgba.view(np.uint32).reshape(im_rgba.shape[:2])
+
+    # 画像の高さと幅を取得
+    h, w = im_rgba.shape[:2]
+
+    # 画像情報を上下反転
+    im = np.flip(im_uint32, 0)
+
+    size = 300
+    # 画像サイズと同じキャンバスを作成
+    p = figure(
+            width = size,
+            height = int(size*h/w),
+            x_range = (0, w),
+            y_range = (h, 0),
+            toolbar_location = 'above',
+            y_minor_ticks = 25,
+        )
+    # 画像をサイズ通りに描画
+    p.image_rgba(image=[im], x=0, y=h, dw=w, dh=h)
+    
+    return p
+    
+@st.cache
+def ohc_image_load(base_images, idx):
     try:
-        img = Image.open(path)
-        st.session_state.result_img_get = True
+        im_base = Image.open(base_images[idx])
     except Exception as e:
-        img = None
-        st.session_state.analysis_messag = "解析対象の画像がありません。"
-        st.session_state.result_img_get = False
-    return img
+        im_base = []
+    return im_base
 
-
-# @st.cache()    # ←エラーのため実装できず…
-def dir_area_view_JP(config, dir_area, main_view):
-    # メインページに設定した線区等の情報を表示する
-    rail_name, st_name, updown_name, measurement_date, measurement_time = helpers.rail_message(dir_area, config)
-    with main_view.container():
-        st.write(f"現在の線区：{rail_name} {st_name}({updown_name})")
-        st.write(f"　　測定日：{measurement_date} ＜{measurement_time}＞")
-        st.success("##### 👈別の線区を表示する場合は、再度「線区フォルダを決定」してください") 
-
-
-# メインページにカラム表示する　※修正中
-def column_view(main_view, camera_view, file_idx, cam_img, result_img_path, fig):
-    col1, col2 = camera_view.columns(2)
-    with col1:
-        st.header("📸カメラ画像")
-        st.write(f"カメラ:{helpers.camera_num_to_name(st.session_state.camera_num_mem, config)} {file_idx + 1}番目の画像です")
-        st.image(cam_img)
-    with col2:
-        st.header("🖥️解析結果")
-        st.write(f"{st.session_state.analysis_message}")
-        if result_img_path != '' and fig == '':
-            result_img = vis.ohc_image_load(result_img_path, main_view)
-            st.image(result_img)
-        elif fig != '':
-            st.pyplot(fig)
-    return
+@st.cache
+def out_image_load(rail, camera_num, base_images, idx):
+    image_path = base_images[idx]
+    try:
+        out_image = rail[camera_num][image_path]['out_image']
+    except Exception as e:
+        st.write('結果画像無し')
+        out_image = []
+    return out_image
