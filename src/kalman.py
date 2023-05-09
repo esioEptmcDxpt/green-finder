@@ -202,13 +202,13 @@ class kalman(trolley):
         Args:
             image_path (str): 画像ファイルのパス
         """
-        for ix in range(1000):
-            self.initialize_measurement()
+        self.initialize_measurement()
 
+        for ix in range(1000):
             for edge_id in range(2):
                 self.get_measurement(image_path, edge_id, ix)
-                self.finalize_measurement(ix)
-                self.update_Kalman(ix, image_path)
+            self.finalize_measurement(ix)
+            self.update_Kalman(ix, image_path)
 
 
 if __name__ == '__main__':
