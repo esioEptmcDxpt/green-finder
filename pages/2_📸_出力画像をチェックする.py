@@ -68,8 +68,11 @@ def result_image_view():
         st.write("🖥️解析結果")
         st.write("解析結果を表示しています")
         out_img = vis.out_image_load(rail, camera_num, base_images, idx)
-        if not out_img:
-            st.error("解析結果がありません")
+        # st.write(out_img)
+        # st.write(not out_img)
+        # if not out_img:
+        # if all(element == 0 for element in out_img):
+        #     st.error("解析結果がありません")
         st.image(out_img)
     
     rail.close()

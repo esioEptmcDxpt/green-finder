@@ -23,8 +23,14 @@ def track_pixel(rail, camera_num, base_images, idx, xin, test_num):
     
     for file_idx, image_path in enumerate(base_images[idx:], idx):
         dt01 = datetime.datetime.now()
+        
+        # 結果保存要素を初期化する
+        pixel_instance_1.reload_image_init()
+        pixel_instance_2.reload_image_init()
+        pixel_instance_3.reload_image_init()
+        
         try:
-            st.sidebar.write(f'{file_idx}>>> {image_path}')
+            st.write(f'{file_idx}>>> {image_path}')
             # 画像を読み込む
             pixel_instance_1.load_picture(image_path)
             pixel_instance_2.load_picture(image_path)
@@ -35,15 +41,15 @@ def track_pixel(rail, camera_num, base_images, idx, xin, test_num):
                 pixel_instance_1.search_trolley_init(0)    # 左端で検索するため0
                 if not pixel_instance_1.search_trolley_init:
                     auto_edge = True
-                st.sidebar.write(f'search_list:{pixel_instance_1.search_list}')
+                st.write(f'search_list:{pixel_instance_1.search_list}')
                 pixel_instance_1.set_init_val(idx, xin, auto_edge)
-            st.sidebar.write(f'last_state:{pixel_instance_1.last_state}')
+            st.write(f'last_state:{pixel_instance_1.last_state}')
             
             # x座標(ix)ごとにトロリ線検出
             pixel_instance_1.infer_trolley_edge(image_path, pixel_instance_2, pixel_instance_3)
             
             # 検出結果を画像に重ねて描画した配列を作る
-            im = pixel_instance_1.write_picture(pixel_instance_2, pixel_instance_3)
+            # im = pixel_instance_1.write_picture(pixel_instance_2, pixel_instance_3)
             
         except Exception as e:
             # 途中で妙な値を拾った場合
@@ -51,20 +57,26 @@ def track_pixel(rail, camera_num, base_images, idx, xin, test_num):
             
         finally:
             # 最後まで完了した値をインスタンス変数から辞書に変換し、shelveに出力
+            st.write(f"update results")
+            # rail[camera_num][image_path] = {
+            #         trolley_id: vars(pixel_instance)
+            #         for trolley_id, pixel_instance in zip(config.trolley_ids, [
+            #             pixel_instance_1,
+            #             pixel_instance_2,
+            #             pixel_instance_3])
+            # }
             rail[camera_num][image_path] = {
-                "out_image": im, 
-                **{
-                    trolley_id: vars(pixel_instance)
-                    for trolley_id, pixel_instance in zip(config.trolley_ids, [
-                        pixel_instance_1,
-                        pixel_instance_2,
-                        pixel_instance_3])
-                }
+                trolley_id: result
+                for trolley_id, result in zip(config.trolley_ids, [
+                    vars(pixel_instance_1),
+                    vars(pixel_instance_2),
+                    vars(pixel_instance_3)
+                ])
             }
         
         dt02 = datetime.datetime.now()
         prc_time = dt02 - dt01
-        st.sidebar.write(str(datetime.datetime.now()) + f' Process end :{prc_time}')
+        st.write(str(datetime.datetime.now()) + f' Process end :{prc_time}')
         
         # 指定画像数に達したら解析を終了する
         if file_idx >= test_num + idx -1:
@@ -72,4 +84,4 @@ def track_pixel(rail, camera_num, base_images, idx, xin, test_num):
     
     # 解析終了後の処理
     st.success("ピクセルトレース完了＜トロリ線の検出処理が完了しました＞")
-    # rail.close()    # 不要？
+    rail.close()    # 不要？

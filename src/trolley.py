@@ -69,42 +69,7 @@ class trolley(object):
         self.value_iy = [0, 0]
         self.box_width = 20
         
-        # ピクセルエッジ検出検出向け
-        # 検出結果
-        self.search_list = []    # トロリ線検出位置
-        self.last_state = []    # 過去1px分の検出位置
-        self.upper_line = []    # 画像内の検出位置
-        self.lower_line = []    # 画像内の検出位置
-        self.upper_diff = []    # 検出位置の差分
-        self.lower_diff = []    # 検出位置の差分
-        self.w_ear = 0
-        self.as_aj = 0
-        # 解析用の属性
-        self.upper_boundary = []    # 輝度の立上り／立下りサーチ範囲の設定
-        self.lower_boundary = []    # 輝度の立上り／立下りサーチ範囲の設定
-        self.avg_brightness = []    # 画面全体の平均輝度
-        self.sigmoid_edge_u = None    # 理想形のエッジ配列
-        self.sigmoid_edge_l = None    # 理想形のエッジ配列
-        self.last_upper_line = []    # 過去5pxの検出位置
-        self.last_lower_line = []    # 過去5pxの検出位置
-        self.edge_std_list_u = []    # 過去10px分のトロリ線周りの輝度配列
-        self.edge_std_list_l = []    # 過去10px分のトロリ線周りの輝度配列
-        self.edge_std_u = None    # 過去10px分のトロリ線周りの輝度配列の平均
-        self.edge_std_l = None    # 過去10px分のトロリ線周りの輝度配列の平均
-        self.slope_dir = None    # 立上りの向き (旧)slope_max < slope_min: 1 else -1
-        # 解析用 元picture
-        self.im_org = None    # 解析対象画像のnumpy配列
-        self.im_trolley = None    # 検出した位置の情報（画像色入れ用）
-        self.im_slice_org = None    # 左端縦1px分の輝度情報（計算前の値を格納）
-        self.im_slice = None    # 左端縦1px分の輝度情報
-        # エラーログ
-        self.err_log_u = []    # Error log on Upper edge
-        self.err_log_l = []    # Error log on Lower edge
-        self.err_skip = [0, 0, 0, 0]    # pixel skip error
-        self.err_diff = [0, 0, 0, 0]    # Difference too large error
-        self.err_edge = [0, 0, 0, 0]    # No edge error
-        self.err_width = [0, 0, 0, 0]    # trolley wear width error
-        self.err_nan = [0, 0]    # Error count
+        
         
         
         # 作業中のためメモを残していますが、後で削除します。

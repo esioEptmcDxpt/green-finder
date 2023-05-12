@@ -26,11 +26,8 @@ def ohc_wear_analysis(config):
     if dir_area is None:
         st.error("No frames fit the criteria. Please select different label or number.")
     
-    rail_name, st_name, updown_name, measurement_date, measurement_time = helpers.rail_message(dir_area, config)
-    with main_view.container():
-        st.write(f"現在の線区：{rail_name} {st_name}({updown_name})")
-        st.write(f"　　測定日：{measurement_date} ＜{measurement_time}＞")
-        st.success("##### 👈別の線区を表示する場合は、再度「線区フォルダを決定」してください") 
+    # 選択された線区情報を表示する
+    vis.rail_info_view(dir_area, config, main_view)
     
     # 解析対象のカメラ番号を選択する
     camera_name = st.sidebar.selectbox(
@@ -69,16 +66,24 @@ def ohc_wear_analysis(config):
     with col1:
         st.write("📸カメラ画像")
         cam_img = vis.ohc_image_load(base_images, idx)
-        st.write(f"カメラ:{camera_name} {idx + 1}番目の画像です")
+        st.write(f"カメラ:{camera_name} {idx + 1}番目の画像")
         st.image(cam_img)
     with col2:
         st.write("🖥️解析結果")
-        st.write("解析結果を表示しています")
-        out_img = vis.out_image_load(rail, camera_num, base_images, idx)
-        st.image(out_img)
+        st.write("解析結果を表示中")
+        
+        # vis.out_image_loadだと遅い？？
+        # image_path = base_images[idx]
+        # try:
+        #     out_img = rail[camera_num][image_path]['out_image']
+        # except Exception as e:
+        #     out_img = []
+            
+        # out_img = vis.out_image_load(rail, camera_num, base_images, idx)
+        # st.image(out_img)
     with col3:
         st.write("📈メモリ付画像")
-        st.write("初期値入力用の画像です")
+        st.write("初期値入力用の画像")
         fig = vis.plot_fig(base_images, idx)
         st.pyplot(fig)
     
@@ -125,7 +130,7 @@ def ohc_wear_analysis(config):
                     y_init_u,
                     y_init_l,
                 )
-    rail.close()
+    # rail.close()
 
     
 if __name__ == "__main__":

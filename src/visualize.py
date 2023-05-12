@@ -67,11 +67,27 @@ def ohc_image_load(base_images, idx):
         im_base = []
     return im_base
 
-@st.cache()
+@st.cache
 def out_image_load(rail, camera_num, base_images, idx):
     image_path = base_images[idx]
-    try:
-        out_image = rail[camera_num][image_path]['out_image']
-    except Exception as e:
-        out_image = []
-    return out_image
+    # オリジナル画像
+    im = Image.open(rail[camera_num][image_path])
+    
+    # 解析結果の情報
+    for trolley_id in config.trolley_ids:
+        im_result = im + rail[camera_num][image_path][trolley_id]['']
+    
+    # try:
+    #     out_img = rail[camera_num][image_path]['out_image']
+    # except Exception as e:
+    #     out_img = []
+    return out_img
+
+def rail_info_view(dir_area, config, main_view):
+    rail_name, st_name, updown_name, measurement_date, measurement_time = helpers.rail_message(dir_area, config)
+    with main_view.container():
+        st.write(f"現在の線区：{rail_name} {st_name}({updown_name})")
+        st.write(f"　　測定日：{measurement_date} ＜{measurement_time}＞")
+        st.success("##### 👈別の線区を表示する場合は、再度「線区フォルダを決定」してください") 
+    return
+

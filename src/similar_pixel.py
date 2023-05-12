@@ -23,11 +23,109 @@ class pixel(trolley):
     
     def __init__(self, trolley_id, y_init_l, y_init_u):
         super().__init__(trolley_id, y_init_l, y_init_u)
+        
+        # ピクセルエッジ検出検出向け
+        # 検出結果
+        self.search_list = []    # トロリ線検出位置
+        self.last_state = []    # 過去1px分の検出位置
+        self.upper_line = []    # 画像内の検出位置
+        self.lower_line = []    # 画像内の検出位置
+        self.upper_diff = []    # 検出位置の差分
+        self.lower_diff = []    # 検出位置の差分
+        self.w_ear = 0
+        self.as_aj = 0
+        # 解析用の属性
+        self.upper_boundary = []    # 輝度の立上り／立下りサーチ範囲の設定
+        self.lower_boundary = []    # 輝度の立上り／立下りサーチ範囲の設定
+        self.avg_brightness = []    # 画面全体の平均輝度
+        self.sigmoid_edge_u = None    # 理想形のエッジ配列
+        self.sigmoid_edge_l = None    # 理想形のエッジ配列
+        self.last_upper_line = []    # 過去5pxの検出位置
+        self.last_lower_line = []    # 過去5pxの検出位置
+        self.edge_std_list_u = []    # 過去10px分のトロリ線周りの輝度配列
+        self.edge_std_list_l = []    # 過去10px分のトロリ線周りの輝度配列
+        self.edge_std_u = None    # 過去10px分のトロリ線周りの輝度配列の平均
+        self.edge_std_l = None    # 過去10px分のトロリ線周りの輝度配列の平均
+        self.slope_dir = None    # 立上りの向き (旧)slope_max < slope_min: 1 else -1
+        # 解析用 元picture
+        self.im_org = None    # 解析対象画像のnumpy配列
+        self.im_trolley = None    # 検出した位置の情報（画像色入れ用）
+        self.im_slice_org = None    # 左端縦1px分の輝度情報（計算前の値を格納）
+        self.im_slice = None    # 左端縦1px分の輝度情報
+        # エラーログ
+        self.err_log_u = []    # Error log on Upper edge
+        self.err_log_l = []    # Error log on Lower edge
+        self.err_skip = [0, 0, 0, 0]    # pixel skip error
+        self.err_diff = [0, 0, 0, 0]    # Difference too large error
+        self.err_edge = [0, 0, 0, 0]    # No edge error
+        self.err_width = [0, 0, 0, 0]    # trolley wear width error
+        self.err_nan = [0, 0]    # Error count
+        
         if trolley_id == 1:
             self.isInFrame = True
         else:
             self.isInFrame = False
+
+            
+    def reset_trolley(self):
+        """ トロリ線消失リセット
+        """
+        self.edge_std_list_u = []
+        self.edge_std_list_l = []
+        self.edge_std_u = None
+        self.edge_std_l = None
+        self.err_skip = [0, 0, 0, 0]
+        self.err_diff = [0, 0, 0, 0]
+        self.err_edge = [0, 0, 0, 0]
+        self.err_width = [0, 0, 0, 0]
+        self.err_nan = [0, 0]
+        self.w_ear = 0
+        self.as_aj = 0
+        self.isInFrame = False
+        return
     
+    
+    def reload_image_init(self):
+        """ 次の画像に移行したときに結果保存用の属性を初期化する
+        """
+        self.reset_trolley()
+        # 解析結果
+        self.ix = []
+        self.estimated_upper_edge = []
+        self.estimated_lower_edge = []
+        self.estimated_width = []
+        self.estimated_slope = []    # (メモ)どんな結果が格納される？ ピクセルエッジでも使うか？
+        self.blightness_center = []
+        self.blightness_mean = []
+        self.blightness_std = []
+        # 内部変数
+        self.upper_line = []    # 画像内の検出位置
+        self.lower_line = []    # 画像内の検出位置
+        self.upper_diff = []    # 検出位置の差分
+        self.lower_diff = []    # 検出位置の差分
+        self.w_ear = 0
+        self.as_aj = 0
+        # 解析用の属性
+        self.upper_boundary = []    # 輝度の立上り／立下りサーチ範囲の設定
+        self.lower_boundary = []    # 輝度の立上り／立下りサーチ範囲の設定
+        self.avg_brightness = []    # 画面全体の平均輝度
+        self.sigmoid_edge_u = None    # 理想形のエッジ配列
+        self.sigmoid_edge_l = None    # 理想形のエッジ配列
+        # self.last_upper_line = []    # 過去5pxの検出位置
+        # self.last_lower_line = []    # 過去5pxの検出位置
+        # self.edge_std_list_u = []    # 過去10px分のトロリ線周りの輝度配列
+        # self.edge_std_list_l = []    # 過去10px分のトロリ線周りの輝度配列
+        # self.edge_std_u = None    # 過去10px分のトロリ線周りの輝度配列の平均
+        # self.edge_std_l = None    # 過去10px分のトロリ線周りの輝度配列の平均
+        # self.slope_dir = None    # 立上りの向き (旧)slope_max < slope_min: 1 else -1
+        # 解析用 元picture
+        self.im_org = None    # 解析対象画像のnumpy配列
+        self.im_trolley = None    # 検出した位置の情報（画像色入れ用）
+        self.im_slice_org = None    # 左端縦1px分の輝度情報（計算前の値を格納）
+        self.im_slice = None    # 左端縦1px分の輝度情報
+        return
+    
+            
     def load_picture(self, image_path):
         # self.picture['file'] = file
         self.im_org = np.array(Image.open(image_path))
@@ -51,23 +149,7 @@ class pixel(trolley):
         self.sigmoid_edge_l = (-sigmoid_max + sigmoid_min) / (1 + np.exp(-x/0.5) ) + sigmoid_max
         return
     
-    def reset_trolley(self):
-        """ トロリ線消失リセット
-        """
-        self.edge_std_list_u = []
-        self.edge_std_list_l = []
-        self.edge_std_u = None
-        self.edge_std_l = None
-        self.err_skip = [0, 0, 0, 0]
-        self.err_diff = [0, 0, 0, 0]
-        self.err_edge = [0, 0, 0, 0]
-        self.err_width = [0, 0, 0, 0]
-        self.err_nan = [0, 0]
-        self.w_ear = 0
-        self.as_aj = 0
-        self.isInFrame = False
-        return
-    
+
     
     def set_init_val(self, ix, xin, auto_edge):
         img = self.im_org
@@ -552,6 +634,8 @@ class pixel(trolley):
         upper_edge = self.last_state[0]
         lower_edge = self.last_state[1]
         center_trolley = (lower_edge + upper_edge) // 2
+        if ix % 100 == 0:
+            print(f"{ix}> upper_edge          :{upper_edge}")
         self.ix.append(ix)
         self.estimated_upper_edge.append(upper_edge)
         self.estimated_lower_edge.append(lower_edge)
@@ -652,6 +736,7 @@ class pixel(trolley):
             trolley2 (pixel instance): ピクセルインスタンス
             trolley3 (pixel instance): ピクセルインスタンス
         """
+        print(f"image_path:{image_path}")
         # 画像の平均画素を算出（背景画素と同等とみなす）
         self.mean_brightness()
         
@@ -670,6 +755,10 @@ class pixel(trolley):
             self.update_result_dic(ix)
             trolley2.update_result_dic(ix)
             trolley3.update_result_dic(ix)
+            
+            if ix % 100 == 0:
+                print(f"{ix}> last_state          :{self.last_state}")
+                print(f"{ix}> estimated_upper_edge:{self.estimated_upper_edge[ix]} ")
         
         return
     

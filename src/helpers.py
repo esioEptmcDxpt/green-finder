@@ -8,7 +8,7 @@ from pathlib import Path
 from PIL import Image
 
 
-@st.cache
+# @st.cache
 def list_imagespath(image_dir):
     images_fullpath = glob.glob(os.path.join(image_dir, "*"))
     images_fullpath = [folder for folder in images_fullpath if os.path.isdir(folder)]
@@ -17,14 +17,14 @@ def list_imagespath(image_dir):
     return images_path
 
 
-@st.cache
+# @st.cache
 def list_images(target_dir):
     base_images = glob.glob(target_dir + "/*.jpg")
     base_images.sort()
     return base_images
 
 
-@st.cache
+# @st.cache
 def get_dir_list(path):
     dir_path = Path(path)
     dir_obj_list = [path for path in dir_path.glob("*") if path.is_dir() and not path.name.startswith(".")]
@@ -33,7 +33,7 @@ def get_dir_list(path):
     return dir_list
 
 
-@st.cache
+# @st.cache
 def get_file_list(path):
     dir_path = Path(path)
     image_obj_list = [path for path in dir_path.glob("*") if path.is_file()]
@@ -42,22 +42,22 @@ def get_file_list(path):
     return image_list
 
 
-@st.cache
+# @st.cache
 def read_markdown_file(markdown_file):
     return Path(markdown_file).read_text()
 
 
-@st.cache
+# @st.cache
 def read_python_file(python_file):
     return Path(python_file).read_text()
 
 
-@st.cache
+# @st.cache
 def get_file_content_as_string(filename):
     st.code(filename)
 
 
-@st.cache
+# @st.cache
 def ohc_image_load(base_images, idx, caption):
     st.text(f'{idx}番目の画像を表示します')
     im_base = Image.open(base_images[idx])
@@ -65,32 +65,32 @@ def ohc_image_load(base_images, idx, caption):
     return im_base
 
 
-@st.cache
+# @st.cache
 def rail_name_to_jp(rail_name, config):
     return config.rail_names[rail_name]
 
 
-@st.cache
+# @st.cache
 def station_name_to_jp(st_name, config):
     return config.station_names[st_name]
 
 
-@st.cache
+# @st.cache
 def rail_type_to_jp(rail_type, config):
     return config.rail_type_names[rail_type]
 
 
-@st.cache
+# @st.cache
 def rail_type_name_to_jp(time_band_names, config):
     return config.time_band_names[time_band_names]
 
 
-@st.cache
+# @st.cache
 def camera_num_to_name(camera_num, config):
     return config.camera_names[camera_num]
 
 
-@st.cache
+# @st.cache
 def rail_message(dir_area, config):
     str_list = re.split('[_-]', dir_area)
     rail_name = rail_name_to_jp(str_list[0], config)
@@ -105,7 +105,7 @@ def rail_message(dir_area, config):
     return rail_name, st_name, updown_name, measurement_date, measurement_time
 
 
-@st.cache
+# @st.cache
 def rail_camera_initialize(rail, camera_num, base_images, trolley_ids):
     """ railに書き込めるように初期化する
         解析結果が既にある場合は初期化しない
@@ -117,9 +117,10 @@ def rail_camera_initialize(rail, camera_num, base_images, trolley_ids):
     """
     if len(rail) < 2:    # 初めてrailが生成された場合は"name"だけなのでlen(rail)は1
         rail_check = False
-    else:    # 一度でも解析されるとtrolley1,2,3とout_imageが追加されるため4以上
-        rail_check = any(len(rail[camera_num][image_path]) > 3 for image_path in base_images)
+    else:    # 一度でも解析されるとtrolley1,2,3とout_imageが追加されるため3以上
+        rail_check = any(len(rail[camera_num][image_path]) > 2 for image_path in base_images)
     if not rail_check:
+        print('rail initilize')
         # railを初期化
         # base_imagesと同じ長さの空のdictionaryを作成してrailを初期化
         blankdict_size = [{}] * len(base_images)
