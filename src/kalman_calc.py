@@ -45,7 +45,7 @@ def track_kalman(rail, camera_num, base_images, idx, trolley_id, x_init, y_init_
             print(y_l, y_u)
 
             try:
-                print(image_path)
+                st.text(image_path)
                 kalman_instance = kalman(trolley_id, y_l, y_u)
                 kalman_instance.infer_trolley_edge(image_path)
                 rail[camera_num][image_path]= vars(kalman_instance)

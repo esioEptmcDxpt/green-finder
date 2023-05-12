@@ -90,7 +90,7 @@ def camera_num_to_name(camera_num, config):
     return config.camera_names[camera_num]
 
 
-@st.cache
+# @st.cache
 def rail_message(dir_area, config):
     str_list = re.split('[_-]', dir_area)
     rail_name = rail_name_to_jp(str_list[0], config)
