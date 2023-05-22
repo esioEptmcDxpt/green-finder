@@ -10,8 +10,9 @@ class trolley(object):
         y_init_u:   入力初期値（水平方向）
         y_init_l:   入力初期値（垂直方向）
     """
-    def __init__(self, trolley_id, y_init_u, y_init_l):
+    def __init__(self, trolley_id, y_init_u, y_init_l, x_init=0):
         self.trolley_id = trolley_id
+        self.x_init = x_init
         self.y_init_u = y_init_u
         self.y_init_l = y_init_l
         self.num_obs = 0

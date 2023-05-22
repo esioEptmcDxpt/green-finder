@@ -1,5 +1,6 @@
 import os
 import shelve
+import copy
 import streamlit as st
 import time    # デバッグ用、後で削除する
 import numpy as np
@@ -41,16 +42,26 @@ def ohc_wear_analysis(config):
     outpath = config.output_dir + "/" + dir_area + "/" + camera_num
     os.makedirs(outpath, exist_ok=True)
     
-    # 既存のresultがあれば読み込み、なければ作成
-    rail = shelve.open(outpath + "/rail.shelve", writeback=True)
-    rail["name"] = dir_area
-    
     # imagesフォルダ内の画像一覧取得
     base_images = helpers.list_images(target_dir)
     
-    # base_imagesと同じ長さの空のdictionaryを作成してrailを初期化
-    blankdict_size = [{}] * len(base_images)
-    rail[camera_num] = dict(zip(base_images, blankdict_size))
+    rail_fpath = outpath + "/rail.shelve"
+    with shelve.open(rail_fpath) as rail:
+    
+        # ファイル中の名称存在チェック
+        if ('name', dir_area) not in rail.items():
+            rail['name'] = dir_area
+        if camera_num not in rail.keys():
+            rail[camera_num] = {}
+
+        # Shelve オブジェクトを辞書形式に一旦引き渡す。
+        rail_dict = copy.deepcopy(rail[camera_num])
+        
+        # 同一の画像名が存在するかチェックし、存在しなければ空の辞書を割り当て
+        for img_path in base_images:
+            if img_path not in rail_dict.keys():
+                rail_dict[img_path] = {}
+        rail[camera_num] = rail_dict
     
     # ファイルインデックスを指定する
     st.sidebar.markdown("# ファイルのインデックスを指定してください")
@@ -69,7 +80,6 @@ def ohc_wear_analysis(config):
     with col2:
         st.header("🖥️解析結果")
         st.write("解析結果を表示しています")
-        # to be implemented
     with col3:
         st.header("📈メモリ付画像")
         fig = vis.plot_fig(base_images, idx)
@@ -88,7 +98,7 @@ def ohc_wear_analysis(config):
         if submit:
             with st.spinner("ピクセルトレース実行中"):
                 track_pixel(
-                    rail,
+                    rail_fpath,
                     camera_num,
                     base_images,
                     idx,
@@ -101,14 +111,14 @@ def ohc_wear_analysis(config):
         form = st.sidebar.form(key="kalman_init")
         trolley_id = form.selectbox("トロリ線のIDを入力してください", ("trolley1", "trolley2"))
         x_init = form.number_input("横方向の初期座標を入力してください", 0, 999)
-        y_init_u = form.number_input("上記X座標でのエッジ位置（上端）の座標を入力してください", 0, 1999)
-        y_init_l = form.number_input("上記X座標でのエッジ位置（下端）の座標を入力してください", 0, 1999)
+        y_init_l = form.number_input("上記X座標でのエッジ位置（上端）の座標を入力してください", 0, 1999)
+        y_init_u = form.number_input("上記X座標でのエッジ位置（下端）の座標を入力してください", 0, 1999)
         submit = form.form_submit_button("カルマンフィルタ実行")
 
         if submit:
             with st.spinner("カルマンフィルタ実行中"):
                 track_kalman(
-                    rail,
+                    rail_fpath,
                     camera_num,
                     base_images,
                     idx,
@@ -117,10 +127,8 @@ def ohc_wear_analysis(config):
                     y_init_u,
                     y_init_l,
                 )
-    rail.close()
 
     return
-    
     
 if __name__ == "__main__":
     config = appProperties('config.yml')

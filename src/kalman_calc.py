@@ -1,8 +1,10 @@
 import streamlit as st
+import shelve
+import copy
 from .kalman import kalman
 
 
-def track_kalman(rail, camera_num, base_images, idx, trolley_id, x_init, y_init_u, y_init_l):
+def track_kalman(rail_fpath, camera_num, base_images, idx, trolley_id, x_init, y_init_u, y_init_l):
     """カルマンフィルタ計算用のラッパー
 
     Args:
@@ -22,40 +24,75 @@ def track_kalman(rail, camera_num, base_images, idx, trolley_id, x_init, y_init_
 
     count = 0
     for image_path in base_images[idx:]:
-
+        image_name = image_path.split('/')[-1]
+        
+        with shelve.open(rail_fpath, writeback=True) as rail:
+            trolley_dict = copy.deepcopy(rail[camera_num][image_path])
+            if trolley_id not in trolley_dict.keys():
+                trolley_dict = {trolley_id: {}}
+            
         # ループの最初は入力した初期値を使い、それ以降は処理時の最後の値を使用するように変更
         count += 1
         if count == 1:
-            print(y_l, y_u)
+            st.text(f"{count}枚目の画像を処理中です。画像名は{image_name}")
+            
             try:
-                st.text(image_path)
-                kalman_instance = kalman(trolley_id, y_l, y_u)
+                kalman_instance = kalman(trolley_id, y_l, y_u, x_init)
                 kalman_instance.infer_trolley_edge(image_path)
-                rail[camera_num][image_path]= vars(kalman_instance)
-
             except:
                 st.error("処理が途中で終了しました。")
-
             finally:
-                rail[camera_num][image_path] = vars(kalman_instance)
+                if x_init > 0:
+                    kalman_dict = vars(kalman_instance)
+                    update_params = ['estimated_upper_edge',
+                                     'estimated_lower_edge',
+                                     'estimated_width',
+                                     'estimated_slope',
+                                     'estimated_upper_edge_variance',
+                                     'estimated_lower_edge_variance',
+                                     'estimated_slope_variance',
+                                     'blightness_center',
+                                     'blightness_mean',
+                                     'blightness_std',
+                                     'measured_upper_edge',
+                                     'measured_lower_edge']
+                    for key in update_params:
+                        if len(trolley_dict[trolley_id]) == 0:
+                            # 初期値が0でない and image_pathのKeyが0の時、新規作成だと判断し、途中までの値は全てNaNで埋める
+                            kalman_dict[key] = [float('nan') for i in range(x_init)] + kalman_dict[key]
+                        else:
+                            # 初期値が0でない and 途中までの値が存在していればその値を挿入
+                            kalman_dict[key] = trolley_dict[trolley_id][key][0:x_init] + kalman_dict[key]
+                    trolley_dict[trolley_id] = kalman_dict
+
+                else:
+                    trolley_dict[trolley_id] = vars(kalman_instance)
+
+                del trolley_dict[trolley_id]['kf_multi']
+                del trolley_dict[trolley_id]['trolley_id']
+                    
+                with shelve.open(rail_fpath, writeback=True) as rail:
+                    rail_dict = copy.deepcopy(rail[camera_num][image_path])
+                    rail_dict = trolley_dict
+                    rail[camera_num][image_path] = rail_dict
 
         else:
+            st.text(f"{count}枚目の画像を処理中です。画像名は{image_name}")
             y_l = int(kalman_instance.last_state[0])
             y_u = int(kalman_instance.last_state[1])
-            print(y_l, y_u)
-
+            
             try:
-                st.text(image_path)
                 kalman_instance = kalman(trolley_id, y_l, y_u)
                 kalman_instance.infer_trolley_edge(image_path)
-                rail[camera_num][image_path]= vars(kalman_instance)
-
             except:
-                print('error')
-
+                st.error("処理が途中で終了しました。")
             finally:
-                rail[camera_num][image_path] = vars(kalman_instance)
-
-    rail.close()
+                trolley_dict[trolley_id] = vars(kalman_instance)
+                del trolley_dict[trolley_id]['kf_multi']
+                del trolley_dict[trolley_id]['trolley_id']
+                with shelve.open(rail_fpath, writeback=True) as rail:
+                    rail_dict = copy.deepcopy(rail[camera_num][image_path])
+                    rail_dict = trolley_dict
+                    rail[camera_num][image_path] = rail_dict
 
 
