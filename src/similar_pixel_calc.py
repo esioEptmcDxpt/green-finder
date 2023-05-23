@@ -1,5 +1,6 @@
 import datetime
 import streamlit as st
+import copy
 from .config import appProperties
 from .similar_pixel import pixel
 
@@ -24,6 +25,11 @@ def track_pixel(rail, camera_num, base_images, idx, xin, test_num):
     for file_idx, image_path in enumerate(base_images[idx:], idx):
         dt01 = datetime.datetime.now()
         
+        # pixelクラスが無い場合、インスタンスを生成
+        # pixel_instance_1 = pixel(1, y_init_l, y_init_u)
+        # pixel_instance_2 = pixel(2, y_init_l, y_init_u)
+        # pixel_instance_3 = pixel(3, y_init_l, y_init_u)
+        
         # 結果保存要素を初期化する
         pixel_instance_1.reload_image_init()
         pixel_instance_2.reload_image_init()
@@ -41,9 +47,9 @@ def track_pixel(rail, camera_num, base_images, idx, xin, test_num):
                 pixel_instance_1.search_trolley_init(0)    # 左端で検索するため0
                 if not pixel_instance_1.search_trolley_init:
                     auto_edge = True
-                st.write(f'search_list:{pixel_instance_1.search_list}')
+                # st.write(f'search_list:{pixel_instance_1.search_list}')
                 pixel_instance_1.set_init_val(idx, xin, auto_edge)
-            st.write(f'last_state:{pixel_instance_1.last_state}')
+            # st.write(f'last_state:{pixel_instance_1.last_state}')
             
             # x座標(ix)ごとにトロリ線検出
             pixel_instance_1.infer_trolley_edge(image_path, pixel_instance_2, pixel_instance_3)
@@ -53,26 +59,30 @@ def track_pixel(rail, camera_num, base_images, idx, xin, test_num):
             
         except Exception as e:
             # 途中で妙な値を拾った場合
-            st.error("処理が途中で終了しました。")
+            st.error(f"処理が途中で終了しました。インデックスは{file_idx}です。")
             
         finally:
             # 最後まで完了した値をインスタンス変数から辞書に変換し、shelveに出力
-            st.write(f"update results")
-            # rail[camera_num][image_path] = {
-            #         trolley_id: vars(pixel_instance)
-            #         for trolley_id, pixel_instance in zip(config.trolley_ids, [
-            #             pixel_instance_1,
-            #             pixel_instance_2,
-            #             pixel_instance_3])
-            # }
+            # st.write(f"update results")
+            # st.write(f'camera_num:{camera_num}')
+            # st.write(f'image_path:{image_path}')
+            # st.write(f'estimated_upper_edge:{pixel_instance_1.estimated_upper_edge[:5]}')
+            # st.write(f'estimated_lower_edge:{pixel_instance_1.estimated_lower_edge[:5]}')
             rail[camera_num][image_path] = {
-                trolley_id: result
+                trolley_id: copy.deepcopy(result)
                 for trolley_id, result in zip(config.trolley_ids, [
                     vars(pixel_instance_1),
                     vars(pixel_instance_2),
                     vars(pixel_instance_3)
                 ])
             }
+            # st.write(f'rail[camera_num][image_path] 1枚目のデータ')
+            # st.write(f'estimated_upper_edge:{rail[camera_num][base_images[0]]["trolley1"]["estimated_upper_edge"][:5]}')
+            # st.write(f'estimated_lower_edge:{rail[camera_num][base_images[0]]["trolley1"]["estimated_lower_edge"][:5]}')
+            # st.write(f'rail[camera_num][image_path] {file_idx+1}枚目のデータ')
+            # st.write(f'estimated_upper_edge:{rail[camera_num][base_images[file_idx]]["trolley1"]["estimated_upper_edge"][:5]}')
+            # st.write(f'estimated_lower_edge:{rail[camera_num][base_images[file_idx]]["trolley1"]["estimated_lower_edge"][:5]}')
+            
         
         dt02 = datetime.datetime.now()
         prc_time = dt02 - dt01
@@ -84,4 +94,6 @@ def track_pixel(rail, camera_num, base_images, idx, xin, test_num):
     
     # 解析終了後の処理
     st.success("ピクセルトレース完了＜トロリ線の検出処理が完了しました＞")
+    st.write("rail.close start")
     rail.close()    # 不要？
+    st.write("rail.close end")

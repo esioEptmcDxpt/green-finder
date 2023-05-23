@@ -634,8 +634,8 @@ class pixel(trolley):
         upper_edge = self.last_state[0]
         lower_edge = self.last_state[1]
         center_trolley = (lower_edge + upper_edge) // 2
-        if ix % 100 == 0:
-            print(f"{ix}> upper_edge          :{upper_edge}")
+        # if ix % 100 == 0:
+        #     print(f"{ix}> upper_edge          :{upper_edge}")
         self.ix.append(ix)
         self.estimated_upper_edge.append(upper_edge)
         self.estimated_lower_edge.append(lower_edge)
@@ -736,7 +736,7 @@ class pixel(trolley):
             trolley2 (pixel instance): ピクセルインスタンス
             trolley3 (pixel instance): ピクセルインスタンス
         """
-        print(f"image_path:{image_path}")
+        # print(f"image_path:{image_path}")
         # 画像の平均画素を算出（背景画素と同等とみなす）
         self.mean_brightness()
         
@@ -756,9 +756,10 @@ class pixel(trolley):
             trolley2.update_result_dic(ix)
             trolley3.update_result_dic(ix)
             
-            if ix % 100 == 0:
-                print(f"{ix}> last_state          :{self.last_state}")
-                print(f"{ix}> estimated_upper_edge:{self.estimated_upper_edge[ix]} ")
+            # デバッグ用
+            # if ix % 100 == 0:
+            #     print(f"{ix}> last_state          :{self.last_state}")
+            #     print(f"{ix}> estimated_upper_edge:{self.estimated_upper_edge[ix]} ")
         
         return
     
