@@ -63,11 +63,6 @@ def track_pixel(rail, camera_num, base_images, idx, xin, test_num):
             
         finally:
             # 最後まで完了した値をインスタンス変数から辞書に変換し、shelveに出力
-            # st.write(f"update results")
-            # st.write(f'camera_num:{camera_num}')
-            # st.write(f'image_path:{image_path}')
-            # st.write(f'estimated_upper_edge:{pixel_instance_1.estimated_upper_edge[:5]}')
-            # st.write(f'estimated_lower_edge:{pixel_instance_1.estimated_lower_edge[:5]}')
             rail[camera_num][image_path] = {
                 trolley_id: copy.deepcopy(result)
                 for trolley_id, result in zip(config.trolley_ids, [
@@ -76,14 +71,7 @@ def track_pixel(rail, camera_num, base_images, idx, xin, test_num):
                     vars(pixel_instance_3)
                 ])
             }
-            # st.write(f'rail[camera_num][image_path] 1枚目のデータ')
-            # st.write(f'estimated_upper_edge:{rail[camera_num][base_images[0]]["trolley1"]["estimated_upper_edge"][:5]}')
-            # st.write(f'estimated_lower_edge:{rail[camera_num][base_images[0]]["trolley1"]["estimated_lower_edge"][:5]}')
-            # st.write(f'rail[camera_num][image_path] {file_idx+1}枚目のデータ')
-            # st.write(f'estimated_upper_edge:{rail[camera_num][base_images[file_idx]]["trolley1"]["estimated_upper_edge"][:5]}')
-            # st.write(f'estimated_lower_edge:{rail[camera_num][base_images[file_idx]]["trolley1"]["estimated_lower_edge"][:5]}')
-            
-        
+           
         dt02 = datetime.datetime.now()
         prc_time = dt02 - dt01
         st.write(str(datetime.datetime.now()) + f' Process end :{prc_time}')
