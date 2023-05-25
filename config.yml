@@ -1,10 +1,40 @@
 default:
   image_dir: imgs
   output_dir: output
-  readme_md: 'instructions.md'
-  camera_types: ['HD11', 'HD12', 'HD21', 'HD22', 'HD31', 'HD32']
-  camera_names: ['高(左)', '高(右)', '中(左)', '中(右)', '低(左)', '低(右)']
-  trolley_ids: ["trolley1", "trolley2", "trolley3"]
+  readme_md: instructions.md
+  camera_types: 
+    - HD11
+    - HD12
+    - HD21
+    - HD22
+    - HD31
+    - HD32
+  camera_names: 
+    - 高(左)
+    - 高(右)
+    - 中(左)
+    - 中(右)
+    - 低(左)
+    - 低(右)
+  trolley_ids: 
+    - trolley1
+    - trolley2
+    - trolley3
+  result_keys: 
+    - ix
+    - upper_boundary
+    - lower_boundary
+    - estimated_upper_edge
+    - estimated_lower_edge
+    - estimated_width
+    - estimated_slope
+    - estimated_upper_edge_variance
+    - estimated_lower_edge_variance
+    - estimated_slope_variance
+    - brightness_center
+    - brightness_mean
+    - brightness_std
+    - current_state
 
 format_func:
   camera_name_to_type:

@@ -8,7 +8,11 @@ import src.visualize as vis
 from src.config import appProperties
 
 
-def result_image_view():
+def result_image_view(config):
+    """ 結果画像を表示させる用のページ
+    Args:
+        config: ymlファイルを読み込んだ設定値
+    """
     # マルチページの設定
     st.set_page_config(page_title="結果画像ビューワー")
     st.sidebar.header("結果画像閲覧システム")
@@ -44,11 +48,11 @@ def result_image_view():
     # outputディレクトリの設定
     outpath = config.output_dir + "/" + dir_area + "/" + camera_num
     
-    # 既存のresultがあれば読み込み
-    rail = shelve.open(outpath + "/rail.shelve")
-    
     # imagesフォルダ内の画像一覧取得
     base_images = helpers.list_images(target_dir)
+    
+    # 結果保存用のshelveファイル(rail)の保存パスを指定
+    rail_fpath = outpath + "/rail.shelve"
     
     # ファイルインデックスを指定する
     st.sidebar.markdown("# ファイルのインデックスを指定してください")
@@ -67,18 +71,18 @@ def result_image_view():
     with col2:
         st.write("🖥️解析結果")
         st.write("解析結果を表示しています")
-        out_img = vis.out_image_load(rail, camera_num, base_images, idx)
-        # st.write(out_img)
-        # st.write(not out_img)
-        # if not out_img:
-        # if all(element == 0 for element in out_img):
-        #     st.error("解析結果がありません")
-        st.image(out_img)
-    
-    rail.close()
+        try:
+            out_img = vis.out_image_load(rail_fpath, camera_num, base_images, idx, config)
+        except:
+            out_img = []
+        if not out_img:
+            st.error("解析結果がありません")
+        else:
+            st.image(out_img)
+
     
 
 if __name__ == "__main__":
     config = appProperties('config.yml')
-    result_image_view()
+    result_image_view(config)
 

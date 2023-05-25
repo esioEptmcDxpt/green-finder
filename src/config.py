@@ -51,6 +51,10 @@ class appProperties:
         return self.config['default']['trolley_ids']
     
     @property
+    def result_keys(self):
+        return self.config['default']['result_keys']
+    
+    @property
     def camera_name_to_type(self):
         return self.config['format_func']['camera_name_to_type']
     

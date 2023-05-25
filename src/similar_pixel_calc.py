@@ -1,10 +1,11 @@
 import datetime
 import streamlit as st
+import shelve
 import copy
 from .config import appProperties
 from .similar_pixel import pixel
 
-def track_pixel(rail, camera_num, base_images, idx, xin, test_num):
+def track_pixel(rail_fpath, camera_num, base_images, idx, xin, test_num):
     """ピクセルエッジ検出計算用のラッパー
     
     Args:
@@ -25,10 +26,19 @@ def track_pixel(rail, camera_num, base_images, idx, xin, test_num):
     for file_idx, image_path in enumerate(base_images[idx:], idx):
         dt01 = datetime.datetime.now()
         
+        image_name = image_path.split('/')[-1]
+        
         # pixelクラスが無い場合、インスタンスを生成
         # pixel_instance_1 = pixel(1, y_init_l, y_init_u)
         # pixel_instance_2 = pixel(2, y_init_l, y_init_u)
         # pixel_instance_3 = pixel(3, y_init_l, y_init_u)
+        
+        # 画像ファイルごとにshleveファイルを準備する
+        with shelve.open(rail_fpath, writeback=True) as rail:
+            trolley_dict = copy.deepcopy(rail[camera_num][image_path])
+            for trolley_id in config.trolley_ids:
+                if trolley_id not in trolley_dict.keys():
+                    trolley_dict = {trolley_id: {}}
         
         # 結果保存要素を初期化する
         pixel_instance_1.reload_image_init()
@@ -36,7 +46,7 @@ def track_pixel(rail, camera_num, base_images, idx, xin, test_num):
         pixel_instance_3.reload_image_init()
         
         try:
-            st.write(f'{file_idx}>>> {image_path}')
+            st.write(f'{file_idx}枚目の画像を処理中です。画像名は{image_name}')
             # 画像を読み込む
             pixel_instance_1.load_picture(image_path)
             pixel_instance_2.load_picture(image_path)
@@ -54,23 +64,29 @@ def track_pixel(rail, camera_num, base_images, idx, xin, test_num):
             # x座標(ix)ごとにトロリ線検出
             pixel_instance_1.infer_trolley_edge(image_path, pixel_instance_2, pixel_instance_3)
             
-            # 検出結果を画像に重ねて描画した配列を作る
-            # im = pixel_instance_1.write_picture(pixel_instance_2, pixel_instance_3)
-            
         except Exception as e:
             # 途中で妙な値を拾った場合
-            st.error(f"処理が途中で終了しました。インデックスは{file_idx}です。")
+            st.error(f"{file_idx}枚目の画像で処理が途中で終了しました。結果を確認して、やりなおしてください。")
+            st.stop()
             
         finally:
-            # 最後まで完了した値をインスタンス変数から辞書に変換し、shelveに出力
-            rail[camera_num][image_path] = {
-                trolley_id: copy.deepcopy(result)
-                for trolley_id, result in zip(config.trolley_ids, [
-                    vars(pixel_instance_1),
-                    vars(pixel_instance_2),
-                    vars(pixel_instance_3)
+            # 結果を辞書に書き込む
+            # config.result_keysで指定した要素だけ辞書に書き込む
+            trolley_dict = {
+                trolley_id: {key: value for key, value in vars(instance).items() if key in config.result_keys}
+                for trolley_id, instance in zip(config.trolley_ids, [
+                    pixel_instance_1,
+                    pixel_instance_2,
+                    pixel_instance_3
                 ])
             }
+
+            # 結果をshelveに書き込む
+            # print("shelve saving")
+            with shelve.open(rail_fpath, writeback=True) as rail:
+                rail_dict = copy.deepcopy(rail[camera_num][image_path])
+                rail_dict = trolley_dict
+                rail[camera_num][image_path] = rail_dict
            
         dt02 = datetime.datetime.now()
         prc_time = dt02 - dt01
@@ -82,6 +98,3 @@ def track_pixel(rail, camera_num, base_images, idx, xin, test_num):
     
     # 解析終了後の処理
     st.success("ピクセルトレース完了＜トロリ線の検出処理が完了しました＞")
-    st.write("rail.close start")
-    rail.close()    # 不要？
-    st.write("rail.close end")

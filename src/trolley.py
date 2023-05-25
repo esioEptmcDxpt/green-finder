@@ -35,9 +35,9 @@ class trolley(object):
         self.estimated_lower_edge = []
         self.estimated_width = []
         self.estimated_slope = []    # (メモ)どんな結果が格納される？ ピクセルエッジでも使うか？
-        self.blightness_center = []
-        self.blightness_mean = []
-        self.blightness_std = []
+        self.brightness_center = []
+        self.brightness_mean = []
+        self.brightness_std = []
         
         # カルマンフィルタ向け
         self.y_init_u = y_init_u
@@ -91,21 +91,21 @@ class trolley(object):
         #                         'upper_edge1':[],          # -> estimated_upper_edge
         #                         'lower_edge1':[],          # -> estimated_lower_edge
         #                         'width1':[],               # -> estimated_width
-        #                         'blightness_center1':[],   # -> brightness_center
-        #                         'blightness_mean1':[],     # -> brightness_mean
-        #                         'blightness_std1':[],      # -> brightness_std
+        #                         'brightness_center1':[],   # -> brightness_center
+        #                         'brightness_mean1':[],     # -> brightness_mean
+        #                         'brightness_std1':[],      # -> brightness_std
         #                         'upper_edge2':[],
         #                         'lower_edge2':[],
         #                         'width2':[],
-        #                         'blightness_center2':[],
-        #                         'blightness_mean2':[],
-        #                         'blightness_std2':[],
+        #                         'brightness_center2':[],
+        #                         'brightness_mean2':[],
+        #                         'brightness_std2':[],
         #                         'upper_edge3':[],
         #                         'lower_edge3':[],
         #                         'width3':[],
-        #                         'blightness_center3':[],
-        #                         'blightness_mean3':[],
-        #                         'blightness_std3':[]
+        #                         'brightness_center3':[],
+        #                         'brightness_mean3':[],
+        #                         'brightness_std3':[]
         #                     }
         # ↓元々はmetafileで定義していたやつ（print_files） ※おそらく不要
         # dict = {
@@ -174,21 +174,21 @@ class trolley(object):
         #         'upper_edge1':[],
         #         'lower_edge1':[],
         #         'width1':[],
-        #         'blightness_center1':[],
-        #         'blightness_mean1':[],
-        #         'blightness_std1':[],
+        #         'brightness_center1':[],
+        #         'brightness_mean1':[],
+        #         'brightness_std1':[],
         #         'upper_edge2':[],
         #         'lower_edge2':[],
         #         'width2':[],
-        #         'blightness_center2':[],
-        #         'blightness_mean2':[],
-        #         'blightness_std2':[],
+        #         'brightness_center2':[],
+        #         'brightness_mean2':[],
+        #         'brightness_std2':[],
         #         'upper_edge3':[],
         #         'lower_edge3':[],
         #         'width3':[],
-        #         'blightness_center3':[],
-        #         'blightness_mean3':[],
-        #         'blightness_std3':[]
+        #         'brightness_center3':[],
+        #         'brightness_mean3':[],
+        #         'brightness_std3':[]
         #     }
         #     return dic.copy()
         

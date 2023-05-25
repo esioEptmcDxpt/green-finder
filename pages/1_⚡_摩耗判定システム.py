@@ -1,5 +1,6 @@
 import os
 import shelve
+import copy
 import streamlit as st
 import numpy as np
 import src.helpers as helpers
@@ -43,16 +44,38 @@ def ohc_wear_analysis(config):
     outpath = config.output_dir + "/" + dir_area + "/" + camera_num
     os.makedirs(outpath, exist_ok=True)
     
-    # 既存のresultがあれば読み込み、なければ作成
-    rail = shelve.open(outpath + "/rail.shelve", writeback=True)
-    rail["name"] = dir_area
-    
     # imagesフォルダ内の画像一覧取得
     base_images = helpers.list_images(target_dir)
     
+    # 結果保存用のshelveファイル(rail)の保存パスを指定
+    rail_fpath = outpath + "/rail.shelve"
+    with shelve.open(rail_fpath) as rail:
+        # 線区名を記録する
+        rail["name"] = dir_area
+        # 解析結果が既にある場合は初期化しない
+        helpers.rail_camera_initialize(rail, camera_num, base_images, config.trolley_ids)
+    
+    # with shelve.open(rail_fpath, writeback=True) as rail:
+    #     # ファイル中の名称存在チェック
+    #     if ('name', dir_area) not in rail.items():
+    #         rail['name'] = dir_area
+    #     if camera_num not in rail.keys():
+    #         rail[camera_num] = {}
+    #     # Shelve オブジェクトを辞書形式に一旦引き渡す。
+    #     rail_dict = copy.deepcopy(rail[camera_num])
+    #     # 同一の画像名が存在するかチェックし、存在しなければ空の辞書を割り当て
+    #     for img_path in base_images:
+    #         if img_path not in rail_dict.keys():
+    #             rail_dict[img_path] = {}
+    #     rail[camera_num] = rail_dict
+    
+    # 元のshleve.open()
+    # rail = shelve.open(rail_fpath, writeback=True)
+    # rail["name"] = dir_area
+    
     # railに書き込めるように初期化する
     # 解析結果が既にある場合は初期化しない
-    helpers.rail_camera_initialize(rail, camera_num, base_images, config.trolley_ids)
+    # helpers.rail_camera_initialize(rail, camera_num, base_images, config.trolley_ids)
     
     # ファイルインデックスを指定する
     st.sidebar.markdown("# ファイルのインデックスを指定してください")
@@ -71,16 +94,14 @@ def ohc_wear_analysis(config):
     with col2:
         st.write("🖥️解析結果")
         st.write("解析結果を表示中")
-        
-        # vis.out_image_loadだと遅い？？
-        # image_path = base_images[idx]
-        # try:
-        #     out_img = rail[camera_num][image_path]['out_image']
-        # except Exception as e:
-        #     out_img = []
-            
-        # out_img = vis.out_image_load(rail, camera_num, base_images, idx)
-        # st.image(out_img)
+        try:
+            out_img = vis.out_image_load(rail_fpath, camera_num, base_images, idx, config)
+        except:
+            out_img = []
+        if not out_img:
+            st.error("解析結果がありません")
+        else:
+            st.image(out_img)
     with col3:
         st.write("📈メモリ付画像")
         st.write("初期値入力用の画像")
@@ -101,7 +122,7 @@ def ohc_wear_analysis(config):
         if submit:
             with st.spinner("ピクセルトレース実行中"):
                 track_pixel(
-                    rail,
+                    rail_fpath,
                     camera_num,
                     base_images,
                     idx,

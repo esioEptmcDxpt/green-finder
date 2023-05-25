@@ -95,9 +95,9 @@ class pixel(trolley):
         self.estimated_lower_edge = []
         self.estimated_width = []
         self.estimated_slope = []    # (メモ)どんな結果が格納される？ ピクセルエッジでも使うか？
-        self.blightness_center = []
-        self.blightness_mean = []
-        self.blightness_std = []
+        self.brightness_center = []
+        self.brightness_mean = []
+        self.brightness_std = []
         # 内部変数
         self.upper_line = []    # 画像内の検出位置
         self.lower_line = []    # 画像内の検出位置
@@ -640,9 +640,9 @@ class pixel(trolley):
         self.estimated_upper_edge.append(upper_edge)
         self.estimated_lower_edge.append(lower_edge)
         self.estimated_width.append(lower_edge - upper_edge)
-        self.blightness_center.append(img[center_trolley, ix, 0])
-        self.blightness_mean.append(np.mean(img[upper_edge:lower_edge+1, ix, 0]))
-        self.blightness_std.append(np.std(img[upper_edge:lower_edge+1, ix, 0]))
+        self.brightness_center.append(img[center_trolley, ix, 0])
+        self.brightness_mean.append(np.mean(img[upper_edge:lower_edge+1, ix, 0]))
+        self.brightness_std.append(np.std(img[upper_edge:lower_edge+1, ix, 0]))
         return 
     
     
