@@ -41,6 +41,7 @@ def track_kalman(rail_fpath, camera_num, base_images, idx, trolley_id, x_init, y
                 kalman_instance.infer_trolley_edge(image_path)
             except:
                 st.error("処理が途中で終了しました。")
+                break
             finally:
                 if x_init > 0:
                     kalman_dict = vars(kalman_instance)
@@ -86,6 +87,7 @@ def track_kalman(rail_fpath, camera_num, base_images, idx, trolley_id, x_init, y
                 kalman_instance.infer_trolley_edge(image_path)
             except:
                 st.error("処理が途中で終了しました。")
+                break
             finally:
                 trolley_dict[trolley_id] = vars(kalman_instance)
                 del trolley_dict[trolley_id]['kf_multi']

@@ -116,6 +116,9 @@ def ohc_wear_analysis(config):
         submit = form.form_submit_button("カルマンフィルタ実行")
 
         if submit:
+            if st.button(f'計算を停止しますか？'):
+                st.stop()
+            
             with st.spinner("カルマンフィルタ実行中"):
                 track_kalman(
                     rail_fpath,
