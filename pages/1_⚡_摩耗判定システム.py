@@ -18,6 +18,7 @@ def ohc_wear_analysis(config):
     # メインページのコンテナを配置する
     main_view = st.container()
     camera_view = st.empty()
+    log_view = st.empty()
     
     # フォルダ直下の画像保管用ディレクトリのリスト
     images_path = helpers.list_imagespath(config.image_dir)
@@ -54,28 +55,6 @@ def ohc_wear_analysis(config):
         rail["name"] = dir_area
         # 解析結果が既にある場合は初期化しない
         helpers.rail_camera_initialize(rail, camera_num, base_images, config.trolley_ids)
-    
-    # with shelve.open(rail_fpath, writeback=True) as rail:
-    #     # ファイル中の名称存在チェック
-    #     if ('name', dir_area) not in rail.items():
-    #         rail['name'] = dir_area
-    #     if camera_num not in rail.keys():
-    #         rail[camera_num] = {}
-    #     # Shelve オブジェクトを辞書形式に一旦引き渡す。
-    #     rail_dict = copy.deepcopy(rail[camera_num])
-    #     # 同一の画像名が存在するかチェックし、存在しなければ空の辞書を割り当て
-    #     for img_path in base_images:
-    #         if img_path not in rail_dict.keys():
-    #             rail_dict[img_path] = {}
-    #     rail[camera_num] = rail_dict
-    
-    # 元のshleve.open()
-    # rail = shelve.open(rail_fpath, writeback=True)
-    # rail["name"] = dir_area
-    
-    # railに書き込めるように初期化する
-    # 解析結果が既にある場合は初期化しない
-    # helpers.rail_camera_initialize(rail, camera_num, base_images, config.trolley_ids)
     
     # ファイルインデックスを指定する
     st.sidebar.markdown("# ファイルのインデックスを指定してください")
@@ -119,6 +98,7 @@ def ohc_wear_analysis(config):
         xin = form_px.number_input("トロリ線の中心位置を入力(0～2048)", 0, 2048, 1024)
         test_num = form_px.number_input(f"解析する画像枚数を入力(1～{len(base_images)-idx})", 1, len(base_images)-idx, len(base_images)-idx)
         submit = form_px.form_submit_button("ピクセルトレース実行")
+        log_view.empty()
         if submit:
             with st.spinner("ピクセルトレース実行中"):
                 track_pixel(
@@ -128,6 +108,7 @@ def ohc_wear_analysis(config):
                     idx,
                     xin,
                     test_num,
+                    log_view,
                 )
     # カルマンフィルタを実行
     elif trace_method == "カルマンフィルタ":
@@ -151,11 +132,8 @@ def ohc_wear_analysis(config):
                     y_init_u,
                     y_init_l,
                 )
-    # st.write("rail.close start")
-    # rail.close()
-    # st.write("rail.close end")
 
-    
+
 if __name__ == "__main__":
     config = appProperties('config.yml')
     ohc_wear_analysis(config)

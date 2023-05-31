@@ -5,7 +5,7 @@ import copy
 from .config import appProperties
 from .similar_pixel import pixel
 
-def track_pixel(rail_fpath, camera_num, base_images, idx, xin, test_num):
+def track_pixel(rail_fpath, camera_num, base_images, idx, xin, test_num, log_view):
     """ピクセルエッジ検出計算用のラッパー
     
     Args:
@@ -46,7 +46,7 @@ def track_pixel(rail_fpath, camera_num, base_images, idx, xin, test_num):
         pixel_instance_3.reload_image_init()
         
         try:
-            st.write(f'{file_idx}枚目の画像を処理中です。画像名は{image_name}')
+            log_view.write(f'{file_idx}枚目の画像を処理中です。画像名は{image_name}')
             # 画像を読み込む
             pixel_instance_1.load_picture(image_path)
             pixel_instance_2.load_picture(image_path)
@@ -66,7 +66,7 @@ def track_pixel(rail_fpath, camera_num, base_images, idx, xin, test_num):
             
         except Exception as e:
             # 途中で妙な値を拾った場合
-            st.error(f"{file_idx}枚目の画像で処理が途中で終了しました。結果を確認して、やりなおしてください。")
+            log_view.error(f"{file_idx}枚目の画像で処理が途中で終了しました。結果を確認して、やりなおしてください。")
             st.stop()
             
         finally:
@@ -90,11 +90,11 @@ def track_pixel(rail_fpath, camera_num, base_images, idx, xin, test_num):
            
         dt02 = datetime.datetime.now()
         prc_time = dt02 - dt01
-        st.write(str(datetime.datetime.now()) + f' Process end :{prc_time}')
+        log_view.write(str(datetime.datetime.now()) + f' Process end :{prc_time}')
         
         # 指定画像数に達したら解析を終了する
         if file_idx >= test_num + idx -1:
             break
     
     # 解析終了後の処理
-    st.success("ピクセルトレース完了＜トロリ線の検出処理が完了しました＞")
+    log_view.success("ピクセルトレース完了＜トロリ線の検出処理が完了しました＞")
