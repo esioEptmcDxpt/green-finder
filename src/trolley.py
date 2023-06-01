@@ -22,7 +22,7 @@ class trolley(object):
         トロリ線幅エラー(err_width):
             [small_state(0 or 1), large_state(0 or 1), small_count, large_count]
     """
-    def __init__(self, trolley_id, y_init_u, y_init_l):
+    def __init__(self, trolley_id, y_init_u, y_init_l, x_init=0):
         # トロリ線の識別＜共通＞
         self.trolley_id = trolley_id
         self.isInFrame = None       # ピクセルエッジでのみ使用？
@@ -38,6 +38,7 @@ class trolley(object):
         self.brightness_std = []
 
         # カルマンフィルタ向け
+        self.x_init = x_init
         self.y_init_u = y_init_u
         self.y_init_l = y_init_l
         self.num_obs = 0
@@ -50,9 +51,16 @@ class trolley(object):
         self.current_state = []
         self.last_state = [0, 0]
         self.last_state_covariance = []
+        self.estimated_upper_edge = []
+        self.estimated_lower_edge = []
+        self.estimated_width = []
+        self.estimated_slope = []
         self.estimated_upper_edge_variance = []
         self.estimated_lower_edge_variance = []
         self.estimated_slope_variance = []
+        self.blightness_center = []
+        self.blightness_mean = []
+        self.blightness_std = []
         self.measured_upper_edge = []
         self.measured_lower_edge = []
         self.missing_state = []
