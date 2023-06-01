@@ -1,8 +1,6 @@
 import os
 import shelve
-import copy
 import streamlit as st
-import numpy as np
 import src.helpers as helpers
 import src.visualize as vis
 from src.kalman_calc import track_kalman
@@ -14,40 +12,40 @@ def ohc_wear_analysis(config):
     # マルチページの設定
     st.set_page_config(page_title="トロリ線摩耗検出システム")
     st.sidebar.header("トロリ線摩耗検出システム")
-        
+
     # メインページのコンテナを配置する
     main_view = st.container()
     camera_view = st.empty()
-    log_view = st.empty()
-    
+    log_view = st.container()
+
     # フォルダ直下の画像保管用ディレクトリのリスト
     images_path = helpers.list_imagespath(config.image_dir)
-    
+
     # 画像保管線区の選択
     dir_area = st.sidebar.selectbox("線区のフォルダ名を選択してください", images_path)
     if dir_area is None:
         st.error("No frames fit the criteria. Please select different label or number.")
-    
+
     # 選択された線区情報を表示する
     vis.rail_info_view(dir_area, config, main_view)
-    
+
     # 解析対象のカメラ番号を選択する
     camera_name = st.sidebar.selectbox(
                     "解析対象のカメラを選択してください",
                     zip(config.camera_names, config.camera_types)
                     )[0]
     camera_num = config.camera_name_to_type[camera_name]
-    
+
     # 解析対象の画像フォルダを指定
-    target_dir = config.image_dir + "/" + dir_area + "/" + camera_num    # (長山)"/camera_num"を追加
-    
+    target_dir = config.image_dir + "/" + dir_area + "/" + camera_num
+
     # outputディレクトリの準備
     outpath = config.output_dir + "/" + dir_area + "/" + camera_num
     os.makedirs(outpath, exist_ok=True)
-    
+
     # imagesフォルダ内の画像一覧取得
     base_images = helpers.list_images(target_dir)
-    
+
     # 結果保存用のshelveファイル(rail)の保存パスを指定
     rail_fpath = outpath + "/rail.shelve"
     with shelve.open(rail_fpath) as rail:
@@ -55,16 +53,16 @@ def ohc_wear_analysis(config):
         rail["name"] = dir_area
         # 解析結果が既にある場合は初期化しない
         helpers.rail_camera_initialize(rail, camera_num, base_images, config.trolley_ids)
-    
+
     # ファイルインデックスを指定する
     st.sidebar.markdown("# ファイルのインデックスを指定してください")
     idx = st.sidebar.number_input(f"インデックス(0～{len(base_images)-1}で指定)",
                                   min_value=0,
                                   max_value=len(base_images) - 1)
-    
+
     # メインページにカメラ画像を表示する
     col1, col2, col3 = camera_view.columns(3)
-    
+
     with col1:
         st.write("📸カメラ画像")
         cam_img = vis.ohc_image_load(base_images, idx)
@@ -75,7 +73,7 @@ def ohc_wear_analysis(config):
         st.write("解析結果を表示中")
         try:
             out_img = vis.out_image_load(rail_fpath, camera_num, base_images, idx, config)
-        except:
+        except Exception as e:
             out_img = []
         if not out_img:
             st.error("解析結果がありません")
@@ -86,20 +84,22 @@ def ohc_wear_analysis(config):
         st.write("初期値入力用の画像")
         fig = vis.plot_fig(base_images, idx)
         st.pyplot(fig)
-    
+
     trace_method = st.sidebar.radio(
-        "システムを選択", 
+        "システムを選択",
         ("ピクセルトレース", "カルマンフィルタ")
     )
-    
+
     # ピクセルトレースを実行
     if trace_method == "ピクセルトレース":
         form_px = st.sidebar.form(key="similar_pixel_init")
         xin = form_px.number_input("トロリ線の中心位置を入力(0～2048)", 0, 2048, 1024)
         test_num = form_px.number_input(f"解析する画像枚数を入力(1～{len(base_images)-idx})", 1, len(base_images)-idx, len(base_images)-idx)
         submit = form_px.form_submit_button("ピクセルトレース実行")
-        log_view.empty()
         if submit:
+            if st.button(f'計算停止ボタン ＜現在の計算が終わったら停止します＞'):
+                st.stop()
+
             with st.spinner("ピクセルトレース実行中"):
                 track_pixel(
                     rail_fpath,

@@ -33,7 +33,7 @@ class appProperties:
     @property
     def output_dir(self):
         return self.config['default']['output_dir']
-    
+
     @property
     def readme_md(self):
         return self.config['default']['readme_md']
@@ -41,35 +41,35 @@ class appProperties:
     @property
     def camera_types(self):
         return self.config['default']['camera_types']
-    
+
     @property
     def camera_names(self):
         return self.config['default']['camera_names']
-    
+
     @property
     def trolley_ids(self):
         return self.config['default']['trolley_ids']
-    
+
     @property
     def result_keys(self):
         return self.config['default']['result_keys']
-    
+
     @property
     def camera_name_to_type(self):
         return self.config['format_func']['camera_name_to_type']
-    
+
     @property
     def rail_names(self):
         return self.config['format_func']['rail_names']
-    
+
     @property
     def station_names(self):
         return self.config['format_func']['station_names']
-    
+
     @property
     def rail_type_names(self):
         return self.config['format_func']['rail_type_names']
-    
+
     @property
     def time_band_names(self):
         return self.config['format_func']['time_band_names']

@@ -2,7 +2,6 @@ import shelve
 import copy
 import matplotlib
 import numpy as np
-import math
 from bokeh.plotting import figure, gridplot
 from bokeh.models import ColumnDataSource, HoverTool
 import streamlit as st
@@ -33,12 +32,12 @@ def plot_fig_bokeh(config, base_images, rail_fpath, camera_num, img_num, graph_h
 
     with shelve.open(rail_fpath) as rail:
         trolley_dict = copy.deepcopy(rail[camera_num])
-    
+
     # グラフ用のデータソースを作成
-    source_upper = ColumnDataSource(data=dict(x=[], y=[]))
-    source_lower = ColumnDataSource(data=dict(x=[], y=[]))
-    source_width = ColumnDataSource(data=dict(x=[], y=[]))
-    source_center = ColumnDataSource(data=dict(x=[], y=[]))
+    # source_upper = ColumnDataSource(data=dict(x=[], y=[]))
+    # source_lower = ColumnDataSource(data=dict(x=[], y=[]))
+    # source_width = ColumnDataSource(data=dict(x=[], y=[]))
+    # source_center = ColumnDataSource(data=dict(x=[], y=[]))
 
     # グラフを作成
     p_edge = figure(title="Upper and Lower Edge", sizing_mode="stretch_width", height=int(graph_height))
@@ -71,136 +70,10 @@ def plot_fig_bokeh(config, base_images, rail_fpath, camera_num, img_num, graph_h
 
         # 3つ目のグラフ（Brightness Center）
         p_center.line(x_values, brightness_center, line_color="orange")
-    
+
     return grid
 
 
-# # @st.cache
-# def plot_fig_bokeh(config, base_images, rail_fpath, camera_num, img_num, graph_height):
-#     with shelve.open(rail_fpath) as rail:
-#         trolley_dict = copy.deepcopy(rail[camera_num])
-    
-#     # グラフ用のデータソースを作成
-#     source_upper = ColumnDataSource(data=dict(x=[], y=[], label=[]))
-#     source_lower = ColumnDataSource(data=dict(x=[], y=[], label=[]))
-#     source_std = ColumnDataSource(data=dict(x=[], y=[], label=[]))
-#     source_center = ColumnDataSource(data=dict(x=[], y=[], label=[]))
-
-#     # グラフを作成
-#     p_upper = figure(title="Upper and Lower Edge", sizing_mode="stretch_width", height=int(graph_height))
-#     p_lower = figure(title="Brightness Std", sizing_mode="stretch_width", x_range=p_upper.x_range, height=int(graph_height))
-#     p_center = figure(title="Brightness Center", sizing_mode="stretch_width", x_range=p_upper.x_range, height=int(graph_height))
-
-#     # グラフを表示する領域を作成
-#     grid = gridplot([[p_upper], [p_lower], [p_center]], toolbar_location="above")
-
-#     # ツールチップを作成
-#     tooltips = [
-#         ("Image", "@label"),
-#     ]
-
-#     # データを追加していくループ
-#     for idx in range(img_num[0], img_num[1] + 1):
-#         image_path = base_images[idx]
-#         x_values = np.array([n + 1000 * idx for n in trolley_dict[image_path][config.trolley_ids[0]]["ix"]])
-
-#         # データを更新
-#         upper_edge = trolley_dict[image_path][config.trolley_ids[0]].get("estimated_upper_edge", [])
-#         lower_edge = trolley_dict[image_path][config.trolley_ids[0]].get("estimated_lower_edge", [])
-#         brightness_std = trolley_dict[image_path][config.trolley_ids[0]].get("brightness_std", [])
-#         brightness_center = trolley_dict[image_path][config.trolley_ids[0]].get("brightness_center", [])
-
-#         if not upper_edge or not lower_edge or not brightness_std or not brightness_center:
-#             continue
-
-#         # データソースにデータを追加
-#         source_upper.stream(dict(x=[], y=[], label=[f"{math.floor((x+1)/2000)}枚目" for x in range(len(x_values))]))
-#         source_lower.stream(dict(x=[], y=[], label=[f"{math.floor((x+1)/2000)}枚目" for x in range(len(x_values))]))
-#         source_std.stream(dict(x=[], y=[], label=[f"{math.floor((x+1)/2000)}枚目" for x in range(len(x_values))]))
-#         source_center.stream(dict(x=[], y=[], label=[f"{math.floor((x+1)/2000)}枚目" for x in range(len(x_values))]))
-
-#     # 1つ目のグラフ（Upper and Lower Edge）
-#     p_upper.line(x=[], y=[], source=source_upper, line_color="blue", hover_line_color="blue")
-#     p_upper.line(x=[], y=[], source=source_lower, line_color="red", hover_line_color="red")
-#     p_upper.add_tools(HoverTool(renderers=[p_upper], tooltips=tooltips))
-
-#     # 2つ目のグラフ（Brightness Std）
-#     p_lower.line(x=[], y=[], source=source_std, line_color="green", hover_line_color="green")
-#     p_lower.add_tools(HoverTool(renderers=[p_lower], tooltips=tooltips))
-
-#     # 3つ目のグラフ（Brightness Center）
-#     p_center.line(x=[], y=[], source=source_center, line_color="orange", hover_line_color="orange")
-#     p_center.add_tools(HoverTool(renderers=[p_center], tooltips=tooltips))
-
-#     return grid
-
-
-
-# def plot_fig_bokeh(config, base_images, rail_fpath, camera_num, img_num, graph_height):
-#     """ ツールチップを適用するコードを作成中
-#     """
-    
-#     with shelve.open(rail_fpath) as rail:
-#         trolley_dict = copy.deepcopy(rail[camera_num])
-    
-#     # グラフ用のデータソースを作成
-#     source_upper = ColumnDataSource(data=dict(x=[], y=[], label=[]))
-#     source_lower = ColumnDataSource(data=dict(x=[], y=[], label=[]))
-#     source_std = ColumnDataSource(data=dict(x=[], y=[], label=[]))
-#     source_center = ColumnDataSource(data=dict(x=[], y=[], label=[]))
-
-#     # グラフを作成
-#     p_upper = figure(title="Upper and Lower Edge", sizing_mode="stretch_width", height=int(graph_height))
-#     p_lower = figure(title="Brightness Std", sizing_mode="stretch_width", x_range=p_upper.x_range, height=int(graph_height))
-#     p_center = figure(title="Brightness Center", sizing_mode="stretch_width", x_range=p_upper.x_range, height=int(graph_height))
-
-#     # グラフを表示する領域を作成
-#     grid = gridplot([[p_upper], [p_lower], [p_center]], toolbar_location="above")
-
-#     # ツールチップを作成
-#     tooltips = [
-#         ("Image", "@label"),
-#     ]
-
-#     # データを追加していくループ
-#     for idx in range(img_num[0], img_num[1] + 1):
-#         image_path = base_images[idx]
-#         x_values = np.array([n + 1000 * idx for n in trolley_dict[image_path][config.trolley_ids[0]]["ix"]])
-
-#         # データを更新
-#         upper_edge = trolley_dict[image_path][config.trolley_ids[0]].get("estimated_upper_edge", [])
-#         lower_edge = trolley_dict[image_path][config.trolley_ids[0]].get("estimated_lower_edge", [])
-#         brightness_std = trolley_dict[image_path][config.trolley_ids[0]].get("brightness_std", [])
-#         brightness_center = trolley_dict[image_path][config.trolley_ids[0]].get("brightness_center", [])
-
-#         if not upper_edge or not lower_edge or not brightness_std or not brightness_center:
-#             continue
-
-#         # データソースにデータを追加
-#         source_upper.stream(dict(x=[], y=[], label=[f"{math.floor((x+1)/2000)}枚目" for x in range(len(x_values))]))
-#         source_lower.stream(dict(x=[], y=[], label=[f"{math.floor((x+1)/2000)}枚目" for x in range(len(x_values))]))
-#         source_std.stream(dict(x=[], y=[], label=[f"{math.floor((x+1)/2000)}枚目" for x in range(len(x_values))]))
-#         source_center.stream(dict(x=[], y=[], label=[f"{math.floor((x+1)/2000)}枚目" for x in range(len(x_values))]))
-
-#     # 1つ目のグラフ（Upper and Lower Edge）
-#     p_upper.line(x=[], y=[], source=source_upper, line_color="blue", hover_line_color="blue")
-#     p_upper.line(x=[], y=[], source=source_lower, line_color="red", hover_line_color="red")
-#     p_upper.add_tools(HoverTool(renderers=[p_upper], tooltips=tooltips))
-
-#     # 2つ目のグラフ（Brightness Std）
-#     p_lower.line(x=[], y=[], source=source_std, line_color="green", hover_line_color="green")
-#     p_lower.add_tools(HoverTool(renderers=[p_lower], tooltips=tooltips))
-
-#     # 3つ目のグラフ（Brightness Center）
-#     p_center.line(x=[], y=[], source=source_center, line_color="orange", hover_line_color="orange")
-#     p_center.add_tools(HoverTool(renderers=[p_center], tooltips=tooltips))
-    
-#     return grid
-
-
-
-
-    
 @st.cache
 def ohc_image_load(base_images, idx):
     try:
@@ -209,9 +82,9 @@ def ohc_image_load(base_images, idx):
         im_base = []
     return im_base
 
+
 @st.cache
 def out_image_load(rail_fpath, camera_num, base_images, idx, config):
-    
     with shelve.open(rail_fpath) as rail:
         trolley_dict = copy.deepcopy(rail[camera_num])
 
@@ -248,11 +121,11 @@ def out_image_load(rail_fpath, camera_num, base_images, idx, config):
 
     return out_img
 
+
 def rail_info_view(dir_area, config, main_view):
     rail_name, st_name, updown_name, measurement_date, measurement_time = helpers.rail_message(dir_area, config)
     with main_view.container():
         st.write(f"現在の線区：{rail_name} {st_name}({updown_name})")
         st.write(f"　　測定日：{measurement_date} ＜{measurement_time}＞")
-        st.success("##### 👈別の線区を表示する場合は、再度「線区フォルダを決定」してください") 
+        st.success("##### 👈別の線区を表示する場合は、再度「線区フォルダを決定」してください")
     return
-

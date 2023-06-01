@@ -1,8 +1,8 @@
 import random
 import statistics
+import streamlit as st
 import math
 import numpy as np
-import cv2
 from PIL import Image
 from .config import appProperties
 from .trolley import trolley
@@ -19,11 +19,9 @@ class pixel(trolley):
         __init__: 各種パラメータの初期化
     """
     config = appProperties('config.yml')
-    
-    
+
     def __init__(self, trolley_id, y_init_l, y_init_u):
         super().__init__(trolley_id, y_init_l, y_init_u)
-        
         # ピクセルエッジ検出検出向け
         # 検出結果
         self.search_list = []    # トロリ線検出位置
@@ -60,13 +58,12 @@ class pixel(trolley):
         self.err_edge = [0, 0, 0, 0]    # No edge error
         self.err_width = [0, 0, 0, 0]    # trolley wear width error
         self.err_nan = [0, 0]    # Error count
-        
+
         if trolley_id == 1:
             self.isInFrame = True
         else:
             self.isInFrame = False
 
-            
     def reset_trolley(self):
         """ トロリ線消失リセット
         """
@@ -83,8 +80,7 @@ class pixel(trolley):
         self.as_aj = 0
         self.isInFrame = False
         return
-    
-    
+
     def reload_image_init(self):
         """ 次の画像に移行したときに結果保存用の属性を初期化する
         """
@@ -124,45 +120,42 @@ class pixel(trolley):
         self.im_slice_org = None    # 左端縦1px分の輝度情報（計算前の値を格納）
         self.im_slice = None    # 左端縦1px分の輝度情報
         return
-    
-            
+
     def load_picture(self, image_path):
         # self.picture['file'] = file
         self.im_org = np.array(Image.open(image_path))
         self.brightness = []    # 摺面の輝度
         self.im_trolley = np.zeros_like(self.im_org).astype(int)
-        
+
         # 画面全体の平均輝度（背景輝度と同等とみなす）を算出
         img = self.im_org
         im_r = img[:, :, 0].flatten()
         im_random = []
-        for i in range(1000): #全画素の平均は処理時間かかるのでランダム1000画素の輝度平均
+        for i in range(1000):  # 全画素の平均は処理時間かかるのでランダム1000画素の輝度平均
             x = random.randint(0, 2047999)
             im_random.append(im_r[x])
         self.avg_brightness = round(np.mean(im_random))
-        
-        # シグモイド関数を使って理想形のエッジ配列を作成
-        sigmoid_max = max(im_r).astype(int)              # 輝度Max値　＝　画像全体の輝度Max値
-        sigmoid_min = int(self.avg_brightness)     # 輝度Min値  ＝　背景輝度(画像全体の平均輝度）
-        x = np.arange(-7, 8, 1)
-        self.sigmoid_edge_u = (sigmoid_max - sigmoid_min) / (1 + np.exp(-x/0.5) ) + sigmoid_min
-        self.sigmoid_edge_l = (-sigmoid_max + sigmoid_min) / (1 + np.exp(-x/0.5) ) + sigmoid_max
-        return
-    
 
-    
+        # シグモイド関数を使って理想形のエッジ配列を作成
+        sigmoid_max = max(im_r).astype(int)      # 輝度Max値 ＝ 画像全体の輝度Max値
+        sigmoid_min = int(self.avg_brightness)   # 輝度Min値 ＝ 背景輝度(画像全体の平均輝度）
+        x = np.arange(-7, 8, 1)
+        self.sigmoid_edge_u = (sigmoid_max - sigmoid_min) / (1 + np.exp(-x/0.5)) + sigmoid_min
+        self.sigmoid_edge_l = (-sigmoid_max + sigmoid_min) / (1 + np.exp(-x/0.5)) + sigmoid_max
+        return
+
     def set_init_val(self, ix, xin, auto_edge):
         img = self.im_org
         if auto_edge:
-            self.upper_boundary = search_list[0][0]
-            self.lower_boundary = search_list[0][1]
-            self.last_state = search_list[0][0:2]
-            self.slope_dir = search_list[0][2]
-        elif xin != None:
+            self.upper_boundary = self.search_list[0][0]
+            self.lower_boundary = self.search_list[0][1]
+            self.last_state = self.search_list[0][0:2]
+            self.slope_dir = self.search_list[0][2]
+        elif xin:
             # 画像1の中心点設定と輝度の立上り／立下りサーチ範囲の設定
             width = 34
-            start = int(xin)  - width // 2
-            end = int(xin)  + width // 2
+            start = int(xin) - width // 2
+            end = int(xin) + width // 2
             # 画像1のトロリ線境界位置の初期値
             im_slice = np.copy(img[:, 0, 0])
             # 傾きから初期値算出
@@ -177,13 +170,10 @@ class pixel(trolley):
             # 初期値から輝度の向きを確認
             self.slope_dir = 1 if slope_max < slope_min else -1
         else:
-            print('トロリ線の初期値が正しく設定できませんでした。')
-            print('やり直しえてください')
-            # st.warning('トロリ線の初期値が正しく設定できませんでした。やり直してください。')
-        
+            st.warning('トロリ線の初期値が正しく設定できませんでした。やり直しえてください。')
+            st.stop()
         return
-    
-    
+
     def search_trolley_init(self, ix):
         """ 摺面エッジ初期位置の自動サーチ
         Args:
@@ -193,16 +183,16 @@ class pixel(trolley):
         img = self.im_org
         im_slice_org = np.copy(img[:, ix, 0])
         im_slice = np.copy(img[:, ix, 0])
-        
+
         # サーチ範囲
         st = 7
         ed = 2040
-        
+
         # 切り出した縦ピクセルのノイズを除去
         im_slice[st:ed] = [round(np.mean(im_slice_org[i-1:i+2])) for i in range(st, ed)]
-        
+
         # 理想的なエッジ配列に近い場所をサーチ
-        slope_val_u, slope_val_l, slope_idx_u, slope_idx_l  = [], [], [], []
+        slope_val_u, slope_val_l, slope_idx_u, slope_idx_l = [], [], [], []
         for i in range(st, ed):
             diff1 = np.sum(abs(im_slice[i-7:i+8].astype(int) - self.sigmoid_edge_u.astype(int)))
             slope_val_u.append(diff1)
@@ -212,10 +202,10 @@ class pixel(trolley):
             slope_idx_l.append(i)
         slope_val_u = np.array(slope_val_u)
         slope_val_l = np.array(slope_val_l)
-        slope_sort_u = np.argsort(slope_val_u)
-        slope_sort_l = np.argsort(slope_val_l)
+        # slope_sort_u = np.argsort(slope_val_u)    # 未使用
+        # slope_sort_l = np.argsort(slope_val_l)    # 未使用
 
-        list_idx,list_val = [],[]
+        list_idx, list_val = [], []
         for idx_u, val_u in enumerate(slope_val_u):
             for idx_l, val_l in enumerate(slope_val_l):
                 if (
@@ -255,15 +245,14 @@ class pixel(trolley):
                 idx_ll = np.argmax(im_slice[edge[1]-2:edge[1]+8]) + (edge[1]-2)
             diff1 = abs(im_slice[idx_uu:idx_ul+1] - center_u)
             idx_u_new = np.argmin(diff1) + idx_uu
-            diff2 = abs(im_slice[idx_lu:idx_ll+1] - center_l) 
+            diff2 = abs(im_slice[idx_lu:idx_ll+1] - center_l)
             idx_l_new = np.argmin(diff2) + idx_lu
             search_list[i][0:2] = [idx_u_new, idx_l_new]
-        
+
         # search_listを更新する
         self.search_list = search_list
         return
-    
-    
+
     def mean_brightness(self):
         """ 画像内の平均輝度を計算(背景とみなす)
         """
@@ -271,13 +260,12 @@ class pixel(trolley):
         img = self.im_org
         im_r = img[:, :, 0].flatten()
         im_random = []
-        for i in range(1000): #全画素の平均は処理時間かかるのでランダム1000画素の平均
+        for i in range(1000):  # 全画素の平均は処理時間かかるのでランダム1000画素の平均
             x = random.randint(0, 2047999)
             im_random.append(im_r[x])
         self.avg_brightness = round(np.mean(im_random))
         return
 
-    
     def search_trolley(self, ix):
         """ トロリ線摺動面を検出する
         Args:
@@ -301,7 +289,7 @@ class pixel(trolley):
             # 前回の検出値（上端、下端、中心）
             upper = np.round(self.last_state[0]).astype(np.int16)
             lower = np.round(self.last_state[1]).astype(np.int16)
-            center = round((upper + lower) / 2)
+            # center = round((upper + lower) / 2)    # 未使用
 
             # 過去5ピクセル平均値（上端、下端、中心）（初回のみ初期値）
             # "upper_line"が空の場合と、"upper_line"にnanが含まれる場合
@@ -342,7 +330,7 @@ class pixel(trolley):
             ed2 = (lower + 5) if lower <= 2035 else 2040
 
             # 元のトロリ線の境界と近い場所をサーチ
-            diff_val_u, diff_val_l, diff_idx_u, diff_idx_l  = [], [], [], []
+            diff_val_u, diff_val_l, diff_idx_u, diff_idx_l = [], [], [], []
             for i in range(st1, ed1):
                 diff1 = np.sum(abs(im_slice[i-7:i+8].astype(int) - self.edge_std_u.astype(int)))
                 diff_val_u.append(diff1)
@@ -398,15 +386,15 @@ class pixel(trolley):
                     # valmax = max(im_slice[idx_u-2:idx_u+8]).astype(np.int16)  # test
                     # valmin = min(im_slice[idx_u-7:idx_u+3]).astype(np.int16)  # test
                     # center_u = valmin + (valmax + valmin) * 0.3               # 中心から外にずらし中央へのズレを防止  # test
-                    idx_uu = np.argmin(im_slice[idx_u-7:idx_u+3]) + (upper-7) # 追加
-                    idx_ul = np.argmax(im_slice[idx_u-2:idx_u+8]) + (upper-2) # 追加
+                    idx_uu = np.argmin(im_slice[idx_u-7:idx_u+3]) + (upper-7)  # 追加
+                    idx_ul = np.argmax(im_slice[idx_u-2:idx_u+8]) + (upper-2)  # 追加
                 elif self.slope_dir == -1:
                     center_u = (max(im_slice[idx_u-7:idx_u+3]).astype(np.int16) + min(im_slice[idx_u-2:idx_u+8]).astype(np.int16)) / 2  # test
                     # valmax = max(im_slice[idx_u-7:idx_u+3]).astype(np.int16)  # test
                     # valmin = min(im_slice[idx_u-2:idx_u+8]).astype(np.int16)  # test
                     # center_u = valmax - (valmax + valmin) * 0.3               # 中心から外にずらし中央へのズレを防止  # test
-                    idx_uu = np.argmax(im_slice[idx_u-7:idx_u+3]) + (upper-7) # 追加
-                    idx_ul = np.argmin(im_slice[idx_u-2:idx_u+8]) + (upper-2) # 追加
+                    idx_uu = np.argmax(im_slice[idx_u-7:idx_u+3]) + (upper-7)  # 追加
+                    idx_ul = np.argmin(im_slice[idx_u-2:idx_u+8]) + (upper-2)  # 追加
                     # diff1 = abs(im_slice[idx_u-1:idx_u+2] - center_u)
                 if idx_uu < idx_ul:
                     diff1 = abs(im_slice[idx_uu:idx_ul+1] - center_u)
@@ -418,18 +406,18 @@ class pixel(trolley):
                     # valmax = max(im_slice[idx_l-7:idx_l+3]).astype(np.int16)  # test
                     # valmin = min(im_slice[idx_l-2:idx_l+8]).astype(np.int16)  # test
                     # center_l = valmin + (valmax + valmin) * 0.3               # 中心から外にずらし中央へのズレを防止  # test
-                    idx_lu = np.argmax(im_slice[idx_l-7:idx_l+3]) + (lower-7) # 追加
-                    idx_ll = np.argmin(im_slice[idx_l-2:idx_l+8]) + (lower-2) # 追加
+                    idx_lu = np.argmax(im_slice[idx_l-7:idx_l+3]) + (lower-7)  # 追加
+                    idx_ll = np.argmin(im_slice[idx_l-2:idx_l+8]) + (lower-2)  # 追加
                 elif self.slope_dir == -1:
                     center_l = (max(im_slice[idx_l-2:idx_l+8]).astype(np.int16) + min(im_slice[idx_l-7:idx_l+3]).astype(np.int16)) / 2  # test
                     # valmax = max(im_slice[idx_l-2:idx_l+8]).astype(np.int16)  # test
                     # valmin = min(im_slice[idx_l-7:idx_l+3]).astype(np.int16)  # test
                     # center_l = valmax - (valmax + valmin) * 0.3               # 中心から外にずらし中央へのズレを防止  # test
-                    idx_lu = np.argmin(im_slice[idx_l-7:idx_l+2]) + (lower-7) # 追加
-                    idx_ll = np.argmax(im_slice[idx_l-2:idx_l+8]) + (lower-2) # 追加
+                    idx_lu = np.argmin(im_slice[idx_l-7:idx_l+2]) + (lower-7)  # 追加
+                    idx_ll = np.argmax(im_slice[idx_l-2:idx_l+8]) + (lower-2)  # 追加
                     # diff2 = abs(im_slice[idx_l-1:idx_l+2] - center_l)
                 if idx_lu < idx_ll:
-                    diff2 = abs(im_slice[idx_lu:idx_ll+1] - center_l) 
+                    diff2 = abs(im_slice[idx_lu:idx_ll+1] - center_l)
                     idx_l = np.argmin(diff2) + idx_lu
 
             # （補正）変化は±1とする
@@ -488,13 +476,13 @@ class pixel(trolley):
                 self.edge_std_list_l.append(im_slice[idx_l-7:idx_l+8])
 
             # 検出したエッジの色変更
-            if math.isnan(self.upper_line[-1]) == False:
+            if not math.isnan(self.upper_line[-1]):
                 self.im_trolley[int(idx_u), ix, :] = [-250, 250, -250]   # 正常に検出した場合「緑」
-            elif math.isnan(self.upper_line[-1]) == True:
+            elif math.isnan(self.upper_line[-1]):
                 self.im_trolley[int(idx_u), ix, :] = [255, -250, -250]   # 輝度が背景に近い場合場合「赤」
-            if math.isnan(self.lower_line[-1]) == False:
+            if not math.isnan(self.lower_line[-1]):
                 self.im_trolley[int(idx_l), ix, :] = [-250, 250, -250]   # 正常に検出した場合「緑」
-            elif math.isnan(self.lower_line[-1]) == True:
+            elif math.isnan(self.lower_line[-1]):
                 self.im_trolley[int(idx_l), ix, :] = [255, -250, -250]   # 輝度が背景に近い場合場合「赤」
 
             # その他検出値等を記録
@@ -506,17 +494,16 @@ class pixel(trolley):
 
         else:
             self.write_value(np.nan, np.nan)
-            self.err_skip[0:2] = [0 ,0]
-            self.err_diff[0:2] = [0 ,0]
-            self.err_edge[0:2] = [0 ,0]
-            self.err_nan[0:2] = [0 ,0]
+            self.err_skip[0:2] = [0, 0]
+            self.err_diff[0:2] = [0, 0]
+            self.err_edge[0:2] = [0, 0]
+            self.err_nan[0:2] = [0, 0]
 
         self.err_log_u.append([self.err_skip[0], self.err_diff[0], self.err_edge[0]])
         self.err_log_l.append([self.err_skip[1], self.err_diff[1], self.err_edge[1]])
 
         return
-    
-    
+
     def search_second_trolley(self, trolley2, ix):
         """ 2本目のトロリ線検出（Wイヤー、ASAJ）
             1本目のトロリ線用のピクセルインスタンスでの使用を想定
@@ -525,9 +512,9 @@ class pixel(trolley):
             ix (int): x座標値
         """
         if (
-            (ix % 5 == 0) and 
+            (ix % 5 == 0) and
             ((trolley2.trolley_id == 2 and trolley2.w_ear == 0) or
-            (trolley2.trolley_id == 3 and trolley2.as_aj == 0))
+             (trolley2.trolley_id == 3 and trolley2.as_aj == 0))
         ):
             upper = np.round(self.last_state[0]).astype(np.int16)
             lower = np.round(self.last_state[1]).astype(np.int16)
@@ -551,15 +538,15 @@ class pixel(trolley):
                 ed2 = (lower + 700) if lower <= 1340 else 2040
 
             # 元のトロリ線の境界と近い場所をサーチ
-            diff_val_u, diff_val_l, diff_idx_u, diff_idx_l  = [], [], [], []
-            for area in [[st1, ed1],[st2, ed2]]:
+            diff_val_u, diff_val_l, diff_idx_u, diff_idx_l = [], [], [], []
+            for area in [[st1, ed1], [st2, ed2]]:
                 for i in range(area[0], area[1]):
                     diff1 = np.sum(abs(im_slice[i-7:i+8].astype(int) - self.edge_std_u.astype(int)))
                     diff2 = np.sum(abs(im_slice[i-7:i+8].astype(int) - self.edge_std_l.astype(int)))
-                    if diff1 <= 200: # 150 => 200 (2022.10.04)
+                    if diff1 <= 200:    # 150 => 200 (2022.10.04)
                         diff_val_u.append(diff1)
                         diff_idx_u.append(i)
-                    if diff2 <= 200: # 150 => 200 (2022.10.04)
+                    if diff2 <= 200:    # 150 => 200 (2022.10.04)
                         diff_val_l.append(diff2)
                         diff_idx_l.append(i)
             if len(diff_val_u) > 0:
@@ -570,15 +557,16 @@ class pixel(trolley):
                 diff_sort_l = np.argsort(diff_val_l)
 
             # 平行トロリ線が存在するかどうか判断
-            idx_u, idx_l, val_u, val_l = 0, 0, 0, 0
+            # idx_u, idx_l, val_u, val_l = 0, 0, 0, 0    # 元のコード
+            idx_u, idx_l = 0, 0
             if len(diff_val_u) > 0 and len(diff_val_l) > 0:
-                for u in diff_sort_u:
-                    for l in diff_sort_l:
-                        if 35 > (diff_idx_l[l] - diff_idx_u[u]) > 0:
-                            idx_u = diff_idx_u[u]
-                            val_u = diff_val_u[u]
-                            idx_l = diff_idx_l[l]
-                            val_l = diff_val_l[l]
+                for upper in diff_sort_u:
+                    for lower in diff_sort_l:
+                        if 35 > (diff_idx_l[lower] - diff_idx_u[upper]) > 0:
+                            idx_u = diff_idx_u[upper]
+                            # val_u = diff_val_u[upper]    # 不要？
+                            idx_l = diff_idx_l[lower]
+                            # val_l = diff_val_l[lower]    # 不要？
                             break
                     if idx_u != 0:
                         break
@@ -596,7 +584,7 @@ class pixel(trolley):
             trolley2.slope_dir = self.slope_dir
 
             # エッジ基準を作成
-            if trolley2.isInFrame == True:
+            if trolley2.isInFrame:
                 if len(trolley2.edge_std_list_u) == 10:
                     trolley2.edge_std_list_u.pop(0)
                 trolley2.edge_std_list_u.append(im_slice[idx_u-7:idx_u+8])
@@ -621,9 +609,8 @@ class pixel(trolley):
                 elif trolley2.trolley_id == 3:
                     trolley2.as_aj += 1
 
-        return    
-    
-    
+        return
+
     def update_result_dic(self, ix):
         """ トロリ線検出結果を更新する
             trolley1インスタンスでの実行を想定
@@ -643,9 +630,8 @@ class pixel(trolley):
         self.brightness_center.append(img[center_trolley, ix, 0])
         self.brightness_mean.append(np.mean(img[upper_edge:lower_edge+1, ix, 0]))
         self.brightness_std.append(np.std(img[upper_edge:lower_edge+1, ix, 0]))
-        return 
-    
-    
+        return
+
     def change_trolley(self, trolley2, trolley3):
         """ トロリ線の切り替え
             トロリ線（Wイヤー）とトロリ線（ASAJ）の両方が存在するとき
@@ -655,7 +641,7 @@ class pixel(trolley):
             trolley2 (pixel instance): ピクセルインスタンス
             trolley3 (pixel instance): ピクセルインスタンス
         """
-        if trolley2.isInFrame == True and trolley3.isInFrame == True:
+        if trolley2.isInFrame and trolley3.isInFrame:
             cnt_err2 = trolley2.err_width[2] + trolley2.err_width[3] + trolley2.err_nan[1]
             cnt_err3 = trolley3.err_width[2] + trolley3.err_width[3] + trolley3.err_nan[1]
             if cnt_err2 < cnt_err3:
@@ -669,11 +655,11 @@ class pixel(trolley):
             self.err_width[3] >= 150 or   # トロリ線幅（大） 判定基準は適当
             self.err_nan[1] >= 100        # エッジ検出無し　判定基準は適当
         ):
-            trolley1.reset_trolley()
+            self.reset_trolley()
             print('Reset Trolley1')
 
         # トロリ線（メイン）の切り替え
-        if self.isInFrame == False and trolley2.isInFrame == True:
+        if not self.isInFrame and trolley2.isInFrame:
             self.edge_std_list_u = trolley2.edge_std_list_u.copy()
             self.edge_std_list_l = trolley2.edge_std_list_l.copy()
             self.edge_std_u = trolley2.edge_std_u.copy()
@@ -684,7 +670,7 @@ class pixel(trolley):
             self.isInFrame = True
             print('Change Trolley -> 2')
             trolley2.reset_trolley()
-        elif self.isInFrame == False and trolley3.isInFrame == True:
+        elif not self.isInFrame and trolley3.isInFrame:
             self.edge_std_list_u = trolley3.edge_std_list_u.copy()
             self.edge_std_list_l = trolley3.edge_std_list_l.copy()
             self.edge_std_u = trolley3.edge_std_u.copy()
@@ -696,8 +682,7 @@ class pixel(trolley):
             trolley3.reset_trolley()
             print('Change Trolley -> 3')
         return
-    
-    
+
     def write_picture(self, trolley2, trolley3):
         """ 検出後の画像を作成して配列として出力する
             trolley1インスタンスでの実行を想定
@@ -705,14 +690,10 @@ class pixel(trolley):
             trolley2 (pixel instance): ピクセルインスタンス
             trolley3 (pixel instance): ピクセルインスタンス
         """
-        im = self.im_org + \
-                self.im_trolley + \
-                trolley2.im_trolley + \
-                trolley3.im_trolley 
+        im = self.im_org + self.im_trolley + trolley2.im_trolley + trolley3.im_trolley
         im = np.clip(im, 0, 255)
         im = im.astype("uint8")
         return im
-    
 
     def write_value(self, value_u, value_l):
         """ 検出値を記録
@@ -727,7 +708,6 @@ class pixel(trolley):
         self.last_lower_line.append(value_l)
         return
 
-
     def infer_trolley_edge(self, image_path, trolley2, trolley3):
         """ 各x座標ごとにピクセルエッジの計算を実施
             trolley1インスタンスでの実行を想定
@@ -739,11 +719,11 @@ class pixel(trolley):
         # print(f"image_path:{image_path}")
         # 画像の平均画素を算出（背景画素と同等とみなす）
         self.mean_brightness()
-        
+
         # x座標(ix)ごとにトロリ線検出
         for ix in range(1000):
             self.search_trolley(ix)
-            
+
             # 2本目のトロリ線検出
             self.search_second_trolley(trolley2, ix)
             self.search_second_trolley(trolley3, ix)
@@ -755,15 +735,14 @@ class pixel(trolley):
             self.update_result_dic(ix)
             trolley2.update_result_dic(ix)
             trolley3.update_result_dic(ix)
-            
+
             # デバッグ用
             # if ix % 100 == 0:
             #     print(f"{ix}> last_state          :{self.last_state}")
             #     print(f"{ix}> estimated_upper_edge:{self.estimated_upper_edge[ix]} ")
-        
+
         return
-    
-    
+
+
 if __name__ == '__main__':
     print('set similar_pixel class')
-    

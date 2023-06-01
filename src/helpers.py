@@ -2,7 +2,6 @@ import os
 import glob
 import re
 import datetime
-import pandas as pd
 import streamlit as st
 from pathlib import Path
 from PIL import Image
@@ -130,4 +129,3 @@ def rail_camera_initialize(rail, camera_num, base_images, trolley_ids):
         for image_path in base_images:
             rail[camera_num][image_path] = dict(zip(trolley_ids, blankdict_size))
     return
-

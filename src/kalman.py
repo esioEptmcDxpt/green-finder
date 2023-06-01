@@ -23,14 +23,14 @@ class kalman(trolley):
         update_Kalman: 測定条件のアップデート
         get_measurements:  測定条件の取得
     """
-    kalman_config = appProperties('config.yml')
-    missing_threshold = kalman_config.missing_threshold
-    brightness_diff_threshold = kalman_config.brightness_diff_threshold
-    sharpness_threshold = kalman_config.sharpness_threshold
-    missing_count_limit = kalman_config.missing_count_limit
+    # kalman_config = appProperties('config.yml')
+    missing_threshold = 5
+    brightness_diff_threshold = 255
+    sharpness_threshold = 1
+    missing_count_limit = 300
 
-    def __init__(self, trolley_id, y_init_l, y_init_u):
-        super().__init__(trolley_id, y_init_l, y_init_u)
+    def __init__(self, trolley_id, y_init_l, y_init_u, x_init=0):
+        super().__init__(trolley_id, y_init_l, y_init_u, x_init=0)
         self.initial_state_covariance = [
             [1, 0, 0],
             [0, 1, 0],
@@ -61,12 +61,12 @@ class kalman(trolley):
             0.5 * self.last_state[0]
             + 0.5 * self.last_state[1]
         ).astype(np.int16)
-        self.new_measurement = np.zeros(2)
+        self.new_measurement = ma.array(np.zeros(2))
 
     def initialize_measurement(self):
         self.new_measurement = ma.array(np.zeros(2))
         self.center = np.round(0.5 * self.last_state[0] + 0.5 * self.last_state[1]).astype(np.int16)
-
+    
     def finalize_measurement(self, ix):
         """トロリ線の上側のエッジと下側のエッジにおける測定値を調査し、欠損が片方だけなら前回値をセットすることでカルマンフィルタを実行可能とする。
         それでも欠損がmissing_count_limit以上継続している場合はWイヤーなどでトロリ線が消失していると判断する。
@@ -162,7 +162,7 @@ class kalman(trolley):
         img = np.array(Image.open(image_path))
         if box_start > box_end:
             box_start, box_end = box_end, box_start
-
+        
         y_slice = img[box_start:box_end, ix: ix + 1, 0].ravel()
 
         if (box_start < 0) or (box_end > 2500):
@@ -182,13 +182,14 @@ class kalman(trolley):
         )
         self.mxn_slope_iy[edge_id] = mxn_slope_iy_edge
         self.value_iy[edge_id] = value_iy
-
+        
         if obs > 2 and (
             abs(mxn_slope_iy_edge - last_boundary_expectation)
             > self.missing_threshold
             or (abs(value_iy) < self.sharpness_threshold)
             or abs(last_brightness - current_brightness) > self.brightness_diff_threshold
         ):
+            
             self.mask[edge_id] = True
             self.new_measurement[edge_id] = ma.masked
             self.last_brightness[edge_id] = last_brightness
@@ -202,28 +203,23 @@ class kalman(trolley):
         Args:
             image_path (str): 画像ファイルのパス
         """
-        for ix in range(1000):
-            self.initialize_measurement()
-
+        self.initialize_measurement()
+        
+        for i in range(1000 - self.x_init):
+            ix = i + self.x_init
             for edge_id in range(2):
                 self.get_measurement(image_path, edge_id, ix)
-                self.finalize_measurement(ix)
-                self.update_Kalman(ix, image_path)
+            self.finalize_measurement(ix)
+            self.update_Kalman(ix, image_path)
 
 
 if __name__ == '__main__':
     trolley_id = "trolley1"
-    y_init_u = 0
-    y_init_l = 1
-    image_path = ''
+    x_init = 0
+    y_init_u = 1003
+    y_init_l = 979
+    image_path = 'testimages/HD11/2021_0696_HD11_01_00020972.jpg'
     edge_id = 0
     ix = 0
-    kalman_instance = kalman()
-    print(kalman_instance.kf_multi)
-    print(kalman_instance.trolley_id)
-    print(kalman_instance.center)
-    print(type(kalman_instance.new_measurement), kalman_instance.new_measurement)
-    kalman_instance.initialize_measurement()
-    print(type(kalman_instance.new_measurement), kalman_instance.new_measurement)
-    appconf = appProperties()
-    kalman_instance.get_measurement(image_path, edge_id, ix, appconf)
+    kalman_instance = kalman(trolley_id, x_init, y_init_l, y_init_u)
+    kalman_instance.infer_trolley_edge(image_path)
