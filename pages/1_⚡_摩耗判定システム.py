@@ -142,7 +142,7 @@ def ohc_wear_analysis(config):
                     y_init_u,
                     y_init_l,
                 )
-    return
+    return(test)
 
 
 if __name__ == "__main__":
