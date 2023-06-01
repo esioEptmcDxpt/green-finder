@@ -4,7 +4,6 @@ from .kalman import kalman
 
 def track_kalman(rail, camera_num, base_images, idx, trolley_id, x_init, y_init_u, y_init_l):
     """カルマンフィルタ計算用のラッパー
-
     Args:
         rail (object): shelveファイル
         camera_num (int): カメラのNo
@@ -18,7 +17,7 @@ def track_kalman(rail, camera_num, base_images, idx, trolley_id, x_init, y_init_
     for image_path in base_images[idx:]:
         try:
             # shelveのrailからtrolley_idを取得
-            trolley_id = rail[camera_num][image_path].get(trolley_id)
+            trolley_id = rail[camera_num][image_path].get(trolley_id)    # rail.getが無い？ trolley_idがNoneになっている
 
             # Kalmanクラスが無い場合、インスタンスを生成
             kalman_instance = kalman(trolley_id, y_init_l, y_init_u)

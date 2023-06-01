@@ -32,7 +32,7 @@ class appProperties:
     @property
     def output_dir(self):
         return self.config['default']['output_dir']
-    
+
     @property
     def readme_md(self):
         return self.config['default']['readme_md']
@@ -40,7 +40,7 @@ class appProperties:
     @property
     def camera_types(self):
         return self.config['default']['camera_types']
-    
+
     @property
     def camera_names(self):
         return self.config['format_func']['camera_names']

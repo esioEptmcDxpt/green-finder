@@ -5,11 +5,12 @@ import streamlit as st
 import src.helpers as helpers
 import src.visualize as vis
 from src.kalman_calc import track_kalman
+import src.similar_pixel_calc as sim_pix
 from src.config import appProperties
 
 
 def main(config):
-    readme_text = st.markdown("## 左のメニューから操作してください")
+    readme_text = st.markdown(helpers.read_markdown_file(config.readme_md))
     st.sidebar.title("What to do")
     app_mode = st.sidebar.selectbox("Choose the app mode",
                                     ["ガイド（作成中）", "カルマンフィルタ実行", "カルマンフィルタ実行結果確認"])
@@ -32,7 +33,7 @@ def main(config):
         camera_num = st.sidebar.selectbox("解析対象のカメラを選択してください", (config.camera_types))
 
         # 解析対象の画像フォルダを指定
-        target_dir = config.image_dir + "/" + dir_area
+        target_dir = config.image_dir + "/" + dir_area + "/" + camera_num
 
         # outputディレクトリの準備
         outpath = config.output_dir + "/" + dir_area + "/" + camera_num
