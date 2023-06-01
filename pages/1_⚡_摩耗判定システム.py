@@ -1,16 +1,10 @@
 import os
 import shelve
-import copy
 import streamlit as st
-import time    # デバッグ用、後で削除する
-import numpy as np
-import datetime
 import src.helpers as helpers
 import src.visualize as vis
 from src.kalman_calc import track_kalman
 from src.similar_pixel_calc import track_pixel
-# import src.similar_pixel_calc as sim_pix    # 摩耗判定システム機能
-import src.utilsST_01 as utlst    # 移行が完了したら削除する
 from src.config import appProperties
 
 
@@ -142,7 +136,6 @@ def ohc_wear_analysis(config):
                     y_init_u,
                     y_init_l,
                 )
-    return(test)
 
 
 if __name__ == "__main__":
