@@ -10,6 +10,7 @@ class appProperties:
         image_dir: 画像ディレクトリのパス
         output_dir: 出力ディレクトリのパス
         camera_type: カメラ種類
+        trolley_ids: トロリ線IDのリスト(trolley1, trolley2...)
         camera_names: カメラ名称の辞書(HD11->高(左))
         rail_names: 線区名称の辞書(Chuo->中央線)
         station_names: 駅名称の辞書(Tokyo->東京)
@@ -43,20 +44,32 @@ class appProperties:
 
     @property
     def camera_names(self):
-        return self.config['format_func']['camera_names']
-    
+        return self.config['default']['camera_names']
+
+    @property
+    def trolley_ids(self):
+        return self.config['default']['trolley_ids']
+
+    @property
+    def result_keys(self):
+        return self.config['default']['result_keys']
+
+    @property
+    def camera_name_to_type(self):
+        return self.config['format_func']['camera_name_to_type']
+
     @property
     def rail_names(self):
         return self.config['format_func']['rail_names']
-    
+
     @property
     def station_names(self):
         return self.config['format_func']['station_names']
-    
+
     @property
     def rail_type_names(self):
         return self.config['format_func']['rail_type_names']
-    
+
     @property
     def time_band_names(self):
         return self.config['format_func']['time_band_names']
@@ -68,6 +81,7 @@ if __name__ == "__main__":
     print(config.output_dir)
     print(config.readme_md)
     print(config.camera_types)
+    print(config.trolley_ids)
     print(config.camera_names)
     print(config.rail_names)
     print(config.station_names)

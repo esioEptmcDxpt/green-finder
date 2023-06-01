@@ -1,16 +1,18 @@
 import streamlit as st
-import src.utilsS3_01 as utls3
-import src.utilsST_01 as utlst
+import src.helpers as helpers
 
 
 def show_code():
-    st.set_page_config(page_title="show code...", page_icon="🍣")
+    """ 各ページ(Pages内)のPythonファイルのコードを表示する
+    """
+    st.set_page_config(page_title="show code...")
     st.sidebar.header("摩耗判定プログラムのコードを表示しています。")
-    # st.code(get_file_content_as_string("1_TTS摩耗判定プログラム.py"))
-    file_list = utlst.get_file_list("pages")
+    dir_select = st.sidebar.selectbox("対象ディレクトリを選択", ["pages", "src"])
+    file_list = helpers.get_file_list(dir_select)
     file_name = st.sidebar.selectbox("Pythonファイルを選択", file_list)
-    st.code(utlst.read_python_file("pages/" + file_name))
+    st.code(helpers.read_python_file(dir_select + "/" + file_name))
     return
+
 
 if __name__ == "__main__":
     show_code()
