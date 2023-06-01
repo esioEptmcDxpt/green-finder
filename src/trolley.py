@@ -4,14 +4,40 @@ from numpy import ma
 
 class trolley(object):
     """トロリ線の初期パラメータを設定
-
-    Args:
+    Args: カルマンフィルタでのみ使用？
+          👇引数を別々にできる？出来なければピクセルエッジ検出でもダミーで入力するようにする
         trolley_id: トロリー線のID
         y_init_u:   入力初期値（水平方向）
-        y_init_l:   入力初期値（垂直方向）
+        y_init_l:   入力初期値（垂直方向
+        isInFrame:  画像内にトロリ線があるかのフラグ
+    Error log: ピクセルエッジ検出でのみ使用
+        エラー記録(err_log_u,l):
+            [err_skip, err_diff, err_edge, err_width(small), err_width(latge)]
+        ピクセル飛びエラー(err_skip):
+            [upper_state(0 or 1), lower_state(0 or 1), upper_count, lower_count]
+        差分大エラー(err_diff):
+            [upper_state(0 or 1), lower_state(0 or 1), upper_count, lower_count]
+        エッジなしエラー(err_edge):
+            [upper_state(0 or 1), lower_state(0 or 1), upper_count, lower_count]
+        トロリ線幅エラー(err_width):
+            [small_state(0 or 1), large_state(0 or 1), small_count, large_count]
     """
     def __init__(self, trolley_id, y_init_u, y_init_l):
+        # トロリ線の識別＜共通＞
         self.trolley_id = trolley_id
+        self.isInFrame = None       # ピクセルエッジでのみ使用？
+
+        # 解析結果＜共通＞
+        self.ix = []
+        self.estimated_upper_edge = []
+        self.estimated_lower_edge = []
+        self.estimated_width = []
+        self.estimated_slope = []    # (メモ)どんな結果が格納される？ ピクセルエッジでも使うか？
+        self.brightness_center = []
+        self.brightness_mean = []
+        self.brightness_std = []
+
+        # カルマンフィルタ向け
         self.y_init_u = y_init_u
         self.y_init_l = y_init_l
         self.num_obs = 0
@@ -24,16 +50,9 @@ class trolley(object):
         self.current_state = []
         self.last_state = [0, 0]
         self.last_state_covariance = []
-        self.estimated_upper_edge = []
-        self.estimated_lower_edge = []
-        self.estimated_width = []
-        self.estimated_slope = []
         self.estimated_upper_edge_variance = []
         self.estimated_lower_edge_variance = []
         self.estimated_slope_variance = []
-        self.blightness_center = []
-        self.blightness_mean = []
-        self.blightness_std = []
         self.measured_upper_edge = []
         self.measured_lower_edge = []
         self.missing_state = []

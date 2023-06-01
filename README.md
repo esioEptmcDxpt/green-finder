@@ -2,10 +2,17 @@
 ## ディレクトリ構造
 ```
 .
-├── README.md                       # Readme
-├── app.py                          # Streamlit app本体
-├── requirements.txt                # ライブラリ
-├── config.yml                      # appの各種設定値格納ファイル
+├── README.md                              # Readme
+├── README_forStreamlit.ipynb              # 使い方の説明＆実行用　　　　※不要であれば削除する
+├── app.py                                 # Streamlit スタートページ
+├── pages                                  # Streamlit 各コードのメインファイル
+│   ├── 1_⚡_摩耗判定システム.py           # 摩耗判定メインファイル
+│   ├── 2_📸_出力画像をチェックする.py     # 結果画像を表示
+│   ├── 3_📈_解析データをチェックする.py   # 結果をCSV出力し、グラフを表示
+│   ├── 4_🔎_異常箇所をチェックする.py     # 異常摩耗箇所をチェックする　※未実装
+│   └── 99_🍣_python_コードを見る.py       # コード参照用
+├── requirements.txt                       # ライブラリ
+├── config.yml                             # appの各種設定値格納ファイル
 ├── src
 │   ├── __init__.py                 # 読み込み用初期化ファイル
 │   ├── trolley.py                  # トロリ線パラメータ用クラス用ファイル
@@ -16,7 +23,6 @@
 │   ├── kalman.py                   # カルマンフィルタの計算用コアクラス用ファイル
 │   ├── similar_pixel_calc.py       # ピクセルエッジ検出の計算用のラッパーファイル
 │   └── similar_pixel.py            # ピクセルエッジ検出の計算用コアクラス用ファイル
-│   └── utilsST_01.py               # 旧Streamlit用ファイル（後日削除予定）
 ├── images                          # 画像ファイル
 ├── output                          # 出力ファイル
 └── test                            # テスト用ディレクトリ
