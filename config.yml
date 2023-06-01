@@ -1,18 +1,49 @@
 default:
   image_dir: imgs
   output_dir: output
-  readme_md: 'instructions.md'
-  camera_types: ['HD11', 'HD12', 'HD21', 'HD22', 'HD31', 'HD32']
-
+  readme_md: instructions.md
+  camera_types: 
+    - HD11
+    - HD12
+    - HD21
+    - HD22
+    - HD31
+    - HD32
+  camera_names: 
+    - 高(左)
+    - 高(右)
+    - 中(左)
+    - 中(右)
+    - 低(左)
+    - 低(右)
+  trolley_ids: 
+    - trolley1
+    - trolley2
+    - trolley3
+  result_keys: 
+    - ix
+    - upper_boundary
+    - lower_boundary
+    - estimated_upper_edge
+    - estimated_lower_edge
+    - estimated_width
+    - estimated_slope
+    - estimated_upper_edge_variance
+    - estimated_lower_edge_variance
+    - estimated_slope_variance
+    - brightness_center
+    - brightness_mean
+    - brightness_std
+    - current_state
 
 format_func:
-  camera_names:
-    HD11: 高(左)
-    HD12: 高(右)
-    HD21: 中(左)
-    HD22: 中(右)
-    HD31: 低(左)
-    HD32: 低(右)
+  camera_name_to_type:
+    高(左): HD11
+    高(右): HD12
+    中(左): HD21
+    中(右): HD22
+    低(左): HD31
+    低(右): HD32
   rail_names:
     Kawagoe: 川越線
     Chuo: 中央線
