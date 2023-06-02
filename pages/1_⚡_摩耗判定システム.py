@@ -106,7 +106,6 @@ def ohc_wear_analysis(config):
                     camera_num,
                     base_images,
                     idx,
-                    trolley_id,
                     xin,
                     test_num,
                     log_view,
