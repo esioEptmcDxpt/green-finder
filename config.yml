@@ -79,3 +79,4 @@ measurement:
   brightness_diff_threshold: 255
   sharpness_threshold: 1
   missing_count_limit: 100
+  width_exceed_limit: 60

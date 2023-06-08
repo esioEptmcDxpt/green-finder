@@ -1,7 +1,7 @@
 import streamlit as st
 import shelve
 import copy
-from .kalman import kalman
+from src.kalman import kalman
 
 
 def track_kalman(rail_fpath, camera_num, base_images, idx, trolley_id, x_init, y_init_u, y_init_l):
@@ -39,8 +39,9 @@ def track_kalman(rail_fpath, camera_num, base_images, idx, trolley_id, x_init, y
             try:
                 kalman_instance = kalman(trolley_id, y_l, y_u, x_init)
                 kalman_instance.infer_trolley_edge(image_path)
-            except:
-                st.error("処理が途中で終了しました。")
+            except Exception as e:
+                st.error(e)
+                st.error("予期せぬ理由で処理が途中終了しました。管理者に問い合わせてください")
                 break
             finally:
                 if x_init > 0:
@@ -85,8 +86,9 @@ def track_kalman(rail_fpath, camera_num, base_images, idx, trolley_id, x_init, y
             try:
                 kalman_instance = kalman(trolley_id, y_l, y_u)
                 kalman_instance.infer_trolley_edge(image_path)
-            except:
-                st.error("処理が途中で終了しました。")
+            except Exception as e:
+                st.error(e)
+                st.error("予期せぬ理由で処理が途中終了しました。管理者に問い合わせてください")
                 break
             finally:
                 trolley_dict[trolley_id] = vars(kalman_instance)
@@ -96,5 +98,29 @@ def track_kalman(rail_fpath, camera_num, base_images, idx, trolley_id, x_init, y
                     rail_dict = copy.deepcopy(rail[camera_num][image_path])
                     rail_dict = trolley_dict
                     rail[camera_num][image_path] = rail_dict
+        
+        if len(kalman_instance.trolley_end_reason) > 0:
+            if kalman_instance.error_flg == 1:
+                st.error(kalman_instance.trolley_end_reason[0])
+                st.markdown(f"{trolley_id}にて再試行の閾値を超えました。\n \
+                            最後に推定した際のx座標は{kalman_instance.ix}, \n \
+                            y座標上部は{int(kalman_instance.last_state[0])}, \n \
+                            y座標下部は{int(kalman_instance.last_state[1])} \n \
+                            画像がピンボケしているなど、推定しにくい条件である可能性があります。再実行しても修正されない場合、他のカメラ番号で実行してください。") 
+            elif kalman_instance.error_flg == 2:
+                st.error(kalman_instance.trolley_end_reason[0])
+                st.markdown(f"{trolley_id}にて計算中に推定線幅が閾値を超えました。\n \
+                            最後に推定した際のx座標は{kalman_instance.ix}, \n \
+                            y座標上部は{int(kalman_instance.last_state[0])}, \n \
+                            y座標下部は{int(kalman_instance.last_state[1])} \n \
+                            入力幅が大きすぎないか、確認して再実行、もしくは異常が疑われますのでご確認下さい。")
+            elif kalman_instance.error_flg == 3:
+                st.error(kalman_instance.trolley_end_reason[0])
+                st.markdown(f"{trolley_id}にて計算中に画面の上端、もしくは下端に到達しました。\n \
+                            最後に推定した際のx座標は{kalman_instance.ix}, \n \
+                            y座標上部は{int(kalman_instance.last_state[0])}, \n \
+                            y座標下部は{int(kalman_instance.last_state[1])} \n \
+                            入力した初期値が上端・下端になっていないか、確認してください。")
+            break
 
 

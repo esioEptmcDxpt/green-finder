@@ -25,6 +25,7 @@ class appProperties:
         self.brightness_diff_threshold = self.config['measurement']['brightness_diff_threshold']
         self.sharpness_threshold = self.config['measurement']['sharpness_threshold']
         self.missing_count_limit = self.config['measurement']['missing_count_limit']
+        self.width_exceed_limit = self.config['measurement']['width_exceed_limit']
 
     @property
     def image_dir(self):

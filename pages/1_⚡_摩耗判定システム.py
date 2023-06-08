@@ -99,6 +99,7 @@ def ohc_wear_analysis(config):
         if submit:
             if st.button(f'計算停止ボタン ＜現在の計算が終わったら停止します＞'):
                 st.stop()
+                st.error('計算停止ボタンが押されたため、計算を停止しました。再開する際には左下の計算ボタンを再度押してください。')
 
             with st.spinner("ピクセルトレース実行中"):
                 track_pixel(
@@ -121,8 +122,9 @@ def ohc_wear_analysis(config):
         submit = form.form_submit_button("カルマンフィルタ実行")
 
         if submit:
-            if st.button(f'計算を停止しますか？'):
+            if st.button(f'計算停止ボタン ＜現在の計算が終わったら停止します＞'):
                 st.stop()
+                st.error('計算停止ボタンが押されたため、計算を停止しました。再開する際には左下の計算ボタンを再度押してください。')
             
             with st.spinner("カルマンフィルタ実行中"):
                 track_kalman(
