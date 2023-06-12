@@ -55,7 +55,7 @@ def test_normalKalman(trolley_id, y_init_u, y_init_l, x_init, imgPath, readConfi
 
 
 # 異常系のテスト
-def test_exceedMissingCountError(trolleyId, imgPath):
+def test_exceedMissingCountError(trolleyId, imgPath, readConfig):
     '''Test for estimated width exceed limitation
     GIVEN: A kalman instance initialize using parameters
     WEHN: we call infer_trolley_edge function for calculating an image using kalman filter
@@ -63,8 +63,10 @@ def test_exceedMissingCountError(trolleyId, imgPath):
     '''
     kalman_instance = kalman(trolleyId, 970, 1000, 0)
     kalman_instance.missing_count_limit = 0
+    kalman_instance.missing_threshold = 0
     expected = 'Exceed missing Counts Limitations'
     kalman_instance.infer_trolley_edge(imgPath)
+    assert kalman_instance.missing_count_limit < kalman_instance.missingCounts
     assert expected == kalman_instance.trolley_end_reason[0]
     
 
