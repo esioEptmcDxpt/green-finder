@@ -1,5 +1,6 @@
 import os
 import shelve
+import copy
 import streamlit as st
 import src.helpers as helpers
 import src.visualize as vis
@@ -120,23 +121,46 @@ def ohc_wear_analysis(config):
         y_init_l = form.number_input("上記X座標でのエッジ位置（上端）の座標を入力してください", 0, 1999)
         y_init_u = form.number_input("上記X座標でのエッジ位置（下端）の座標を入力してください", 0, 1999)
         submit = form.form_submit_button("カルマンフィルタ実行")
-
-        if submit:
-            if st.button(f'計算停止ボタン ＜現在の計算が終わったら停止します＞'):
-                st.stop()
-                st.error('計算停止ボタンが押されたため、計算を停止しました。再開する際には左下の計算ボタンを再度押してください。')
             
-            with st.spinner("カルマンフィルタ実行中"):
-                track_kalman(
-                    rail_fpath,
-                    camera_num,
-                    base_images,
-                    idx,
-                    trolley_id,
-                    x_init,
-                    y_init_u,
-                    y_init_l,
-                )
+        if submit:
+            trolley_dict = helpers.load_shelves(rail_fpath, camera_num, base_images, idx)
+            print(trolley_dict.keys())
+
+            if trolley_id in trolley_dict.keys():
+                st.warning('既に同じ画像での結果が存在しています。このまま続行すると結果が初期化されますが宜しいですか？')
+                submit_init = st.button('初期化して実行')
+                if submit_init:
+                    if st.button(f'計算停止ボタン ＜現在の計算が終わったら停止します＞'):
+                        st.stop()
+                        st.error('計算停止ボタンが押されたため、計算を停止しました。再開する際には左下の計算ボタンを再度押してください。')
+            
+                    with st.spinner("カルマンフィルタ実行中"):
+                        track_kalman(
+                            rail_fpath,
+                            camera_num,
+                            base_images,
+                            idx,
+                            trolley_id,
+                            x_init,
+                            y_init_u,
+                            y_init_l,
+                        )
+            else:
+                if st.button(f'計算停止ボタン ＜現在の計算が終わったら停止します＞'):
+                    st.stop()
+                    st.error('計算停止ボタンが押されたため、計算を停止しました。再開する際には左下の計算ボタンを再度押してください。')
+            
+                with st.spinner("カルマンフィルタ実行中"):
+                    track_kalman(
+                        rail_fpath,
+                        camera_num,
+                        base_images,
+                        idx,
+                        trolley_id,
+                        x_init,
+                        y_init_u,
+                        y_init_l,
+                    )
 
 
 if __name__ == "__main__":
