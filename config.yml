@@ -75,8 +75,8 @@ format_func:
 
 
 measurement:
-  missing_threshold: 5
+  missing_threshold: 15
   brightness_diff_threshold: 255
   sharpness_threshold: 1
-  missing_count_limit: 100
+  missing_count_limit: 300
   width_exceed_limit: 60
