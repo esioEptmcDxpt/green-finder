@@ -56,6 +56,10 @@ def result_image_view(config):
                                   min_value=0,
                                   max_value=len(base_images) - 1)
 
+    # 解析結果があるかをサイドバーに表示する
+    df = helpers.check_camera_dirs(dir_area, config)
+    st.sidebar.dataframe(df)
+
     # メインページにカメラ画像を表示する
     col1, col2 = camera_view.columns(2)
 

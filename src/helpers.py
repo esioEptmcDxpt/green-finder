@@ -1,9 +1,11 @@
 import os
 import glob
 import re
+import copy
 import shutil
 import boto3
 import datetime
+import shelve
 import streamlit as st
 import pandas as pd
 from pathlib import Path
@@ -304,3 +306,179 @@ def S3_EBS_imgs_dir_Compare(S3_dir_list, EBS_dir_list):
     df['TTSシステム'] = df['線区名'].apply(lambda x: '○' if x in EBS_dir_list else '×')
 
     return df
+
+
+@st.cache()
+def check_camera_dirs(dir_area, config):
+    """ Outputディレクトリ内の結果ファイルの有無を確認する
+    Args:
+        dir_area (str): output内のディレクトリ名
+        config: configファイル
+    Return:
+        df (DataFrame): Pandasデータフレーム形式
+    """
+    # 結果を格納するリスト
+    result = []
+
+    # 各カメラのディレクトリをチェック
+    for camera_name, camera_type in config.camera_name_to_type.items():
+        # ディレクトリのパスを作成
+        dir_path = os.path.join(config.output_dir, dir_area, camera_type)
+        
+        # ディレクトリ内のファイルをチェック
+        try:
+            for file in os.listdir(dir_path):
+                if "rail.shelve" in file:  # ファイル名に"rail.shelve"が含まれるかをチェック
+                    result.append([f"{camera_name}_{camera_type}", "○"])
+                    break
+            else:  # ディレクトリ内に"rail.shelve"が含まれるファイルがない場合
+                result.append([f"{camera_name}_{camera_type}", "×"])
+        except FileNotFoundError:  # ディレクトリが存在しない場合
+            result.append([f"{camera_name}_{camera_type}", "×"])
+
+    # 結果をPandasデータフレームに変換
+    df = pd.DataFrame(result, columns=["カメラ番号", "結果有無"])
+
+    return df
+
+
+def check_camera_results(dir_area, config):
+    """ Outputディレクトリ内の結果ファイル＋CSVファイルの有無を確認する
+    Args:
+        dir_area (str): output内のディレクトリ名
+        config: configファイル
+    Return:
+        df (DataFrame): Pandasデータフレーム形式
+    """
+    # 結果を格納するリスト
+    result = []
+
+    # 各カメラのディレクトリをチェック
+    for camera_name, camera_type in config.camera_name_to_type.items():
+        # ディレクトリのパスを作成
+        dir_path = os.path.join(config.output_dir, dir_area, camera_type)
+        # ディレクトリ内のファイルをチェック
+        try:
+            shelve_check = False
+            csv_check = False
+            for file in os.listdir(dir_path):
+                if "rail.shelve" in file:  # ファイル名に"rail.shelve"が含まれるかをチェック
+                    shelve_check = True
+                if file.endswith(".csv"):  # ファイルがCSV形式かをチェック
+                    csv_check = True
+                if shelve_check and csv_check:  # 両方のファイルが存在する場合はループを抜ける
+                    break
+            result.append([f"{camera_name}_{camera_type}", "○" if shelve_check else "×", "○" if csv_check else "×"])
+        except FileNotFoundError:  # ディレクトリが存在しない場合
+            result.append([f"{camera_name}_{camera_type}", "×", "×"])
+
+    # 結果をPandasデータフレームに変換
+    df = pd.DataFrame(result, columns=["カメラ番号", "結果有無", "CSV変換"])
+
+    return df
+
+
+def trim_trolley_dict(config, trolley_dict, img_path):
+    """ shelveから読み取ったtrolley_dictの行数を揃える
+    Args:
+        config: 設定用ファイル
+        trolley_dict(dict): shleveから読み込んだ辞書
+        img_path(str): 解析対象の画像パス
+    Return:
+        trolley_dict(dict): 更新されたtrolley_dict
+    Memo:
+        デバッグ用のprint文はコメントアウトしています。
+        必要な場合は有効化してください。
+    """
+    for trolley_id in config.trolley_ids:
+        # print(trolley_id)
+        for key in trolley_dict[img_path][trolley_id].keys():
+            if not trolley_dict[img_path][trolley_id][key]:
+                # 空のリストの場合
+                # print("Empty list")
+                trolley_dict[img_path][trolley_id][key] = [np.nan] * config.max_len
+            # elif isinstance(trolley_dict[img_path][trolley_id][key], (int, float, str)):
+            elif not isinstance(trolley_dict[img_path][trolley_id][key], list):
+                # リスト以外(数値等)の場合
+                # print("Not list")
+                trolley_dict[img_path][trolley_id][key] = [trolley_dict[img_path][trolley_id][key]] + [np.nan] * (config.max_len - 1)
+            value_len = len(trolley_dict[img_path][trolley_id][key])
+            # print(f"{key} -> type: {type(trolley_dict[img_path][trolley_id][key])}, len:{value_len}")
+            if config.max_len < value_len:
+                config.max_len = value_len
+        # print(f"Max Length: {config.max_len}")
+    return trolley_dict
+
+
+def read_trolley_dict(config, trolley_dict, img_path):
+    """ 画像パスごとにデータを読み込む
+    Args:
+        config: 設定用ファイル
+        trolley_dict(dict): shleveから読み込んだ辞書
+        img_path(str): 解析対象の画像パス
+    Return:
+        df_trolley(DataFrame): trolley_dictから作成したデータフレーム
+    """
+    
+    # trolley_dictの行数を揃える
+    trim_trolley_dict(config, trolley_dict, img_path)
+    
+    df_trolley = pd.DataFrame()
+    for idx, trolley_id in enumerate(config.trolley_ids):
+        column_name = [trolley_id + "_" + key for key in list(trolley_dict[img_path][trolley_id].keys())]
+        df = pd.DataFrame(trolley_dict[img_path][trolley_id]).copy()
+        df.columns = column_name
+        if not idx:
+            df_trolley = df.copy()
+            df_trolley = df_trolley.rename(columns={trolley_id + "_ix" : 'ix'})
+        else:
+            df_trolley = pd.concat([df_trolley, df], axis=1).copy()
+    # 読み込まれたデータフレームの整形
+    # trolleyX_ixの列を削除
+    for col in df_trolley.columns:
+        # 列名に'_ix'が含まれる場合
+        if '_ix' in col:
+            # その列を削除
+            df_trolley = df_trolley.drop(col, axis=1)
+    # 画像名を記録する
+    if not "img_path" in df_trolley.columns:
+        df_trolley.insert(0, 'img_path', img_path)
+    else:
+        df_trolley["img_path"] = img_path
+    return df_trolley
+
+
+def trolley_dict_to_csv(config, rail_fpath, camera_num, base_images):
+    """ ShelveファイルからCSVファイルを生成する
+    Args:
+        config: コンフィグファイル
+        rail_fpath (str): shelveファイルの保存パス
+        camera_num (str): 選択されたカメラ番号
+    """
+    # CSVファイルの保存パスを指定
+    csv_fpath = rail_fpath.replace(".shelve", ".csv")
+
+    # shelveファイルを読み込む
+    with shelve.open(rail_fpath) as rail:
+        trolley_dict = copy.deepcopy(rail[camera_num])
+
+    # 読み込んだ辞書からデータフレームを作成する
+    dfs = pd.DataFrame()
+    for idx, img_path in enumerate(base_images):
+        # print(f"{idx}> img_path: {img_path}")
+        try:
+            df_trolley = read_trolley_dict(config, trolley_dict, img_path).copy()
+            # ixの値が連番になるように修正
+            df_trolley['ix'] = df_trolley['ix'] + 1000 * idx
+            dfs = pd.concat([dfs, df_trolley], ignore_index=True)
+        except Exception as e:
+            print(f"解析エラーで中断しました。中断した画像👇")
+            print(f"{idx}> img_path: {img_path}")
+            break
+    
+    # データフレームからCSVファイルを生成してoutputディレクトリ内に保存する
+    dfs.to_csv(csv_fpath, encoding='cp932')
+    
+    return
+
+

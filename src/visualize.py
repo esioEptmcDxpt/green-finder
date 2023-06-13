@@ -2,6 +2,7 @@ import shelve
 import copy
 import matplotlib
 import numpy as np
+import pandas as pd
 from bokeh.plotting import figure, gridplot
 from bokeh.models import ColumnDataSource, HoverTool
 import streamlit as st
@@ -28,8 +29,16 @@ def plot_fig(base_images, idx):
 
 
 # @st.cache()
-def plot_fig_bokeh(config, base_images, rail_fpath, camera_num, img_num, graph_height):
-
+def plot_fig_bokeh_fromDict(config, base_images, rail_fpath, camera_num, img_num, graph_height):
+    """ shelveファイルを直接読み込んでbokehグラフ表示
+    Args:
+        config: 設定ファイル
+        base_images(list): 画像パスのリスト
+        rail_fpath(str): shelveファイルのパス
+        camera_num(str): カメラ番号
+        img_num(int): グラフ表示したい画像の枚数
+        graph_height(int): グラフの高さ設定値
+    """
     with shelve.open(rail_fpath) as rail:
         trolley_dict = copy.deepcopy(rail[camera_num])
 
@@ -71,6 +80,65 @@ def plot_fig_bokeh(config, base_images, rail_fpath, camera_num, img_num, graph_h
         # 3つ目のグラフ（Brightness Center）
         p_center.line(x_values, brightness_center, line_color="orange")
 
+    return grid
+
+
+def plot_fig_bokeh(config, rail_fpath, graph_height):
+    """
+    Args:
+        config: 設定ファイル
+        rail_fpath(str): shelveファイルのパス
+        graph_height(int): グラフ1枚当たりの高さ
+    """
+    # CSVファイルの保存パスを指定
+    csv_fpath = rail_fpath.replace(".shelve", ".csv")
+    
+    # CSVファイルからデータフレームを作成する
+    df_csv = pd.read_csv(csv_fpath, encoding='cp932')
+    
+    # グラフを作成
+    p_edge = figure(
+        title="Upper and Lower Edge",
+        sizing_mode="stretch_width",
+        height=int(graph_height)
+    )
+    p_width = figure(
+        title="Width",
+        sizing_mode="stretch_width",
+        x_range=p_edge.x_range,
+        height=int(graph_height)
+    )
+    p_center = figure(
+        title="Brightness Center",
+        sizing_mode="stretch_width",
+        x_range=p_edge.x_range,
+        height=int(graph_height)
+    )
+
+    # グラフを表示する領域を作成
+    grid = gridplot(
+        [[p_edge], [p_width], [p_center]],
+        toolbar_location="above"
+    )
+
+    # データを追加
+    x_values = df_csv["ix"]
+    upper_edge = df_csv["trolley1_estimated_upper_edge"]
+    lower_edge = df_csv["trolley1_estimated_lower_edge"]
+    estimated_width = df_csv["trolley1_estimated_width"]
+    brightness_center = df_csv["trolley1_brightness_center"]
+
+    # グラフにデータを追加
+    # 1つ目のグラフ（Upper and Lower Edge）
+    p_edge.line(x_values, upper_edge, line_color="blue")
+    p_edge.line(x_values, lower_edge, line_color="red")
+
+    # 2つ目のグラフ（Brightness Std）
+    p_width.line(x_values, estimated_width, line_color="green")
+
+    # 3つ目のグラフ（Brightness Center）
+    p_center.line(x_values, brightness_center, line_color="orange")
+    
     return grid
 
 

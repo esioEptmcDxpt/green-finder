@@ -137,6 +137,10 @@ def ohc_wear_analysis(config):
                     y_init_u,
                     y_init_l,
                 )
+    
+    # 解析結果があるかをサイドバーに表示する
+    df = helpers.check_camera_dirs(dir_area, config)
+    st.sidebar.dataframe(df)
 
 
 if __name__ == "__main__":

@@ -2,7 +2,7 @@ import streamlit as st
 import src.helpers as helpers
 import src.visualize as vis
 from src.config import appProperties
-
+import time
 
 def check_graph(config):
     """ グラフ表示ページ
@@ -18,7 +18,7 @@ def check_graph(config):
     graph_view = st.empty()
 
     # フォルダ直下の画像保管用ディレクトリのリスト
-    images_path = helpers.list_imagespath(config.image_dir)
+    images_path = helpers.list_imagespath_nonCache(config.output_dir)
 
     # 画像保管線区の選択
     dir_area = st.sidebar.selectbox("線区のフォルダ名を選択してください", images_path)
@@ -49,23 +49,30 @@ def check_graph(config):
 
     # 結果保存用のshelveファイル(rail)の保存パスを指定
     rail_fpath = outpath + "/rail.shelve"
+    
+    # 解析結果があるかをサイドバーに表示する
+    df = helpers.check_camera_results(dir_area, config)
+    st.sidebar.dataframe(df)
 
+    if st.sidebar.button("結果CSVファイルを作成"):
+        with st.spinner("CSVファイルに変換中..."):
+            helpers.trolley_dict_to_csv(config, rail_fpath, camera_num, base_images)
+        st.sidebar.success("結果CSVファイルを作成しました")
+    
     # スライダーでグラフ化する範囲を指定（サイドバーに表示）
     form_graph = main_view.form(key="graph_init")
-    img_num = form_graph.select_slider("グラフ化する画像を指定",
-                                       options=list(range(len(base_images))),
-                                       value=(0, 50))
+    # img_num = form_graph.select_slider("グラフ化する画像を指定",
+    #                                    options=list(range(len(base_images))),
+    #                                    value=(0, 50))
     graph_height = form_graph.text_input("グラフの表示高さを指定する(単位:px)", "200")
+    form_graph.warning("＜確認＞CSVデータは作成済みですか？")
     submit = form_graph.form_submit_button("グラフを作成する")
     if submit:
         with st.spinner("グラフ作成中"):
             # グラフデータを作成する
             grid = vis.plot_fig_bokeh(
                 config,
-                base_images,
                 rail_fpath,
-                camera_num,
-                img_num,
                 graph_height
             )
             # グラフを表示

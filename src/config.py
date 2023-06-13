@@ -16,6 +16,8 @@ class appProperties:
         station_names: 駅名称の辞書(Tokyo->東京)
         rail_type_names: 線別の辞書(up->上り)
         time_band_names: 時間帯の辞書(day->昼間)
+    Parameters:
+        max_len: 画像1枚あたりの横ピクセル数（結果データフレーム作成で使用）
     """
     def __init__(self, config_path):
         with open(config_path, 'r') as yml:
@@ -25,6 +27,7 @@ class appProperties:
         self.brightness_diff_threshold = self.config['measurement']['brightness_diff_threshold']
         self.sharpness_threshold = self.config['measurement']['sharpness_threshold']
         self.missing_count_limit = self.config['measurement']['missing_count_limit']
+        self.max_len = self.config['results']['max_len']
 
     @property
     def image_dir(self):

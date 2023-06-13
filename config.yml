@@ -91,3 +91,6 @@ measurement:
   brightness_diff_threshold: 255
   sharpness_threshold: 1
   missing_count_limit: 100
+
+results:
+  max_len: 1000
