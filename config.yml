@@ -1,6 +1,7 @@
 default:
   image_dir: imgs
   output_dir: output
+  bucket: trolley-monitor
   readme_md: instructions.md
   camera_types: 
     - HD11

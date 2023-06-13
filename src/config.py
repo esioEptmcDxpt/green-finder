@@ -36,6 +36,10 @@ class appProperties:
     @property
     def output_dir(self):
         return self.config['default']['output_dir']
+    
+    @property
+    def bucket(self):
+        return self.config['default']['bucket']
 
     @property
     def readme_md(self):

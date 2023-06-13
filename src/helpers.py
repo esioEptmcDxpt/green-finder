@@ -4,9 +4,11 @@ import re
 import copy
 import shutil
 import boto3
+from botocore.exceptions import NoCredentialsError
 import datetime
 import shelve
 import streamlit as st
+import numpy as np
 import pandas as pd
 from pathlib import Path
 from PIL import Image
@@ -217,44 +219,24 @@ def get_file_content_as_string(img_dir_name, path):
 def download_dir(prefix, local):
     """ バケット内の指定したプレフィックスを持つすべてのオブジェクトをダウンロードします。
     Args:
-        prefix (str): S3オブジェクトのプレフィックス　※S3のフォルダパス
+        prefix (str): S3のフォルダパス
                       (例) imgs/Chuo_01_Tokyo-St_up_20230201_knight/
         local  (str): ローカルディレクトリへのパス
-                      (例) imgs/
+                      (例) ./
     """
     # S3のクライアントを作成
-    s3 = boto3.client('s3')
-
+    client  = boto3.client('s3')
     # バケット名
-    bucket = 'trolley-monitor'
-
-    keys = []
-    dirs = []
-    next_token = ''
-    base_kwargs = {
-        'Bucket':bucket,
-        'Prefix':prefix,
-    }
-    while next_token is not None:
-        kwargs = base_kwargs.copy()
-        if next_token != '':
-            kwargs.update({'ContinuationToken': next_token})
-        results = s3.list_objects_v2(**kwargs)
-        contents = results.get('Contents')
-        for i in contents:
-            k = i.get('Key')
-            if k[-1] != '/':
-                keys.append(k)
-            else:
-                dirs.append(k)
-        next_token = results.get('NextContinuationToken')
-    for dest_pathname in dirs:
-        if not os.path.exists(os.path.dirname(dest_pathname)):
-            os.makedirs(os.path.dirname(dest_pathname))
-    for dest_pathname in keys:
-        if not os.path.exists(os.path.dirname(dest_pathname)):
-            os.makedirs(os.path.dirname(dest_pathname))
-        s3.download_file(bucket, k, dest_pathname)
+    bucket  = 'trolley-monitor'
+    
+    paginator = client.get_paginator('list_objects')
+    for result in paginator.paginate(Bucket=bucket, Prefix=prefix):
+        if result.get('Contents') is not None:
+            for file in result.get('Contents'):
+                if not os.path.exists(os.path.dirname(local + os.sep + file.get('Key'))):
+                    os.makedirs(os.path.dirname(local + os.sep + file.get('Key')))
+                client.download_file(bucket, file.get('Key'), local + os.sep + file.get('Key'))
+        
     return
 
 
@@ -451,12 +433,13 @@ def read_trolley_dict(config, trolley_dict, img_path):
 def trolley_dict_to_csv(config, rail_fpath, camera_num, base_images):
     """ ShelveファイルからCSVファイルを生成する
     Args:
-        config: コンフィグファイル
+        config: 設定ファイル
         rail_fpath (str): shelveファイルの保存パス
         camera_num (str): 選択されたカメラ番号
     """
     # CSVファイルの保存パスを指定
     csv_fpath = rail_fpath.replace(".shelve", ".csv")
+    st.sidebar.write(f"csv_fpath:{csv_fpath}")
 
     # shelveファイルを読み込む
     with shelve.open(rail_fpath) as rail:
@@ -472,8 +455,9 @@ def trolley_dict_to_csv(config, rail_fpath, camera_num, base_images):
             df_trolley['ix'] = df_trolley['ix'] + 1000 * idx
             dfs = pd.concat([dfs, df_trolley], ignore_index=True)
         except Exception as e:
-            print(f"解析エラーで中断しました。中断した画像👇")
-            print(f"{idx}> img_path: {img_path}")
+            st.sidebar.write(f"解析エラーで中断しました。中断した画像👇")
+            st.sidebar.write(f"{idx}> img_path: {img_path}")
+            # st.sidebar.error(f"Error> {e}")
             break
     
     # データフレームからCSVファイルを生成してoutputディレクトリ内に保存する

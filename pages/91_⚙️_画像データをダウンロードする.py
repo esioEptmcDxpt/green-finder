@@ -35,7 +35,10 @@ def data_loader(config):
         # S3からダウンロード
         if st.button("線区フォルダのデータをダウンロードする"):
             with st.spinner("S3からダウンロード中"):
-                helpers.download_dir(config.image_dir + "/" + s3_rail_path + "/", config.image_dir + "/")
+                # st.write(f's3_path:{config.image_dir + "/" + s3_rail_path + "/"}')
+                # st.write(f'local_path:{config.image_dir + "/"}')
+                # helpers.download_dir(config.image_dir + "/" + s3_rail_path + "/", config.image_dir + "/")
+                helpers.download_dir(config.image_dir + "/" + s3_rail_path + "/", "./")
             st.success("TTSにダウンロードしました")
 
 

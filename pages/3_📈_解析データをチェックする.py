@@ -55,9 +55,24 @@ def check_graph(config):
     st.sidebar.dataframe(df)
 
     if st.sidebar.button("結果CSVファイルを作成"):
-        with st.spinner("CSVファイルに変換中..."):
-            helpers.trolley_dict_to_csv(config, rail_fpath, camera_num, base_images)
-        st.sidebar.success("結果CSVファイルを作成しました")
+        try:
+            with st.spinner("CSVファイルに変換中..."):
+                helpers.trolley_dict_to_csv(config, rail_fpath, camera_num, base_images)
+            st.sidebar.success("結果CSVファイルを作成しました")
+        except Exception as e:
+            st.sidebar.error("解析結果ファイルがありません")
+    
+    csv_fpath = rail_fpath.replace(".shelve", ".csv")
+    try:
+        with open(csv_fpath) as csv:
+            btn = st.sidebar.download_button(
+                    label="結果CSVファイルをダウンロード",
+                    data=csv,
+                    file_name=dir_area + "_" + camera_num + "_output.csv",
+                    mime="text/csv"
+                  )
+    except Exception as e:
+        st.sidebar.error("CSVファイルがありません")
     
     # スライダーでグラフ化する範囲を指定（サイドバーに表示）
     form_graph = main_view.form(key="graph_init")

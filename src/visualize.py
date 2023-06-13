@@ -92,25 +92,42 @@ def plot_fig_bokeh(config, rail_fpath, graph_height):
     """
     # CSVファイルの保存パスを指定
     csv_fpath = rail_fpath.replace(".shelve", ".csv")
-    
+    st.write(f"csv_fpath: {csv_fpath}")
+
     # CSVファイルからデータフレームを作成する
     df_csv = pd.read_csv(csv_fpath, encoding='cp932')
     
+    # CSVから作成したデータフレームをbokeh形式で読み込む
+    source = ColumnDataSource(data=df_csv)
+    
+    # ツールチップを設定
+    # TOOLTIPS=[
+    #     ('img_path', '@img_path'),
+    #     ('ix', '@ix'),
+    #     ('upper_edge', '@trolley1_estimated_upper_edge'),
+    #     ('lower_edge', '@trolley1_estimated_lower_edge'),
+    #     ('estimated_width', '@trolley1_estimated_width'),
+    #     ('brightness_center', '@trolley1_brightness_center'),
+    # ]
+
     # グラフを作成
     p_edge = figure(
         title="Upper and Lower Edge",
         sizing_mode="stretch_width",
+        # tooltips=TOOLTIPS,
         height=int(graph_height)
     )
     p_width = figure(
         title="Width",
         sizing_mode="stretch_width",
+        # tooltips=TOOLTIPS,
         x_range=p_edge.x_range,
         height=int(graph_height)
     )
     p_center = figure(
         title="Brightness Center",
         sizing_mode="stretch_width",
+        # tooltips=TOOLTIPS,
         x_range=p_edge.x_range,
         height=int(graph_height)
     )
@@ -122,23 +139,25 @@ def plot_fig_bokeh(config, rail_fpath, graph_height):
     )
 
     # データを追加
-    x_values = df_csv["ix"]
-    upper_edge = df_csv["trolley1_estimated_upper_edge"]
-    lower_edge = df_csv["trolley1_estimated_lower_edge"]
-    estimated_width = df_csv["trolley1_estimated_width"]
-    brightness_center = df_csv["trolley1_brightness_center"]
+    x_values = "ix"
+    upper_edge = "trolley1_estimated_upper_edge"
+    lower_edge = "trolley1_estimated_lower_edge"
+    estimated_width = "trolley1_estimated_width"
+    brightness_center = "trolley1_brightness_center"
 
     # グラフにデータを追加
     # 1つ目のグラフ（Upper and Lower Edge）
-    p_edge.line(x_values, upper_edge, line_color="blue")
-    p_edge.line(x_values, lower_edge, line_color="red")
+    p_edge.line(x_values, upper_edge, line_color="blue", source=source)
+    p_edge.line(x_values, lower_edge, line_color="red", source=source)
 
     # 2つ目のグラフ（Brightness Std）
-    p_width.line(x_values, estimated_width, line_color="green")
+    p_width.line(x_values, estimated_width, line_color="green", source=source)
 
     # 3つ目のグラフ（Brightness Center）
-    p_center.line(x_values, brightness_center, line_color="orange")
+    p_center.line(x_values, brightness_center, line_color="orange", source=source)
     
+    st.sidebar.write("convert bokeh grid")
+
     return grid
 
 

@@ -57,10 +57,14 @@ def ohc_wear_analysis(config):
         helpers.rail_camera_initialize(rail, camera_num, base_images, config.trolley_ids)
 
     # ファイルインデックスを指定する
-    st.sidebar.markdown("# ファイルのインデックスを指定してください")
-    idx = st.sidebar.number_input(f"インデックス(0～{len(base_images)-1}で指定)",
-                                  min_value=0,
-                                  max_value=len(base_images) - 1)
+    if not base_images:
+        st.sidebar.error("画像がありません")
+        st.stop()
+    else:
+        st.sidebar.markdown("# ファイルのインデックスを指定してください")
+        idx = st.sidebar.number_input(f"インデックス(0～{len(base_images)-1}で指定)",
+                                      min_value=0,
+                                      max_value=len(base_images) - 1)
     
     # メインページにカメラ画像を表示する
     col1, col2, col3 = camera_view.columns(3)
