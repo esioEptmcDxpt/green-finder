@@ -127,15 +127,14 @@ def ohc_wear_analysis(config):
             print(trolley_dict.keys())
 
             if trolley_id in trolley_dict.keys():
-                st.warning('既に同じ画像での結果が存在しています。このまま続行すると結果が初期化されますが宜しいですか？')
-                submit_init = st.button('初期化して実行')
-                if submit_init:
-                    if st.button(f'計算停止ボタン ＜現在の計算が終わったら停止します＞'):
-                        st.stop()
-                        st.error('計算停止ボタンが押されたため、計算を停止しました。再開する際には左下の計算ボタンを再度押してください。')
+                st.warning('既に同じ画像での結果が存在していますが、初期化して実行します')
+                #submit_init = st.button('初期化して実行')
+                if st.button(f'計算停止ボタン ＜現在の計算が終わったら停止します＞'):
+                    st.stop()
+                    st.error('計算停止ボタンが押されたため、計算を停止しました。再開する際には左下の計算ボタンを再度押してください。')
             
-                    with st.spinner("カルマンフィルタ実行中"):
-                        track_kalman(
+                with st.spinner("カルマンフィルタ実行中"):
+                    track_kalman(
                             rail_fpath,
                             camera_num,
                             base_images,
