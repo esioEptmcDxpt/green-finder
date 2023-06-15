@@ -137,6 +137,7 @@ def rail_camera_initialize(rail, camera_num, base_images, trolley_ids):
         rail_check = any(len(rail[camera_num][image_path]) > 2 for image_path in base_images)
     if not rail_check:
         print('rail initilize')
+        print(f'dir_area: {rail["name"]}')
         # railを初期化
         # base_imagesと同じ長さの空のdictionaryを作成してrailを初期化
         blankdict_size = [{}] * len(base_images)
@@ -301,12 +302,10 @@ def check_camera_dirs(dir_area, config):
     """
     # 結果を格納するリスト
     result = []
-
     # 各カメラのディレクトリをチェック
     for camera_name, camera_type in config.camera_name_to_type.items():
         # ディレクトリのパスを作成
         dir_path = os.path.join(config.output_dir, dir_area, camera_type)
-        
         # ディレクトリ内のファイルをチェック
         try:
             for file in os.listdir(dir_path):
@@ -317,10 +316,8 @@ def check_camera_dirs(dir_area, config):
                 result.append([f"{camera_name}_{camera_type}", "×"])
         except FileNotFoundError:  # ディレクトリが存在しない場合
             result.append([f"{camera_name}_{camera_type}", "×"])
-
     # 結果をPandasデータフレームに変換
     df = pd.DataFrame(result, columns=["カメラ番号", "結果有無"])
-
     return df
 
 
@@ -392,19 +389,19 @@ def trim_trolley_dict(config, trolley_dict, img_path):
     return trolley_dict
 
 
-def read_trolley_dict(config, trolley_dict, img_path):
+def read_trolley_dict(config, trolley_dict, img_idx, img_path, thin_out):
     """ 画像パスごとにデータを読み込む
     Args:
         config: 設定用ファイル
         trolley_dict(dict): shleveから読み込んだ辞書
         img_path(str): 解析対象の画像パス
+        thin_out(int): 行を間引く間隔(例)50 ⇒ 横50pxずつデータを記録する
     Return:
         df_trolley(DataFrame): trolley_dictから作成したデータフレーム
     """
-    
-    # trolley_dictの行数を揃える
+    # Step1: trolley_dictの行数を揃える
     trim_trolley_dict(config, trolley_dict, img_path)
-    
+
     df_trolley = pd.DataFrame()
     for idx, trolley_id in enumerate(config.trolley_ids):
         column_name = [trolley_id + "_" + key for key in list(trolley_dict[img_path][trolley_id].keys())]
@@ -415,27 +412,47 @@ def read_trolley_dict(config, trolley_dict, img_path):
             df_trolley = df_trolley.rename(columns={trolley_id + "_ix" : 'ix'})
         else:
             df_trolley = pd.concat([df_trolley, df], axis=1).copy()
-    # 読み込まれたデータフレームの整形
+
+    # Step2: 読み込まれたデータフレームを整形する
     # trolleyX_ixの列を削除
     for col in df_trolley.columns:
         # 列名に'_ix'が含まれる場合
         if '_ix' in col:
             # その列を削除
             df_trolley = df_trolley.drop(col, axis=1)
-    # 画像名を記録する
-    if not "img_path" in df_trolley.columns:
-        df_trolley.insert(0, 'img_path', img_path)
-    else:
-        df_trolley["img_path"] = img_path
+
+    # Step3: インデックスや画像名等の情報を記録する
+    # 線区名、カメラ名、画像名を取得
+    dir_area, camera_num = img_path.split("/")[1:3]
+    image_name = img_path.split('/')[-1]
+
+    # データフレームに挿入する項目・位置を指定
+    columns_to_insert = [("img_idx", img_idx, 0), 
+                     ("dir_area", dir_area, 1), 
+                     ("camera_num", camera_num, 2), 
+                     ("image_name", image_name, 3)]
+
+    # データフレームにインデックス・画像名等を挿入する
+    for col_name, col_value, idx in columns_to_insert:
+        if col_name not in df_trolley.columns:
+            df_trolley.insert(idx, col_name, col_value)
+        else:
+            df_trolley[col_name] = col_value
+
+    # Step4: データを間引く
+    df_trolley = df_trolley[::thin_out]
+
     return df_trolley
 
 
-def trolley_dict_to_csv(config, rail_fpath, camera_num, base_images):
+def trolley_dict_to_csv(config, rail_fpath, camera_num, base_images, thin_out):
     """ ShelveファイルからCSVファイルを生成する
     Args:
         config: 設定ファイル
         rail_fpath (str): shelveファイルの保存パス
         camera_num (str): 選択されたカメラ番号
+        base_images (list): カメラ番号に対応する画像パスのリスト
+        thin_out (int): CSVの行を間引く間隔 (例)50 ⇒ 横50pxずつデータを記録する
     """
     # CSVファイルの保存パスを指定
     csv_fpath = rail_fpath.replace(".shelve", ".csv")
@@ -447,22 +464,21 @@ def trolley_dict_to_csv(config, rail_fpath, camera_num, base_images):
 
     # 読み込んだ辞書からデータフレームを作成する
     dfs = pd.DataFrame()
-    for idx, img_path in enumerate(base_images):
+    for img_idx, img_path in enumerate(base_images):
         # print(f"{idx}> img_path: {img_path}")
         try:
-            df_trolley = read_trolley_dict(config, trolley_dict, img_path).copy()
+            df_trolley = read_trolley_dict(config, trolley_dict, img_idx, img_path, thin_out).copy()
             # ixの値が連番になるように修正
-            df_trolley['ix'] = df_trolley['ix'] + 1000 * idx
+            df_trolley['ix'] = df_trolley['ix'] + 1000 * img_idx
             dfs = pd.concat([dfs, df_trolley], ignore_index=True)
         except Exception as e:
             st.sidebar.write(f"解析エラーで中断しました。中断した画像👇")
-            st.sidebar.write(f"{idx}> img_path: {img_path}")
-            # st.sidebar.error(f"Error> {e}")
+            st.sidebar.write(f"{img_idx}> img_path: {img_path}")
+            st.sidebar.error(f"Error> {e}")
             break
     
     # データフレームからCSVファイルを生成してoutputディレクトリ内に保存する
     dfs.to_csv(csv_fpath, encoding='cp932')
     
     return
-
 

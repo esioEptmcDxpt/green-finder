@@ -96,5 +96,3 @@ def track_kalman(rail_fpath, camera_num, base_images, idx, trolley_id, x_init, y
                     rail_dict = copy.deepcopy(rail[camera_num][image_path])
                     rail_dict = trolley_dict
                     rail[camera_num][image_path] = rail_dict
-
-

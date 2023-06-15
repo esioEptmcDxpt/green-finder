@@ -1,18 +1,26 @@
+import os
 import shelve
 import copy
 import matplotlib
 import numpy as np
 import pandas as pd
 from bokeh.plotting import figure, gridplot
-from bokeh.models import ColumnDataSource, HoverTool
+from bokeh.models import ColumnDataSource, FuncTickFormatter
+from bokeh.palettes import d3
 import streamlit as st
 from PIL import Image
 import src.helpers as helpers
 
 
 # @st.cache(hash_funcs={matplotlib.figure.Figure: lambda _: None})
-def plot_fig(base_images, idx):
-    im_base = Image.open(base_images[idx])
+def plot_fig(image_path):
+    """ メモリ付き画像を生成する
+    Args:
+        image_path(str): 元の画像パス
+    Return:
+        fig: pyplot形式の画像データ
+    """
+    im_base = Image.open(image_path)
     dpi = 200
     margin = 0.05
     xpixels, ypixels = 1000, 2200
@@ -28,154 +36,28 @@ def plot_fig(base_images, idx):
     return fig
 
 
-# @st.cache()
-def plot_fig_bokeh_fromDict(config, base_images, rail_fpath, camera_num, img_num, graph_height):
-    """ shelveファイルを直接読み込んでbokehグラフ表示
+@st.cache
+def ohc_image_load(image_path):
+    """ 解析対象の画像を表示する
     Args:
-        config: 設定ファイル
-        base_images(list): 画像パスのリスト
-        rail_fpath(str): shelveファイルのパス
-        camera_num(str): カメラ番号
-        img_num(int): グラフ表示したい画像の枚数
-        graph_height(int): グラフの高さ設定値
+        image_path(str): 元画像のパス
+    Return: PIL形式の画像データ
     """
-    with shelve.open(rail_fpath) as rail:
-        trolley_dict = copy.deepcopy(rail[camera_num])
-
-    # グラフ用のデータソースを作成
-    # source_upper = ColumnDataSource(data=dict(x=[], y=[]))
-    # source_lower = ColumnDataSource(data=dict(x=[], y=[]))
-    # source_width = ColumnDataSource(data=dict(x=[], y=[]))
-    # source_center = ColumnDataSource(data=dict(x=[], y=[]))
-
-    # グラフを作成
-    p_edge = figure(title="Upper and Lower Edge", sizing_mode="stretch_width", height=int(graph_height))
-    p_width = figure(title="Width", sizing_mode="stretch_width", x_range=p_edge.x_range, height=int(graph_height))
-    p_center = figure(title="Brightness Center", sizing_mode="stretch_width", x_range=p_edge.x_range, height=int(graph_height))
-
-    # グラフを表示する領域を作成
-    grid = gridplot([[p_edge], [p_width], [p_center]], toolbar_location="above")
-
-    # データを追加していくループ
-    for idx in range(img_num[0], img_num[1] + 1):
-        image_path = base_images[idx]
-        x_values = np.array([n + 1000 * idx for n in trolley_dict[image_path][config.trolley_ids[0]]["ix"]])
-
-        # データを更新
-        upper_edge = trolley_dict[image_path][config.trolley_ids[0]].get("estimated_upper_edge", [])
-        lower_edge = trolley_dict[image_path][config.trolley_ids[0]].get("estimated_lower_edge", [])
-        estimated_width = trolley_dict[image_path][config.trolley_ids[0]].get("estimated_width", [])
-        brightness_center = trolley_dict[image_path][config.trolley_ids[0]].get("brightness_center", [])
-
-        if not upper_edge or not lower_edge or not estimated_width or not brightness_center:
-            continue
-
-        # 1つ目のグラフ（Upper and Lower Edge）
-        p_edge.line(x_values, upper_edge, line_color="blue")
-        p_edge.line(x_values, lower_edge, line_color="red")
-
-        # 2つ目のグラフ（Brightness Std）
-        p_width.line(x_values, estimated_width, line_color="green")
-
-        # 3つ目のグラフ（Brightness Center）
-        p_center.line(x_values, brightness_center, line_color="orange")
-
-    return grid
+    return Image.open(image_path) if os.path.isfile(image_path) else []
 
 
-def plot_fig_bokeh(config, rail_fpath, graph_height):
+# @st.cache
+def out_image_load(rail_fpath, camera_num, image_path, config):
     """
     Args:
-        config: 設定ファイル
         rail_fpath(str): shelveファイルのパス
-        graph_height(int): グラフ1枚当たりの高さ
+        camera_num(str): 選択されたカメラ番号(例)HD11
+        image_path(str): 画像パス名(例)base_images[idx]で指定
+        config(dict): 設定ファイル
+    Return:
+        out_img(PIL Image): 結果を重ね合わせた画像データ
     """
-    # CSVファイルの保存パスを指定
-    csv_fpath = rail_fpath.replace(".shelve", ".csv")
-    st.write(f"csv_fpath: {csv_fpath}")
-
-    # CSVファイルからデータフレームを作成する
-    df_csv = pd.read_csv(csv_fpath, encoding='cp932')
-    
-    # CSVから作成したデータフレームをbokeh形式で読み込む
-    source = ColumnDataSource(data=df_csv)
-    
-    # ツールチップを設定
-    # TOOLTIPS=[
-    #     ('img_path', '@img_path'),
-    #     ('ix', '@ix'),
-    #     ('upper_edge', '@trolley1_estimated_upper_edge'),
-    #     ('lower_edge', '@trolley1_estimated_lower_edge'),
-    #     ('estimated_width', '@trolley1_estimated_width'),
-    #     ('brightness_center', '@trolley1_brightness_center'),
-    # ]
-
-    # グラフを作成
-    p_edge = figure(
-        title="Upper and Lower Edge",
-        sizing_mode="stretch_width",
-        # tooltips=TOOLTIPS,
-        height=int(graph_height)
-    )
-    p_width = figure(
-        title="Width",
-        sizing_mode="stretch_width",
-        # tooltips=TOOLTIPS,
-        x_range=p_edge.x_range,
-        height=int(graph_height)
-    )
-    p_center = figure(
-        title="Brightness Center",
-        sizing_mode="stretch_width",
-        # tooltips=TOOLTIPS,
-        x_range=p_edge.x_range,
-        height=int(graph_height)
-    )
-
-    # グラフを表示する領域を作成
-    grid = gridplot(
-        [[p_edge], [p_width], [p_center]],
-        toolbar_location="above"
-    )
-
-    # データを追加
-    x_values = "ix"
-    upper_edge = "trolley1_estimated_upper_edge"
-    lower_edge = "trolley1_estimated_lower_edge"
-    estimated_width = "trolley1_estimated_width"
-    brightness_center = "trolley1_brightness_center"
-
-    # グラフにデータを追加
-    # 1つ目のグラフ（Upper and Lower Edge）
-    p_edge.line(x_values, upper_edge, line_color="blue", source=source)
-    p_edge.line(x_values, lower_edge, line_color="red", source=source)
-
-    # 2つ目のグラフ（Brightness Std）
-    p_width.line(x_values, estimated_width, line_color="green", source=source)
-
-    # 3つ目のグラフ（Brightness Center）
-    p_center.line(x_values, brightness_center, line_color="orange", source=source)
-    
-    st.sidebar.write("convert bokeh grid")
-
-    return grid
-
-
-@st.cache
-def ohc_image_load(base_images, idx):
-    try:
-        im_base = Image.open(base_images[idx])
-    except Exception as e:
-        im_base = []
-    return im_base
-
-
-@st.cache
-def out_image_load(rail_fpath, camera_num, base_images, idx, config):
-    with shelve.open(rail_fpath) as rail:
-        trolley_dict = copy.deepcopy(rail[camera_num])
-
-    image_path = base_images[idx]
+    # オリジナル画像データを取得する
     img = Image.open(image_path)
 
     # 画像をnumpy配列に変換
@@ -188,12 +70,16 @@ def out_image_load(rail_fpath, camera_num, base_images, idx, config):
     ]
     background_brightness = random_pixels.mean()
 
+    # shelveファイルを開いて辞書にセットする
+    with shelve.open(rail_fpath) as rail:
+        trolley_dict = copy.deepcopy(rail[camera_num][image_path])
+
     # データを描画
     # trolley_idのひとつめのixを使用する
-    x_values = trolley_dict[image_path][config.trolley_ids[0]]["ix"]
+    x_values = trolley_dict[config.trolley_ids[0]]["ix"]
     for trolley_id in config.trolley_ids:
-        upper_edge = trolley_dict[image_path][trolley_id]["estimated_upper_edge"]
-        lower_edge = trolley_dict[image_path][trolley_id]["estimated_lower_edge"]
+        upper_edge = trolley_dict[trolley_id]["estimated_upper_edge"]
+        lower_edge = trolley_dict[trolley_id]["estimated_lower_edge"]
         for x, y1, y2 in zip(x_values, upper_edge, lower_edge):
             # estimated_upper_edgeとestimated_lower_edgeが0でない場合のみ色を変更
             if y1 != 0:
@@ -203,16 +89,166 @@ def out_image_load(rail_fpath, camera_num, base_images, idx, config):
                 color_lower = [0, 255, 0] if background_brightness < 128 else [255, 0, 0]  # 緑または赤
                 img_array[y2, x] = color_lower
 
-    # 変更後の画像を返す
-    out_img = Image.fromarray(img_array)
-
-    return out_img
+    # out_img
+    return Image.fromarray(img_array)
 
 
 def rail_info_view(dir_area, config, main_view):
+    """ 線区情報を日本語で表示する
+    Args:
+        dir_area(str): 線区フォルダのパス
+        config(dict): 設定ファイル
+        main_view: Streamlitのコンテナ
+    """
     rail_name, st_name, updown_name, measurement_date, measurement_time = helpers.rail_message(dir_area, config)
     with main_view.container():
         st.write(f"現在の線区：{rail_name} {st_name}({updown_name})")
         st.write(f"　　測定日：{measurement_date} ＜{measurement_time}＞")
         st.success("##### 👈別の線区を表示する場合は、再度「線区フォルダを決定」してください")
     return
+
+
+def plot_fig_bokeh(config, rail_fpath, graph_height, graph_width):
+    """
+    Args:
+        config: 設定ファイル
+        rail_fpath(str): shelveファイルのパス
+        graph_height(int): グラフ1枚当たりの高さ
+        graph_width(int): グラフ1枚当たりの幅
+    """
+    # CSVファイルの保存パスを指定
+    csv_fpath = rail_fpath.replace(".shelve", ".csv")
+    # st.write(f"csv_fpath: {csv_fpath}")
+
+    # CSVファイルからデータフレームを作成する
+    df_csv = pd.read_csv(csv_fpath, encoding='cp932')
+
+    # CSVから作成したデータフレームをbokeh形式で読み込む
+    source = ColumnDataSource(data=df_csv)
+
+    # グラフの色情報を設定する
+    # グラフの数に合わせて12色だけ取得する
+    # edge(upper,lower),width,brightness=4 -> 4*3=12
+    colors = d3["Category20"][12]
+
+    # ツールチップを設定
+    TOOLTIPS_EDGE=[
+        ('image_index', '@img_idx'),
+        ('image_name', '@image_name'),
+        ('ix', '@ix'),
+        ('upper_edge1', '@trolley1_estimated_upper_edge'),
+        ('lower_edge1', '@trolley1_estimated_lower_edge'),
+        ('upper_edge2', '@trolley2_estimated_upper_edge'),
+        ('lower_edge2', '@trolley2_estimated_lower_edge'),
+        ('upper_edge3', '@trolley3_estimated_upper_edge'),
+        ('lower_edge3', '@trolley3_estimated_lower_edge'),
+    ]
+    TOOLTIPS_WIDTH=[
+        ('image_index', '@img_idx'),
+        ('image_name', '@image_name'),
+        ('image_name', '@image_name'),
+        ('estimated_width1', '@trolley1_estimated_width'),
+        ('estimated_width2', '@trolley2_estimated_width'),
+        ('estimated_width3', '@trolley3_estimated_width'),
+    ]
+    TOOLTIPS_BRIGHTNESS=[
+        ('image_index', '@img_idx'),
+        ('image_name', '@image_name'),
+        ('image_name', '@image_name'),
+        ('brightness_center1', '@trolley1_brightness_center'),
+        ('brightness_center2', '@trolley2_brightness_center'),
+        ('brightness_center3', '@trolley3_brightness_center'),
+    ]
+
+    # グラフを作成
+    p_edge = figure(
+        title="Upper and Lower Edge",
+        sizing_mode="stretch_width",
+        tooltips=TOOLTIPS_EDGE,
+        height=int(graph_height),
+        width=int(graph_width)
+    )
+    p_width = figure(
+        title="Width",
+        sizing_mode="stretch_width",
+        tooltips=TOOLTIPS_WIDTH,
+        x_range=p_edge.x_range,
+        height=int(graph_height),
+        width=int(graph_width)
+    )
+    p_center = figure(
+        title="Brightness Center",
+        sizing_mode="stretch_width",
+        tooltips=TOOLTIPS_BRIGHTNESS,
+        x_range=p_edge.x_range,
+        height=int(graph_height),
+        width=int(graph_width)
+    )
+    plots = [[p_edge], [p_width], [p_center]]
+
+    # グラフを表示する領域を作成
+    grid = gridplot(
+        plots,
+        toolbar_location="above"
+    )
+
+    # グラフにデータを追加
+    # 列名と変数名を紐づける
+    x_values = "ix"
+    upper_edge1 = "trolley1_estimated_upper_edge"
+    lower_edge1 = "trolley1_estimated_lower_edge"
+    upper_edge2 = "trolley2_estimated_upper_edge"
+    lower_edge2 = "trolley2_estimated_lower_edge"
+    upper_edge3 = "trolley3_estimated_upper_edge"
+    lower_edge3 = "trolley3_estimated_lower_edge"
+    estimated_width1 = "trolley1_estimated_width"
+    estimated_width2 = "trolley2_estimated_width"
+    estimated_width3 = "trolley3_estimated_width"
+    brightness_center1 = "trolley1_brightness_center"
+    brightness_center2 = "trolley2_brightness_center"
+    brightness_center3 = "trolley3_brightness_center"
+    # 各グラフに描画する要素を指定
+    edges = [
+        (p_edge, upper_edge1, "upper_edge1"),
+        (p_edge, upper_edge2, "upper_edge2"),
+        (p_edge, upper_edge3, "upper_edge3"),
+        (p_edge, lower_edge1, "lower_edge1"),
+        (p_edge, lower_edge2, "lower_edge2"),
+        (p_edge, lower_edge3, "lower_edge3")
+    ]
+    widths = [
+        (p_width, estimated_width1, "estimated_width1"),
+        (p_width, estimated_width2, "estimated_width2"),
+        (p_width, estimated_width3, "estimated_width3")
+    ]
+    centers = [
+        (p_center, brightness_center1, "brightness_center1"),
+        (p_center, brightness_center2, "brightness_center2"),
+        (p_center, brightness_center3, "brightness_center3")
+    ]
+    # グラフに要素を追加
+    for i, (p, line_data, label_name) in enumerate(edges + widths + centers):
+        p.line(
+            x_values,
+            line_data,
+            legend_label=label_name,
+            line_color=colors[i],
+            source=source
+        )
+
+    # 軸・凡例の条件を指定する
+    # 軸表示用のフォーマット関数
+    formatter = FuncTickFormatter(code="""
+        return tick.toLocaleString() + "px";
+    """)
+    for p in [sublist[0] for sublist in plots]:
+        # p.legend.location = "top_left"    # グラフ内に表示
+        p.add_layout(p.legend[0], "right")    # グラフの外に表示
+        p.legend.click_policy = "hide"    # 凡例でグラフを非表示
+        # p.legend.click_policy = "mute"    # 凡例でグラフをミュート
+        p.xaxis.axis_label = "location"
+        # p.xaxis.formatter = NumeralTickFormatter(format="0,0")
+        p.xaxis.formatter = formatter
+        p.yaxis.formatter = formatter
+
+    return grid

@@ -48,9 +48,10 @@ format_func:
   rail_names:
     Kawagoe: 川越線
     Chuo: 中央線
-    Yamate: 山手
+    Yamate: 山手線
     Utsunomiya: 宇都宮線
   station_names:
+    st: 構内
     Omiya: 大宮
     Nisshin: 日進
     Nishioomiya: 西大宮
@@ -67,6 +68,14 @@ format_func:
     Sendagaya: 千駄ヶ谷
     Yoyogi: 代々木
     Shinjuku: 新宿
+    Ookubo: 大久保
+    Higashinakano: 東中野
+    Nakano: 中野
+    Koenji: 高円寺
+    Asagaya: 阿佐ヶ谷
+    Ogikubo: 荻窪
+    Nishiogikubo: 西荻窪
+    Kichijoji: 吉祥寺
     Miyahara: 宮原
     Ueno: 上野
     Nippori: 日暮里
