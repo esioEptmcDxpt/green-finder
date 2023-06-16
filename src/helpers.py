@@ -226,10 +226,10 @@ def download_dir(prefix, local):
                       (例) ./
     """
     # S3のクライアントを作成
-    client  = boto3.client('s3')
+    client = boto3.client('s3')
     # バケット名
-    bucket  = 'trolley-monitor'
-    
+    bucket = 'trolley-monitor'
+
     paginator = client.get_paginator('list_objects')
     for result in paginator.paginate(Bucket=bucket, Prefix=prefix):
         if result.get('Contents') is not None:
@@ -237,7 +237,7 @@ def download_dir(prefix, local):
                 if not os.path.exists(os.path.dirname(local + os.sep + file.get('Key'))):
                     os.makedirs(os.path.dirname(local + os.sep + file.get('Key')))
                 client.download_file(bucket, file.get('Key'), local + os.sep + file.get('Key'))
-        
+
     return
 
 

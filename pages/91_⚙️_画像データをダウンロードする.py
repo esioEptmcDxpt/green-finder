@@ -45,7 +45,10 @@ def data_loader(config):
                 with ThreadPoolExecutor(max_workers=10) as executor:
                     for folder in config.camera_types:
                         s3_dir = config.image_dir + "/" + s3_rail_path + "/" + folder + "/"
-                        ebs_dir = "./" + folder + "/"
+                        ebs_dir = "./" + config.image_dir + "/" + s3_rail_path + "/"
+                        # st.sidebar.write(f"{folder}>")
+                        # st.sidebar.write(f"s3_dir: {s3_dir}")
+                        # st.sidebar.write(f"ebs_dir: {ebs_dir}")
                         executor.submit(helpers.download_dir, s3_dir, ebs_dir)
 
             st.success("TTSにダウンロードしました")
