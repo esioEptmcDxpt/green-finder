@@ -87,7 +87,7 @@ def ohc_wear_analysis(config):
         else:
             st.image(out_img)
     # with col3:
-    if st.sidebar.button("📈初期値入力用メモリ付画を表示する"):
+    if st.sidebar.button("📈初期値入力用メモリ付画像を表示する"):
         fig = vis.plot_fig(base_images[idx])
         log_view.pyplot(fig)
 
