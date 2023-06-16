@@ -156,7 +156,7 @@ def get_s3_dir_list(path):
         path (str): backet内の画像ディレクトリ名(例)imgs
     """
     backet_name = "trolley-monitor"
-    
+
     s3 = boto3.client('s3')
     rail_list = []
     # S3バケット内のディレクトリ一覧を取得

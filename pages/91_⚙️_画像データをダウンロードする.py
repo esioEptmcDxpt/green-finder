@@ -1,5 +1,7 @@
 import os
+import datetime
 import streamlit as st
+from concurrent.futures import ThreadPoolExecutor
 import src.helpers as helpers
 import src.visualize as vis
 from src.config import appProperties
@@ -9,17 +11,17 @@ def data_loader(config):
     # マルチページの設定
     st.set_page_config(page_title="画像データダウンロード")
     st.sidebar.header("画像データダウンロード")
-    
+
     col1, col2 = st.columns(2)
     with col1:
         col1_cont = st.container()
     with col2:
         col2_cont = st.container()
-    
+
     with col1_cont:
         # S3の情報を表示する
         st.header("S3アップ済ファイル")
-        
+
         # 線区
         rail_list = helpers.get_s3_dir_list(config.image_dir)
         s3_rail_path = st.selectbox("S3> 線区フォルダ", rail_list)
@@ -29,18 +31,27 @@ def data_loader(config):
         s3_camera_path = st.selectbox("S3> カメラフォルダ", s3_camera_list)
 
         # 画像リスト
-        image_list = helpers.get_s3_image_list(config.image_dir + "/"  + s3_rail_path + "/" + s3_camera_path)
+        image_list = helpers.get_s3_image_list(config.image_dir + "/" + s3_rail_path + "/" + s3_camera_path)
         st.selectbox("S3> 画像リスト", image_list)
 
         # S3からダウンロード
         if st.button("線区フォルダのデータをダウンロードする"):
+            # dt01 = datetime.datetime.now()
             with st.spinner("S3からダウンロード中"):
-                # st.write(f's3_path:{config.image_dir + "/" + s3_rail_path + "/"}')
-                # st.write(f'local_path:{config.image_dir + "/"}')
-                # helpers.download_dir(config.image_dir + "/" + s3_rail_path + "/", config.image_dir + "/")
-                helpers.download_dir(config.image_dir + "/" + s3_rail_path + "/", "./")
-            st.success("TTSにダウンロードしました")
+                # シングルスレッドでのダウンロード
+                # helpers.download_dir(config.image_dir + "/" + s3_rail_path + "/", "./")
 
+                # マルチスレッド化してダウンロード
+                with ThreadPoolExecutor(max_workers=10) as executor:
+                    for folder in config.camera_types:
+                        s3_dir = config.image_dir + "/" + s3_rail_path + "/" + folder + "/"
+                        ebs_dir = "./" + folder + "/"
+                        executor.submit(helpers.download_dir, s3_dir, ebs_dir)
+
+            st.success("TTSにダウンロードしました")
+            # dt02 = datetime.datetime.now()
+            # prc_time = dt02 - dt01
+            # st.sidebar.write(f"処理時間:{prc_time}")
 
     with col2_cont:
         # EBSの情報を表示する
