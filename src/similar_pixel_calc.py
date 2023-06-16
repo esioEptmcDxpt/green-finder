@@ -47,7 +47,7 @@ def track_pixel(rail_fpath, camera_num, base_images, idx, xin, test_num, log_vie
         pixel_instance_3.reload_image_init()
 
         try:
-            log_view.write(f'{file_idx}枚目の画像を処理中です。画像名は{image_name}')
+            log_view.write(f'{file_idx + 1}枚目の画像を処理中です。画像名は{image_name}')
             # 画像を読み込む
             pixel_instance_1.load_picture(image_path)
             pixel_instance_2.load_picture(image_path)
@@ -67,7 +67,7 @@ def track_pixel(rail_fpath, camera_num, base_images, idx, xin, test_num, log_vie
 
         except Exception as e:
             # 途中で妙な値を拾った場合
-            log_view.error(f"{file_idx}枚目の画像で処理が途中で終了しました。結果を確認して、やりなおしてください。")
+            log_view.error(f"{file_idx + 1}枚目の画像で処理が途中で終了しました。結果を確認して、やりなおしてください。")
             # log_view.error(f"Error> {e.message}")
             t = traceback.format_exc()
             log_view.error(f"Error> {t} {e}")
@@ -94,7 +94,11 @@ def track_pixel(rail_fpath, camera_num, base_images, idx, xin, test_num, log_vie
 
         dt02 = datetime.datetime.now()
         prc_time = dt02 - dt01
-        log_view.write(str(datetime.datetime.now()) + f' Process end :{prc_time}')
+        log_view.write(f'＜計算終了＞終了時間:{str(datetime.datetime.now())} 計算時間:{prc_time}')
+
+        if not pixel_instance_1.isInFrame and not pixel_instance_2.isInFrame and not pixel_instance_3.isInFrame:
+            log_view.error(f"{file_idx + 1}枚目の画像でトロリ線が検出されなくなりました。やりなおしてください。")
+            st.stop()
 
         # 指定画像数に達したら解析を終了する
         if file_idx >= test_num + idx - 1:
