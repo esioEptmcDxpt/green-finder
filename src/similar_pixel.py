@@ -84,7 +84,7 @@ class pixel(trolley):
     def reload_image_init(self):
         """ 次の画像に移行したときに結果保存用の属性を初期化する
         """
-        self.reset_trolley()
+        # self.reset_trolley()
         # 解析結果
         self.ix = []
         self.estimated_upper_edge = []
@@ -320,7 +320,7 @@ class pixel(trolley):
             if ix == 0:
                 self.edge_std_list_u.append(im_slice[upper-7:upper+8])
                 self.edge_std_list_l.append(im_slice[lower-7:lower+8])
-            self.edge_std_u = np.mean(self.edge_std_list_u, axis=0).astype(np.int16)
+            self.edge_std_u = np.mean(self.edge_std_list_u, axis=0).astype(np.int16)    # ここでエラーが発生する？
             self.edge_std_l = np.mean(self.edge_std_list_l, axis=0).astype(np.int16)
 
             # 前回値から上下5ピクセルがサーチ範囲

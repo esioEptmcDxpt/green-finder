@@ -1,6 +1,7 @@
 default:
   image_dir: imgs
   output_dir: output
+  bucket: trolley-monitor
   readme_md: instructions.md
   camera_types: 
     - HD11
@@ -47,8 +48,15 @@ format_func:
   rail_names:
     Kawagoe: 川越線
     Chuo: 中央線
+    Yamate: 山手線
     Utsunomiya: 宇都宮線
   station_names:
+    st: 構内
+    Omiya: 大宮
+    Nisshin: 日進
+    Nishioomiya: 西大宮
+    Sashiougi: 指扇
+    Minamifuruya: 南古谷
     Tokyo: 東京
     Kanda: 神田
     Ochanomizu: 御茶ノ水
@@ -60,19 +68,32 @@ format_func:
     Sendagaya: 千駄ヶ谷
     Yoyogi: 代々木
     Shinjuku: 新宿
-    Omiya: 大宮
+    Ookubo: 大久保
+    Higashinakano: 東中野
+    Nakano: 中野
+    Koenji: 高円寺
+    Asagaya: 阿佐ヶ谷
+    Ogikubo: 荻窪
+    Nishiogikubo: 西荻窪
+    Kichijoji: 吉祥寺
     Miyahara: 宮原
-    Nisshin: 日進
-    Nishioomiya: 西大宮
-    Sashiougi: 指扇
-    Minamifuruya: 南古谷
+    Ueno: 上野
+    Nippori: 日暮里
+    Tabata: 田端
+    Yurakucho: 有楽町
+    Shinbashi: 新橋
+    Hamamatsucho: 浜松町
+    Tamachi: 田町
+    Shinagawa: 品川
+    Oosaki: 大崎
   rail_type_names:
     up: 上り
     down: 下り
+    soto: 外回り
+    uchi: 内回り
   time_band_names:
     day: 昼間
     knight: 夜間
-
 
 measurement:
   missing_threshold: 5
@@ -80,3 +101,6 @@ measurement:
   sharpness_threshold: 1
   missing_count_limit: 100
   width_exceed_limit: 60
+
+results:
+  max_len: 1000
