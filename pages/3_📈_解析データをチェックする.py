@@ -59,7 +59,7 @@ def check_graph(config):
     st.sidebar.dataframe(df)
 
     # CSV変換
-    st.sidebar.markdown("# ② CSVデータを作成")
+    st.sidebar.markdown("# ② グラフ用CSVデータを作成")
     thin_out = st.sidebar.number_input("画像間引き間隔(1～1000で指定)",
                                        min_value=1,
                                        max_value=1000,
@@ -67,7 +67,7 @@ def check_graph(config):
     # window = st.sidebar.number_input("標準偏差計算のウィンドウサイズを指定",
     #                                 min_value=1,
     #                                 value=1000)
-    if st.sidebar.button("結果CSVファイルを作成"):
+    if st.sidebar.button("グラフ用CSVファイルを作成"):
         try:
             with st.spinner("CSVファイルに変換中..."):
                 helpers.trolley_dict_to_csv(
@@ -78,7 +78,7 @@ def check_graph(config):
                     thin_out,
                     thin_out,
                     log_view)    # ウィンドウサイズを指定する場合はwindowにする
-            log_view.success("結果CSVファイルを作成しました")
+            log_view.success("グラフ用CSVファイルを作成しました")
         except Exception as e:
             log_view.error("解析結果ファイルがありません")
             log_view.write(f"Error> {e}")
@@ -88,13 +88,13 @@ def check_graph(config):
     try:
         with open(csv_fpath) as csv:
             st.sidebar.download_button(
-                label="結果CSVファイルをダウンロード",
+                label="グラフ用CSVファイルをダウンロード",
                 data=csv,
                 file_name=dir_area + "_" + camera_num + "_output.csv",
                 mime="text/csv"
             )
     except Exception as e:
-        log_view.error("CSVファイルがありません")
+        log_view.error("グラフ用CSVファイルがありません")
         log_view.write(f"Error> {e}")
 
     # グラフ表示

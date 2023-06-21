@@ -234,9 +234,9 @@ def download_dir(prefix, local):
     for result in paginator.paginate(Bucket=bucket, Prefix=prefix):
         if result.get('Contents') is not None:
             for file in result.get('Contents'):
-                if not os.path.exists(os.path.dirname(local + os.sep + file.get('Key'))):
-                    os.makedirs(os.path.dirname(local + os.sep + file.get('Key')))
-                client.download_file(bucket, file.get('Key'), local + os.sep + file.get('Key'))
+                if not os.path.exists(os.path.dirname(local + file.get('Key'))):
+                    os.makedirs(os.path.dirname(local + file.get('Key')))
+                client.download_file(bucket, file.get('Key'), local + file.get('Key'))
 
     return
 
