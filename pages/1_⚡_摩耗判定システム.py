@@ -92,7 +92,7 @@ def ohc_wear_analysis(config):
         log_view.pyplot(fig)
 
     trace_method = st.sidebar.radio(
-        "システムを選択", 
+        "システムを選択",
         ("ピクセルトレース", "カルマンフィルタ")
     )
 
@@ -113,7 +113,7 @@ def ohc_wear_analysis(config):
                 # 解析結果が既にある場合は初期化しない
                 helpers.rail_camera_initialize(rail, camera_num, base_images, config.trolley_ids)
 
-            if st.button(f'計算停止ボタン ＜現在の計算が終わったら停止します＞'):
+            if st.button('計算停止ボタン ＜現在の計算が終わったら停止します＞'):
                 st.stop()
                 st.error('計算停止ボタンが押されたため、計算を停止しました。再開する際には左下の計算ボタンを再度押してください。')
 
@@ -147,7 +147,7 @@ def ohc_wear_analysis(config):
                 # 解析結果が既にある場合は初期化しない
                 helpers.rail_camera_initialize(rail, camera_num, base_images, config.trolley_ids)
 
-            if st.button(f'計算を停止しますか？'):
+            if st.button('計算停止ボタン ＜現在の計算が終わったら停止します＞'):
                 st.stop()
                 st.error('計算停止ボタンが押されたため、計算を停止しました。再開する際には左下の計算ボタンを再度押してください。')
 
