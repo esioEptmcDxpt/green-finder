@@ -183,10 +183,10 @@ def get_s3_image_list(path):
                     (例)images/Chuo_01_Tokyo-St_20230201_knight/HD11/
     """
     backet_name = "trolley-monitor"
-    
+
     s3 = boto3.client('s3')
     image_list = []
-    
+
     # S3バケット内のファイル一覧を取得
     response = s3.list_objects_v2(Bucket=backet_name, Prefix=path + "/")
     for content in response.get('Contents', []):
@@ -211,7 +211,7 @@ def get_file_content_as_string(img_dir_name, path):
     """
     backet_name = "trolley-monitor"
     dir_path = img_dir_name + path
-    
+
     s3 = boto3.resource('s3')
     response = s3.Object(backet_name, dir_path).get()['Body']
     return response.read().decode("utf-8")
@@ -234,9 +234,9 @@ def download_dir(prefix, local):
     for result in paginator.paginate(Bucket=bucket, Prefix=prefix):
         if result.get('Contents') is not None:
             for file in result.get('Contents'):
-                if not os.path.exists(os.path.dirname(local + os.sep + file.get('Key'))):
-                    os.makedirs(os.path.dirname(local + os.sep + file.get('Key')))
-                client.download_file(bucket, file.get('Key'), local + os.sep + file.get('Key'))
+                if not os.path.exists(os.path.dirname(local + file.get('Key'))):
+                    os.makedirs(os.path.dirname(local + file.get('Key')))
+                client.download_file(bucket, file.get('Key'), local + file.get('Key'))
 
     return
 
@@ -399,17 +399,20 @@ def read_trolley_dict(config, trolley_dict, img_idx, img_path, thin_out):
     Return:
         df_trolley(DataFrame): trolley_dictから作成したデータフレーム
     """
-    # Step1: trolley_dictの行数を揃える
+    # Step0: trolley_dictの行数を揃える
     trim_trolley_dict(config, trolley_dict, img_path)
 
+    # Step1: trolley_dictをデータフレームとして読み込む
     df_trolley = pd.DataFrame()
     for idx, trolley_id in enumerate(config.trolley_ids):
         column_name = [trolley_id + "_" + key for key in list(trolley_dict[img_path][trolley_id].keys())]
         df = pd.DataFrame(trolley_dict[img_path][trolley_id]).copy()
         df.columns = column_name
+        # dfとdf_trolleyを連結する
         if not idx:
             df_trolley = df.copy()
-            df_trolley = df_trolley.rename(columns={trolley_id + "_ix" : 'ix'})
+            # trolley1のときだけ劣名をixに変更
+            df_trolley = df_trolley.rename(columns={trolley_id + "_ix": 'ix'})
         else:
             df_trolley = pd.concat([df_trolley, df], axis=1).copy()
 
@@ -427,10 +430,10 @@ def read_trolley_dict(config, trolley_dict, img_idx, img_path, thin_out):
     image_name = img_path.split('/')[-1]
 
     # データフレームに挿入する項目・位置を指定
-    columns_to_insert = [("img_idx", img_idx, 0), 
-                     ("dir_area", dir_area, 1), 
-                     ("camera_num", camera_num, 2), 
-                     ("image_name", image_name, 3)]
+    columns_to_insert = [("img_idx", img_idx, 0),
+                         ("dir_area", dir_area, 1),
+                         ("camera_num", camera_num, 2),
+                         ("image_name", image_name, 3)]
 
     # データフレームにインデックス・画像名等を挿入する
     for col_name, col_value, idx in columns_to_insert:
@@ -440,12 +443,12 @@ def read_trolley_dict(config, trolley_dict, img_idx, img_path, thin_out):
             df_trolley[col_name] = col_value
 
     # Step4: データを間引く
-    df_trolley = df_trolley[::thin_out]
+    # df_trolley = df_trolley[::thin_out]
 
     return df_trolley
 
 
-def trolley_dict_to_csv(config, rail_fpath, camera_num, base_images, thin_out):
+def trolley_dict_to_csv(config, rail_fpath, camera_num, base_images, thin_out, window, log_view):
     """ ShelveファイルからCSVファイルを生成する
     Args:
         config: 設定ファイル
@@ -453,10 +456,12 @@ def trolley_dict_to_csv(config, rail_fpath, camera_num, base_images, thin_out):
         camera_num (str): 選択されたカメラ番号
         base_images (list): カメラ番号に対応する画像パスのリスト
         thin_out (int): CSVの行を間引く間隔 (例)50 ⇒ 横50pxずつデータを記録する
+        window (int): 標準偏差の計算に用いるウィンドウサイズ
+        log_view(st.empty): Streamlitのコンテナ（ログ表示用のエリアを指定）
     """
     # CSVファイルの保存パスを指定
     csv_fpath = rail_fpath.replace(".shelve", ".csv")
-    st.sidebar.write(f"csv_fpath:{csv_fpath}")
+    log_view.write(f"csv_fpath:{csv_fpath}")
 
     # shelveファイルを読み込む
     with shelve.open(rail_fpath) as rail:
@@ -472,13 +477,59 @@ def trolley_dict_to_csv(config, rail_fpath, camera_num, base_images, thin_out):
             df_trolley['ix'] = df_trolley['ix'] + 1000 * img_idx
             dfs = pd.concat([dfs, df_trolley], ignore_index=True)
         except Exception as e:
-            st.sidebar.write(f"解析エラーで中断しました。中断した画像👇")
-            st.sidebar.write(f"{img_idx}> img_path: {img_path}")
-            st.sidebar.error(f"Error> {e}")
+            log_view.write("この画像までCSV変換しました👇")
+            log_view.write(f"{img_idx}> img_path: {img_path}")
+            # st.sidebar.error(f"Error> {e}")
             break
+
+    # estimated_widthの標準偏差を計算して追記する
+    dfs = width_std_calc(config, dfs, window)
     
+    # Step4: データを間引く
+    dfs = dfs[::thin_out]
+
     # データフレームからCSVファイルを生成してoutputディレクトリ内に保存する
     dfs.to_csv(csv_fpath, encoding='cp932')
-    
+
     return
 
+def width_std_calc(config, dfs, window):
+    """ estimated_widthの標準偏差を計算して追記する
+    Args:
+        config(dict)    : 設定ファイル
+        dfs(DataFrame)  : 計算対象のデータフレーム
+        window(int)   : スライドウィンドウのサイズ
+    Return:
+        dfs(DataFrame)  : 標準偏差を追記したデータフレーム
+    """
+    # ウィンドウサイズからスライドウィンドウの最小計算単位を指定
+    # min_periodsの指定値以下で標準偏差を計算する場合はNaNになる
+    if window <= 2:
+        window = 2
+        min_periods = 1
+    elif window > 2:
+        min_periods = int(window / 2)
+    # st.sidebar.write(f"window:{window}")
+    # st.sidebar.write(f"min_periods:{min_periods}")
+
+    # estimated_widthの列を取得
+    insert_positions = [
+        dfs.columns.get_loc(c) for c in dfs.columns if '_estimated_width' in c
+    ]
+
+    # 標準偏差を計算してwidthの右隣りに追記する
+    for trolley_id, insert_position in zip(config.trolley_ids, insert_positions):
+        width_col = trolley_id + "_estimated_width"
+        width_std_col = trolley_id + "_estimated_width_std"
+
+        # print(f"width_col    :{width_col}")
+        # print(f"width_std_col:{width_std_col}")
+
+        width_std_col_values = (
+            dfs[width_col]
+            .rolling(window=window, min_periods=min_periods)
+            .std()
+        )
+        dfs.insert(insert_position + 1, width_std_col, width_std_col_values)
+
+    return dfs

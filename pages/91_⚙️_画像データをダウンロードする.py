@@ -36,7 +36,7 @@ def data_loader(config):
 
         # S3からダウンロード
         if st.button("線区フォルダのデータをダウンロードする"):
-            # dt01 = datetime.datetime.now()
+            dt01 = datetime.datetime.now()
             with st.spinner("S3からダウンロード中"):
                 # シングルスレッドでのダウンロード
                 # helpers.download_dir(config.image_dir + "/" + s3_rail_path + "/", "./")
@@ -45,16 +45,13 @@ def data_loader(config):
                 with ThreadPoolExecutor(max_workers=10) as executor:
                     for folder in config.camera_types:
                         s3_dir = config.image_dir + "/" + s3_rail_path + "/" + folder + "/"
-                        ebs_dir = "./" + config.image_dir + "/" + s3_rail_path + "/"
-                        # st.sidebar.write(f"{folder}>")
-                        # st.sidebar.write(f"s3_dir: {s3_dir}")
-                        # st.sidebar.write(f"ebs_dir: {ebs_dir}")
+                        ebs_dir = "./"
                         executor.submit(helpers.download_dir, s3_dir, ebs_dir)
 
             st.success("TTSにダウンロードしました")
-            # dt02 = datetime.datetime.now()
-            # prc_time = dt02 - dt01
-            # st.sidebar.write(f"処理時間:{prc_time}")
+            dt02 = datetime.datetime.now()
+            prc_time = dt02 - dt01
+            st.write(f"(参考)処理時間> {prc_time}")
 
     with col2_cont:
         # EBSの情報を表示する
@@ -77,7 +74,8 @@ def data_loader(config):
 
             # EBSから削除する
             if st.button("線区フォルダのデータを削除する"):
-                helpers.imgs_dir_remove(config.image_dir + "/" + ebs_rail_path + "/")
+                with st.spinner("TTSの画像を削除中"):
+                    helpers.imgs_dir_remove(config.image_dir + "/" + ebs_rail_path + "/")
                 st.warning("TTSの画像データを削除しました")
         else:
             st.error("TTSに線区データがありません")

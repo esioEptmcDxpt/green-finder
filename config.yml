@@ -48,6 +48,7 @@ format_func:
   rail_names:
     Kawagoe: 川越線
     Chuo: 中央線
+    ChuoKanko: 中央緩行線
     Yamate: 山手線
     Utsunomiya: 宇都宮線
   station_names:

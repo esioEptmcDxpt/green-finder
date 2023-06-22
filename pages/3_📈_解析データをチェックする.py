@@ -1,8 +1,9 @@
 import streamlit as st
+import time
 import src.helpers as helpers
 import src.visualize as vis
 from src.config import appProperties
-import time
+
 
 def check_graph(config):
     """ グラフ表示ページ
@@ -17,6 +18,7 @@ def check_graph(config):
     # メインページのコンテナを配置する
     main_view = st.container()
     graph_view = st.empty()
+    log_view = st.container()
 
     # フォルダ直下の画像保管用ディレクトリのリスト
     images_path = helpers.list_imagespath_nonCache(config.output_dir)
@@ -57,32 +59,43 @@ def check_graph(config):
     st.sidebar.dataframe(df)
 
     # CSV変換
-    st.sidebar.markdown("# ② CSVデータを作成")
+    st.sidebar.markdown("# ② グラフ用CSVデータを作成")
     thin_out = st.sidebar.number_input("画像間引き間隔(1～1000で指定)",
                                        min_value=1,
                                        max_value=1000,
-                                       value=100
-                                      )
-    if st.sidebar.button("結果CSVファイルを作成"):
+                                       value=100)
+    # window = st.sidebar.number_input("標準偏差計算のウィンドウサイズを指定",
+    #                                 min_value=1,
+    #                                 value=1000)
+    if st.sidebar.button("グラフ用CSVファイルを作成"):
         try:
             with st.spinner("CSVファイルに変換中..."):
-                helpers.trolley_dict_to_csv(config, rail_fpath, camera_num, base_images, thin_out)
-            st.sidebar.success("結果CSVファイルを作成しました")
+                helpers.trolley_dict_to_csv(
+                    config,
+                    rail_fpath,
+                    camera_num,
+                    base_images,
+                    thin_out,
+                    thin_out,
+                    log_view)    # ウィンドウサイズを指定する場合はwindowにする
+            log_view.success("グラフ用CSVファイルを作成しました")
         except Exception as e:
-            st.sidebar.error("解析結果ファイルがありません")
+            log_view.error("解析結果ファイルがありません")
+            log_view.write(f"Error> {e}")
 
     # CSVダウンロード
     csv_fpath = rail_fpath.replace(".shelve", ".csv")
     try:
         with open(csv_fpath) as csv:
-            btn = st.sidebar.download_button(
-                    label="結果CSVファイルをダウンロード",
-                    data=csv,
-                    file_name=dir_area + "_" + camera_num + "_output.csv",
-                    mime="text/csv"
-                  )
+            st.sidebar.download_button(
+                label="グラフ用CSVファイルをダウンロード",
+                data=csv,
+                file_name=dir_area + "_" + camera_num + "_output.csv",
+                mime="text/csv"
+            )
     except Exception as e:
-        st.sidebar.error("CSVファイルがありません")
+        log_view.error("グラフ用CSVファイルがありません")
+        log_view.write(f"Error> {e}")
 
     # グラフ表示
     # スライダーでグラフ化する範囲を指定（サイドバーに表示）

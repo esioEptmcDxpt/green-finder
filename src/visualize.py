@@ -116,6 +116,8 @@ def plot_fig_bokeh(config, rail_fpath, graph_height, graph_width):
         graph_height(int): グラフ1枚当たりの高さ
         graph_width(int): グラフ1枚当たりの幅
     """
+    y_max = 2048
+
     # CSVファイルの保存パスを指定
     csv_fpath = rail_fpath.replace(".shelve", ".csv")
     # st.write(f"csv_fpath: {csv_fpath}")
@@ -128,8 +130,8 @@ def plot_fig_bokeh(config, rail_fpath, graph_height, graph_width):
 
     # グラフの色情報を設定する
     # グラフの数に合わせて12色だけ取得する
-    # edge(upper,lower),width,brightness=4 -> 4*3=12
-    colors = d3["Category20"][12]
+    # edge(upper,lower),width,width_std,brightness=4 -> 3*5=15
+    colors = d3["Category20"][15]
 
     # ツールチップを設定
     TOOLTIPS_EDGE=[
@@ -146,15 +148,23 @@ def plot_fig_bokeh(config, rail_fpath, graph_height, graph_width):
     TOOLTIPS_WIDTH=[
         ('image_index', '@img_idx'),
         ('image_name', '@image_name'),
-        ('image_name', '@image_name'),
+        ('ix', '@ix'),
         ('estimated_width1', '@trolley1_estimated_width'),
         ('estimated_width2', '@trolley2_estimated_width'),
         ('estimated_width3', '@trolley3_estimated_width'),
     ]
+    TOOLTIPS_WIDTH_STD=[
+        ('image_index', '@img_idx'),
+        ('image_name', '@image_name'),
+        ('ix', '@ix'),
+        ('estimated_width_std1', '@trolley1_estimated_width_std'),
+        ('estimated_width_std2', '@trolley2_estimated_width_std'),
+        ('estimated_width_std3', '@trolley3_estimated_width_std'),
+    ]
     TOOLTIPS_BRIGHTNESS=[
         ('image_index', '@img_idx'),
         ('image_name', '@image_name'),
-        ('image_name', '@image_name'),
+        ('ix', '@ix'),
         ('brightness_center1', '@trolley1_brightness_center'),
         ('brightness_center2', '@trolley2_brightness_center'),
         ('brightness_center3', '@trolley3_brightness_center'),
@@ -164,6 +174,7 @@ def plot_fig_bokeh(config, rail_fpath, graph_height, graph_width):
     p_edge = figure(
         title="Upper and Lower Edge",
         sizing_mode="stretch_width",
+        y_range=(y_max, 0),
         tooltips=TOOLTIPS_EDGE,
         height=int(graph_height),
         width=int(graph_width)
@@ -176,6 +187,14 @@ def plot_fig_bokeh(config, rail_fpath, graph_height, graph_width):
         height=int(graph_height),
         width=int(graph_width)
     )
+    p_width_std = figure(
+        title="Width Standard Deviation",
+        sizing_mode="stretch_width",
+        tooltips=TOOLTIPS_WIDTH_STD,
+        x_range=p_edge.x_range,
+        height=int(graph_height),
+        width=int(graph_width)
+    )
     p_center = figure(
         title="Brightness Center",
         sizing_mode="stretch_width",
@@ -184,7 +203,7 @@ def plot_fig_bokeh(config, rail_fpath, graph_height, graph_width):
         height=int(graph_height),
         width=int(graph_width)
     )
-    plots = [[p_edge], [p_width], [p_center]]
+    plots = [[p_edge], [p_width], [p_width_std], [p_center]]
 
     # グラフを表示する領域を作成
     grid = gridplot(
@@ -204,6 +223,9 @@ def plot_fig_bokeh(config, rail_fpath, graph_height, graph_width):
     estimated_width1 = "trolley1_estimated_width"
     estimated_width2 = "trolley2_estimated_width"
     estimated_width3 = "trolley3_estimated_width"
+    estimated_width_std1 = "trolley1_estimated_width_std"
+    estimated_width_std2 = "trolley2_estimated_width_std"
+    estimated_width_std3 = "trolley3_estimated_width_std"
     brightness_center1 = "trolley1_brightness_center"
     brightness_center2 = "trolley2_brightness_center"
     brightness_center3 = "trolley3_brightness_center"
@@ -221,13 +243,18 @@ def plot_fig_bokeh(config, rail_fpath, graph_height, graph_width):
         (p_width, estimated_width2, "estimated_width2"),
         (p_width, estimated_width3, "estimated_width3")
     ]
+    width_stds = [
+        (p_width_std, estimated_width_std1, "estimated_width_std1"),
+        (p_width_std, estimated_width_std2, "estimated_width_std2"),
+        (p_width_std, estimated_width_std3, "estimated_width_std3")
+    ]
     centers = [
         (p_center, brightness_center1, "brightness_center1"),
         (p_center, brightness_center2, "brightness_center2"),
         (p_center, brightness_center3, "brightness_center3")
     ]
     # グラフに要素を追加
-    for i, (p, line_data, label_name) in enumerate(edges + widths + centers):
+    for i, (p, line_data, label_name) in enumerate(edges + widths + width_stds + centers):
         p.line(
             x_values,
             line_data,
