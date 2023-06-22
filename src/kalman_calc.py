@@ -72,7 +72,7 @@ def track_kalman(rail_fpath, camera_num, base_images, idx, trolley_id, x_init, y
 
                 del trolley_dict[trolley_id]['kf_multi']
                 del trolley_dict[trolley_id]['trolley_id']
-                    
+
                 with shelve.open(rail_fpath, writeback=True) as rail:
                     rail_dict = copy.deepcopy(rail[camera_num][image_path])
                     rail_dict = trolley_dict
@@ -82,7 +82,7 @@ def track_kalman(rail_fpath, camera_num, base_images, idx, trolley_id, x_init, y
             st.text(f"{count}枚目の画像を処理中です。画像名は{image_name}")
             y_l = int(kalman_instance.last_state[0])
             y_u = int(kalman_instance.last_state[1])
-            
+
             try:
                 kalman_instance = kalman(trolley_id, y_l, y_u, 0)
                 kalman_instance.infer_trolley_edge(image_path)
@@ -98,7 +98,7 @@ def track_kalman(rail_fpath, camera_num, base_images, idx, trolley_id, x_init, y
                     rail_dict = copy.deepcopy(rail[camera_num][image_path])
                     rail_dict = trolley_dict
                     rail[camera_num][image_path] = rail_dict
-        
+
         if len(kalman_instance.trolley_end_reason) > 0:
             if kalman_instance.error_flg == 1:
                 st.error(kalman_instance.trolley_end_reason[0])

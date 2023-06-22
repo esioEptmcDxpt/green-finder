@@ -50,8 +50,8 @@ def test_normalKalman(trolley_id, y_init_u, y_init_l, x_init, imgPath, readConfi
     k.infer_trolley_edge(imgPath)
 
     # THEN the variables are expected values
-    assert k.missingCounts < readConfig.missing_count_limit
     assert k.error_flg == 0
+    assert k.missingCounts < readConfig.missing_count_limit
     assert k.num_obs == 1000 - x_init
 
 
