@@ -84,7 +84,7 @@ def track_kalman(rail_fpath, camera_num, base_images, idx, trolley_id, x_init, y
             y_u = int(kalman_instance.last_state[1])
             
             try:
-                kalman_instance = kalman(trolley_id, y_l, y_u)
+                kalman_instance = kalman(trolley_id, y_l, y_u, 0)
                 kalman_instance.infer_trolley_edge(image_path)
             except Exception as e:
                 st.error(e)
@@ -98,7 +98,7 @@ def track_kalman(rail_fpath, camera_num, base_images, idx, trolley_id, x_init, y
                     rail_dict = copy.deepcopy(rail[camera_num][image_path])
                     rail_dict = trolley_dict
                     rail[camera_num][image_path] = rail_dict
-
+        
         if len(kalman_instance.trolley_end_reason) > 0:
             if kalman_instance.error_flg == 1:
                 st.error(kalman_instance.trolley_end_reason[0])

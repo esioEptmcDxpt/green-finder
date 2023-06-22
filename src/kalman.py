@@ -98,7 +98,6 @@ class kalman(trolley):
             self.new_measurement[1] = self.current_state[1]
             self.missingCounts = self.missingCounts + 0.25
             self.missing_state = 'lower'
-        print(self.missingCounts, self.current_state[0], self.current_state[1])
 
         if self.missingCounts > self.missing_count_limit:
             self.end_reason = "Exceed missing Counts Limitations"
@@ -185,7 +184,6 @@ class kalman(trolley):
         y_slice = img[box_start:box_end, ix: ix + 1, 0].ravel()
 
         if (box_start < 0) or (box_end > 2500):
-            print(f" trolley Line {self.trolley_id} frame out at x={ix},y={self.last_state},box_start={box_start},box_end={box_end}")
             self.end_reason = "gone out of sight"
             self.error_flg = 3
         else:
