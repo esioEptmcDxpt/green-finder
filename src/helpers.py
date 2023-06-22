@@ -133,8 +133,8 @@ def rail_camera_initialize(rail, camera_num, base_images, trolley_ids):
     """
     if len(rail) < 2:    # 初めてrailが生成された場合は"name"だけなのでlen(rail)は1
         rail_check = False
-    else:    # 一度でも解析されるとtrolley1,2,3が追加されるため3以上
-        rail_check = any(len(rail[camera_num][image_path]) > 2 for image_path in base_images)
+    else:    # 一度でも解析されるとtrolley1,2,3が追加されるため3以上。カルマンの方ではtrolleyが一つしかない場合もあるので修正
+        rail_check = any(len(rail[camera_num][image_path]) > 0 for image_path in base_images)
     if not rail_check:
         print('rail initilize')
         print(f'dir_area: {rail["name"]}')
@@ -484,7 +484,7 @@ def trolley_dict_to_csv(config, rail_fpath, camera_num, base_images, thin_out, w
 
     # estimated_widthの標準偏差を計算して追記する
     dfs = width_std_calc(config, dfs, window)
-    
+
     # Step4: データを間引く
     dfs = dfs[::thin_out]
 
