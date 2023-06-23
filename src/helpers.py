@@ -133,7 +133,7 @@ def rail_camera_initialize(rail, camera_num, base_images, trolley_ids):
     """
     if len(rail) < 2:    # 初めてrailが生成された場合は"name"だけなのでlen(rail)は1
         rail_check = False
-    else:    # 一度でも解析されるとtrolley1,2,3が追加されるため3以上。カルマンの方ではtrolleyが一つしかない場合もあるので修正
+    else:    # 一度でも解析されるとtrolley_idが追加されるため1以上
         rail_check = any(len(rail[camera_num][image_path]) > 0 for image_path in base_images)
     if not rail_check:
         print('rail initilize')
