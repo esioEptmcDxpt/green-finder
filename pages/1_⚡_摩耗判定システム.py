@@ -1,5 +1,6 @@
 import os
 import shelve
+import copy
 import streamlit as st
 import src.helpers as helpers
 import src.visualize as vis
@@ -61,7 +62,6 @@ def ohc_wear_analysis(config):
         st.sidebar.error("画像がありません")
         st.stop()
     else:
-        st.sidebar.markdown("# ファイルのインデックスを指定してください")
         idx = st.sidebar.number_input(f"インデックス(1～{len(base_images)}で指定)",
                                       min_value=1,
                                       max_value=len(base_images) - 1) - 1
@@ -92,7 +92,7 @@ def ohc_wear_analysis(config):
         log_view.pyplot(fig)
 
     trace_method = st.sidebar.radio(
-        "システムを選択",
+        "システムを選択", 
         ("ピクセルトレース", "カルマンフィルタ")
     )
 
@@ -112,7 +112,6 @@ def ohc_wear_analysis(config):
                 rail["name"] = dir_area
                 # 解析結果が既にある場合は初期化しない
                 helpers.rail_camera_initialize(rail, camera_num, base_images, config.trolley_ids)
-
             if st.button('計算停止ボタン ＜現在の計算が終わったら停止します＞'):
                 st.stop()
                 st.error('計算停止ボタンが押されたため、計算を停止しました。再開する際には左下の計算ボタンを再度押してください。')
@@ -141,27 +140,50 @@ def ohc_wear_analysis(config):
             # outputディレクトリの準備
             os.makedirs(outpath, exist_ok=True)
 
+            # shelveファイルの初期化
             with shelve.open(rail_fpath) as rail:
                 # 線区名を記録する
                 rail["name"] = dir_area
                 # 解析結果が既にある場合は初期化しない
                 helpers.rail_camera_initialize(rail, camera_num, base_images, config.trolley_ids)
 
-            if st.button('計算停止ボタン ＜現在の計算が終わったら停止します＞'):
-                st.stop()
-                st.error('計算停止ボタンが押されたため、計算を停止しました。再開する際には左下の計算ボタンを再度押してください。')
+            # 選択画像における処理結果が既に存在しているかチェック
+            trolley_dict = helpers.load_shelves(rail_fpath, camera_num, base_images, idx)
 
-            with st.spinner("カルマンフィルタ実行中"):
-                track_kalman(
-                    rail_fpath,
-                    camera_num,
-                    base_images,
-                    idx,
-                    trolley_id,
-                    x_init,
-                    y_init_u,
-                    y_init_l,
-                )
+            if trolley_id in trolley_dict.keys():
+                st.warning('既に同じ画像での結果が存在していますが、初期化して実行します')
+
+                if st.button('計算停止ボタン ＜現在の計算が終わったら停止します＞'):
+                    st.stop()
+                    st.error('計算停止ボタンが押されたため、計算を停止しました。再開する際には左下の計算ボタンを再度押してください。')
+
+                with st.spinner("カルマンフィルタ実行中"):
+                    track_kalman(
+                            rail_fpath,
+                            camera_num,
+                            base_images,
+                            idx,
+                            trolley_id,
+                            x_init,
+                            y_init_u,
+                            y_init_l,
+                        )
+            else:
+                if st.button(f'計算停止ボタン ＜現在の計算が終わったら停止します＞'):
+                    st.stop()
+                    st.error('計算停止ボタンが押されたため、計算を停止しました。再開する際には左下の計算ボタンを再度押してください。')
+
+                with st.spinner("カルマンフィルタ実行中"):
+                    track_kalman(
+                        rail_fpath,
+                        camera_num,
+                        base_images,
+                        idx,
+                        trolley_id,
+                        x_init,
+                        y_init_u,
+                        y_init_l,
+                    )
 
     # 解析結果があるかをサイドバーに表示する
     df = helpers.check_camera_dirs(dir_area, config)
