@@ -533,3 +533,10 @@ def width_std_calc(config, dfs, window):
         dfs.insert(insert_position + 1, width_std_col, width_std_col_values)
 
     return dfs
+
+
+def load_shelves(rail_fpath, camera_num, base_images, idx):
+    image_path = base_images[idx]
+    with shelve.open(rail_fpath, writeback=True) as rail:
+        trolley_dict = copy.deepcopy(rail[camera_num][image_path])
+    return trolley_dict

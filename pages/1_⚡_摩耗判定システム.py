@@ -139,18 +139,20 @@ def ohc_wear_analysis(config):
         if submit:
             # outputディレクトリの準備
             os.makedirs(outpath, exist_ok=True)
- 
+
+            # shelveファイルの初期化
             with shelve.open(rail_fpath) as rail:
                 # 線区名を記録する
                 rail["name"] = dir_area
                 # 解析結果が既にある場合は初期化しない
                 helpers.rail_camera_initialize(rail, camera_num, base_images, config.trolley_ids)
+
+            # 選択画像における処理結果が既に存在しているかチェック
             trolley_dict = helpers.load_shelves(rail_fpath, camera_num, base_images, idx)
-            print(trolley_dict.keys())
 
             if trolley_id in trolley_dict.keys():
                 st.warning('既に同じ画像での結果が存在していますが、初期化して実行します')
-                # submit_init = st.button('初期化して実行')
+
                 if st.button('計算停止ボタン ＜現在の計算が終わったら停止します＞'):
                     st.stop()
                     st.error('計算停止ボタンが押されたため、計算を停止しました。再開する際には左下の計算ボタンを再度押してください。')
