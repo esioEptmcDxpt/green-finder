@@ -46,11 +46,11 @@ format_func:
     低(左): HD31
     低(右): HD32
   rail_names:
-    Kawagoe: 川越線
     Chuo: 中央線
     ChuoKanko: 中央緩行線
     Yamate: 山手線
     Utsunomiya: 宇都宮線
+    Kawagoe: 川越線
   station_names:
     st: 構内
     Omiya: 大宮

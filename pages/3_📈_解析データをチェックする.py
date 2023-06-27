@@ -69,6 +69,8 @@ def check_graph(config):
     #                                 value=1000)
     if st.sidebar.button("グラフ用CSVファイルを作成"):
         try:
+            log_view.write("変換ステータス...")
+            progress_bar = log_view.progress(0)
             with st.spinner("CSVファイルに変換中..."):
                 helpers.trolley_dict_to_csv(
                     config,
@@ -76,8 +78,9 @@ def check_graph(config):
                     camera_num,
                     base_images,
                     thin_out,
-                    thin_out,
-                    log_view)    # ウィンドウサイズを指定する場合はwindowにする
+                    thin_out,    # ウィンドウサイズを指定する場合はwindowにする
+                    log_view,
+                    progress_bar)    
             log_view.success("グラフ用CSVファイルを作成しました")
         except Exception as e:
             log_view.error("解析結果ファイルがありません")

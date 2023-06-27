@@ -22,16 +22,33 @@ def ohc_wear_analysis(config):
     # フォルダ直下の画像保管用ディレクトリのリスト
     # images_path = helpers.list_imagespath(config.image_dir)
     # 他ページでの結果を反映するためnonCacheを使用
+    
     images_path = helpers.list_imagespath_nonCache(config.image_dir)
 
     # 画像保管線区の選択
-    dir_area = st.sidebar.selectbox("線区のフォルダ名を選択してください", images_path)
+    st.sidebar.markdown("# ___Step1___ 線区を選択")
+    dir_search = st.sidebar.checkbox("検索ボックス表示")
+    if dir_search:
+        dir_area_key = st.sidebar.text_input("線区 検索キーワード").lower()
+        images_path_filtered = [path for path in images_path if dir_area_key in path.lower()]
+        if dir_area_key:
+
+            if not images_path_filtered:
+                st.sidebar.error("対象データがありません。検索キーワードを変更してください。")
+                st.stop()
+        else:
+            images_path_filtered = images_path
+    else:
+        images_path_filtered = images_path
+    
+    dir_area = st.sidebar.selectbox("線区のフォルダ名を選択してください", images_path_filtered)
     if dir_area is None:
         st.error("No frames fit the criteria. Please select different label or number.")
 
     # 選択された線区情報を表示する
     vis.rail_info_view(dir_area, config, main_view)
 
+    st.sidebar.markdown("# ___Step2___ 解析条件を設定")
     # 解析対象のカメラ番号を選択する
     camera_name = st.sidebar.selectbox(
                     "解析対象のカメラを選択してください",
@@ -65,7 +82,7 @@ def ohc_wear_analysis(config):
         idx = st.sidebar.number_input(f"インデックス(1～{len(base_images)}で指定)",
                                       min_value=1,
                                       max_value=len(base_images) - 1) - 1
-        st.sidebar.write(f"ファイル名:{base_images[idx]}")
+        # st.sidebar.write(f"ファイル名:{base_images[idx]}")
 
     # メインページにカメラ画像を表示する
     col1, col2 = camera_view.columns(2)
@@ -186,6 +203,7 @@ def ohc_wear_analysis(config):
                     )
 
     # 解析結果があるかをサイドバーに表示する
+    st.sidebar.markdown("# 参考 結果有無👇")
     df = helpers.check_camera_dirs(dir_area, config)
     st.sidebar.dataframe(df)
 

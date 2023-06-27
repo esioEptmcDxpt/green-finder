@@ -98,6 +98,9 @@ def track_pixel(rail_fpath, camera_num, base_images, idx, xin, test_num, log_vie
 
         if not pixel_instance_1.isInFrame and not pixel_instance_2.isInFrame and not pixel_instance_3.isInFrame:
             log_view.error(f"{file_idx + 1}枚目の画像でトロリ線が検出されなくなりました。やりなおしてください。")
+            print(f"pixel_instance_1.isInFrame> {pixel_instance_1.isInFrame}")
+            print(f"pixel_instance_2.isInFrame> {pixel_instance_2.isInFrame}")
+            print(f"pixel_instance_3.isInFrame> {pixel_instance_3.isInFrame}")
             st.stop()
 
         # 指定画像数に達したら解析を終了する

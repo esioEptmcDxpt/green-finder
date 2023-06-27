@@ -269,7 +269,7 @@ def imgs_dir_remove(path):
 
 
 # @st.cache()
-def S3_EBS_imgs_dir_Compare(S3_dir_list, EBS_dir_list):
+def S3_EBS_imgs_dir_Compare(S3_dir_list, EBS_dir_list, df_key):
     """ 2つのリストからデータの有無をまとめたデータフレームを作成
     Args:
         S3_dir_list (list): 1つ目のリスト（例）S3内のディレクトリ名のリスト
@@ -287,8 +287,13 @@ def S3_EBS_imgs_dir_Compare(S3_dir_list, EBS_dir_list):
     # S3列とTTS列の作成
     df['S3'] = df['線区名'].apply(lambda x: '○' if x in S3_dir_list else '×')
     df['TTSシステム'] = df['線区名'].apply(lambda x: '○' if x in EBS_dir_list else '×')
+    
+    if df_key:
+        df_filtered = df[df['線区名'].str.contains(df_key)].copy()
+    else:
+        df_filtered = df.copy()
 
-    return df
+    return df_filtered
 
 
 @st.cache()
@@ -374,18 +379,21 @@ def trim_trolley_dict(config, trolley_dict, img_path):
         for key in trolley_dict[img_path][trolley_id].keys():
             if not trolley_dict[img_path][trolley_id][key]:
                 # 空のリストの場合
-                # print("Empty list")
                 trolley_dict[img_path][trolley_id][key] = [np.nan] * config.max_len
-            # elif isinstance(trolley_dict[img_path][trolley_id][key], (int, float, str)):
             elif not isinstance(trolley_dict[img_path][trolley_id][key], list):
                 # リスト以外(数値等)の場合
-                # print("Not list")
                 trolley_dict[img_path][trolley_id][key] = [trolley_dict[img_path][trolley_id][key]] + [np.nan] * (config.max_len - 1)
             value_len = len(trolley_dict[img_path][trolley_id][key])
-            # print(f"{key} -> type: {type(trolley_dict[img_path][trolley_id][key])}, len:{value_len}")
             if config.max_len < value_len:
                 config.max_len = value_len
-        # print(f"Max Length: {config.max_len}")
+            if value_len < config.max_len:
+                # 要素がmax_len(例:1000行)未満の場合
+                if key == "ix":
+                    # 連番で埋める
+                    trolley_dict[img_path][trolley_id][key].extend(range(value_len, config.max_len))
+                else:
+                    # NaN埋めする
+                    trolley_dict[img_path][trolley_id][key].extend([np.nan] * (config.max_len - value_len))
     return trolley_dict
 
 
@@ -448,7 +456,39 @@ def read_trolley_dict(config, trolley_dict, img_idx, img_path, thin_out):
     return df_trolley
 
 
-def trolley_dict_to_csv(config, rail_fpath, camera_num, base_images, thin_out, window, log_view):
+def trolley_dict_fillna(img_idx, img_path, dfs_columns):
+    """
+    Args:
+        img_idx (int): 画像ファイルのインデックス
+        img_path (str): 画像ファイルのパス
+        dfs_columns(DataFrame columns): 結合先の列名
+    Return:
+        df_trolley(DataFrame): NaN埋めされたデータフレーム
+    """
+    df_trolley = pd.DataFrame(columns=dfs_columns)
+    df_trolley['ix'] = range(img_idx * 1000, img_idx * 1000 + 1000)
+    df_trolley.fillna(np.nan)
+    dir_area, camera_num = img_path.split("/")[1:3]
+    image_name = img_path.split('/')[-1]
+    # データフレームに挿入する項目・位置を指定
+    columns_to_insert = [("img_idx", img_idx, 0),
+                         ("dir_area", dir_area, 1),
+                         ("camera_num", camera_num, 2),
+                         ("image_name", image_name, 3)]
+
+    # データフレームにインデックス・画像名等を挿入する
+    for col_name, col_value, idx in columns_to_insert:
+        if col_name not in df_trolley.columns:
+            df_trolley.insert(idx, col_name, col_value)
+        else:
+            df_trolley[col_name] = col_value
+    
+    return df_trolley
+
+
+
+
+def trolley_dict_to_csv(config, rail_fpath, camera_num, base_images, thin_out, window, log_view, progress_bar):
     """ ShelveファイルからCSVファイルを生成する
     Args:
         config: 設定ファイル
@@ -458,6 +498,7 @@ def trolley_dict_to_csv(config, rail_fpath, camera_num, base_images, thin_out, w
         thin_out (int): CSVの行を間引く間隔 (例)50 ⇒ 横50pxずつデータを記録する
         window (int): 標準偏差の計算に用いるウィンドウサイズ
         log_view(st.empty): Streamlitのコンテナ（ログ表示用のエリアを指定）
+        progress_bar(st.progress): Streamlitのプログレスバー
     """
     # CSVファイルの保存パスを指定
     csv_fpath = rail_fpath.replace(".shelve", ".csv")
@@ -470,22 +511,29 @@ def trolley_dict_to_csv(config, rail_fpath, camera_num, base_images, thin_out, w
     # 読み込んだ辞書からデータフレームを作成する
     dfs = pd.DataFrame()
     for img_idx, img_path in enumerate(base_images):
-        # print(f"{idx}> img_path: {img_path}")
-        try:
+        # 変換の進捗をプログレスバーに表示する
+        progress_bar.progress(img_idx / len(base_images))
+        # img_pathの結果が空でないときに実行する
+        # log_view.write(f"{img_idx}> img_path: {img_path}")
+        if len(trolley_dict[img_path]):
+            # 解析結果があるとき
             df_trolley = read_trolley_dict(config, trolley_dict, img_idx, img_path, thin_out).copy()
             # ixの値が連番になるように修正
             df_trolley['ix'] = df_trolley['ix'] + 1000 * img_idx
-            dfs = pd.concat([dfs, df_trolley], ignore_index=True)
-        except Exception as e:
-            log_view.write("この画像までCSV変換しました👇")
-            log_view.write(f"{img_idx}> img_path: {img_path}")
-            # st.sidebar.error(f"Error> {e}")
+        elif img_idx:
+            # img_pathの結果が空のとき & img_idxが0以外のとき
+            df_trolley = trolley_dict_fillna(img_idx, img_path, dfs.columns).copy()
+        elif img_idx:
+            # 1枚目の画像でエラーになる
+            print("解析結果がないため、CSVファイルを生成できませんでした。")
             break
+        # df_trolleyを結合する
+        dfs = pd.concat([dfs, df_trolley], ignore_index=True)
 
     # estimated_widthの標準偏差を計算して追記する
     dfs = width_std_calc(config, dfs, window)
 
-    # Step4: データを間引く
+    # データを間引く
     dfs = dfs[::thin_out]
 
     # データフレームからCSVファイルを生成してoutputディレクトリ内に保存する
