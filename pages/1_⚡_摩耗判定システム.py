@@ -62,7 +62,7 @@ def ohc_wear_analysis(config):
         st.sidebar.error("画像がありません")
         st.stop()
     else:
-        idx = st.sidebar.number_input(f"インデックス(1～{len(base_images)}で指定)",
+        idx = st.sidebar.number_input(f"インデックス(1～{len(base_images)-1}で指定)",
                                       min_value=1,
                                       max_value=len(base_images) - 1) - 1
         st.sidebar.write(f"ファイル名:{base_images[idx]}")
