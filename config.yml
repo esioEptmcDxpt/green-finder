@@ -36,6 +36,20 @@ default:
     - brightness_mean
     - brightness_std
     - current_state
+  result_keys_kalman:
+    - estimated_upper_edge
+    - estimated_lower_edge
+    - measured_upper_edge
+    - measured_lower_edge
+    - brightness_center
+    - brightness_mean
+    - brightness_std
+    - estimated_upper_edge_variance
+    - estimated_lower_edge_variance
+    - estimated_slope_variance
+    - trolley_end_reason
+    - mask_edgelog_1
+    - mask_edgelog_2
 
 format_func:
   camera_name_to_type:

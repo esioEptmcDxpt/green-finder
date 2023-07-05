@@ -58,16 +58,14 @@ class trolley(object):
         self.estimated_upper_edge_variance = []
         self.estimated_lower_edge_variance = []
         self.estimated_slope_variance = []
-        self.blightness_center = []
-        self.blightness_mean = []
-        self.blightness_std = []
         self.measured_upper_edge = []
         self.measured_lower_edge = []
         self.missing_state = []
         self.trolley_end_reason = []
         self.brightness = []
         self.new_measurement = ma.array(np.zeros(2))
-        self.mask = [False, False]
+        self.mask_edgelog_1 = []
+        self.mask_edgelog_2 = []
         self.center = 0
         self.last_boundary_expectation = []
         self.last_brightness = [0, 0]  # list[0, 0] = list[edge_id1, edge_id2]
