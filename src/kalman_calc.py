@@ -1,6 +1,7 @@
 import streamlit as st
 import shelve
 import copy
+from src.config import appProperties
 from src.kalman import kalman
 
 
@@ -19,6 +20,7 @@ def track_kalman(rail_fpath, camera_num, base_images, idx, trolley_id, x_init, y
         y_l (int): 後続画像用の上部Y座標の初期指定値（前画像の最終推定値流用）
         y_u (int): 後続画像用の下部Y座標の初期指定値（前画像の最終推定値流用）
     """
+    config = appProperties('config.yml')
     y_l = y_init_l
     y_u = y_init_u
 
@@ -45,37 +47,36 @@ def track_kalman(rail_fpath, camera_num, base_images, idx, trolley_id, x_init, y
                 break
             finally:
                 if x_init > 0:
-                    kalman_dict = vars(kalman_instance)
-                    update_params = ['estimated_upper_edge',
-                                     'estimated_lower_edge',
-                                     'estimated_width',
-                                     'estimated_slope',
-                                     'estimated_upper_edge_variance',
-                                     'estimated_lower_edge_variance',
-                                     'estimated_slope_variance',
-                                     'blightness_center',
-                                     'blightness_mean',
-                                     'blightness_std',
-                                     'measured_upper_edge',
-                                     'measured_lower_edge']
-                    for key in update_params:
-                        if len(trolley_dict[trolley_id]) == 0:
-                            # 初期値が0でない and image_pathのKeyが0の時、新規作成だと判断し、途中までの値は全てNaNで埋める
-                            kalman_dict[key] = [float('nan') for i in range(x_init)] + kalman_dict[key]
-                        else:
-                            # 初期値が0でない and 途中までの値が存在していればその値を挿入
-                            kalman_dict[key] = trolley_dict[trolley_id][key][0:x_init] + kalman_dict[key]
-                    trolley_dict[trolley_id] = kalman_dict
+                    kalman_dict = {trolley_id: 
+                                    {key: value for key, value in vars(kalman_instance).items() if key in config.result_keys_kalman}
+                                   }
+                    
+                    # 途中開始する場合、値を埋めるために処理を追加
+                    if len(trolley_dict[trolley_id]) == 0:
+                        for key in kalman_dict[trolley_id].keys():
+                            if key in ['estimated_upper_edge', 'estimated_lower_edge']:
+                                kalman_dict[trolley_id][key] = [np.int16(0) for i in range(x_init)] + kalman_dict[trolley_id][key]
+                            elif key in ['mask_edgelog_1', 'mask_edgelog_2']:
+                                kalman_dict[trolley_id][key] = [np.int8(0) for i in range(x_init)] + kalman_dict[trolley_id][key]
+                            elif key in ['trolley_end_reason']:
+                                continue
+                            else:
+                                kalman_dict[trolley_id][key] = [np.float16(0) for i in range(x_init)] + kalman_dict[trolley_id][key]
+                    else:
+                        for key in kalman_dict[trolley_id].keys():
+                            if key in ['trolley_end_reason']:
+                                continue
+                            else:
+                                kalman_dict[trolley_id][key] = trolley_dict[trolley_id][key][0:x_init] + kalman_dict[trolley_id][key]
 
                 else:
-                    trolley_dict[trolley_id] = vars(kalman_instance)
-
-                del trolley_dict[trolley_id]['kf_multi']
-                del trolley_dict[trolley_id]['trolley_id']
+                    kalman_dict = {trolley_id: 
+                                    {key: value for key, value in vars(kalman_instance).items() if key in config.result_keys_kalman}
+                                   }
 
                 with shelve.open(rail_fpath, writeback=True) as rail:
                     rail_dict = copy.deepcopy(rail[camera_num][image_path])
-                    rail_dict = trolley_dict
+                    rail_dict = kalman_dict
                     rail[camera_num][image_path] = rail_dict
 
         else:
@@ -91,12 +92,12 @@ def track_kalman(rail_fpath, camera_num, base_images, idx, trolley_id, x_init, y
                 st.error("予期せぬ理由で処理が途中終了しました。管理者に問い合わせてください")
                 break
             finally:
-                trolley_dict[trolley_id] = vars(kalman_instance)
-                del trolley_dict[trolley_id]['kf_multi']
-                del trolley_dict[trolley_id]['trolley_id']
+                kalman_dict = {trolley_id: 
+                                {key: value for key, value in vars(kalman_instance).items() if key in config.result_keys_kalman}
+                              }
                 with shelve.open(rail_fpath, writeback=True) as rail:
                     rail_dict = copy.deepcopy(rail[camera_num][image_path])
-                    rail_dict = trolley_dict
+                    rail_dict = kalman_dict
                     rail[camera_num][image_path] = rail_dict
 
         if len(kalman_instance.trolley_end_reason) > 0:
