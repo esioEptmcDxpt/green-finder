@@ -4,8 +4,9 @@ import streamlit as st
 import math
 import numpy as np
 from PIL import Image
-from .config import appProperties
-from .trolley import trolley
+from src.config import appProperties
+from src.trolley import trolley
+from src.logger import my_logger
 
 
 class pixel(trolley):
@@ -121,10 +122,10 @@ class pixel(trolley):
         self.im_slice = None    # 左端縦1px分の輝度情報
         return
 
-    def load_picture(self, image_path):
-        # self.picture['file'] = file
-        self.im_org = np.array(Image.open(image_path))
-        self.brightness = []    # 摺面の輝度
+    @my_logger
+    def load_picture(self, im_org):
+        # ピクセル配列を格納する
+        self.im_org = im_org
         self.im_trolley = np.zeros_like(self.im_org).astype(int)
 
         # 画面全体の平均輝度（背景輝度と同等とみなす）を算出
@@ -144,6 +145,16 @@ class pixel(trolley):
         self.sigmoid_edge_l = (-sigmoid_max + sigmoid_min) / (1 + np.exp(-x/0.5)) + sigmoid_max
         return
 
+    @my_logger
+    def load_picture_duplicate(self, trolley1):
+        self.im_org = trolley1.im_org
+        self.im_trolley = trolley1.im_trolley
+        self.avg_brightness = trolley1.avg_brightness
+        self.sigmoid_edge_u = trolley1.sigmoid_edge_u
+        self.sigmoid_edge_l = trolley1.sigmoid_edge_l
+        return
+
+    @my_logger
     def set_init_val(self, ix, xin, auto_edge):
         img = self.im_org
         if auto_edge:
@@ -174,37 +185,57 @@ class pixel(trolley):
             st.stop()
         return
 
+    @my_logger
     def search_trolley_init(self, ix):
         """ 摺面エッジ初期位置の自動サーチ
         Args:
             ix (int): エッジ検索するx座標(基本は0 ※左端)
         """
         # 横1ピクセル、縦全ピクセル切り出し
-        img = self.im_org
-        im_slice_org = np.copy(img[:, ix, 0])
-        im_slice = np.copy(img[:, ix, 0])
+        # img = self.im_org
+        im_slice_org = np.copy(self.im_org[:, ix, 0])
+        im_slice = np.copy(self.im_org[:, ix, 0])
 
         # サーチ範囲
         st = 7
         ed = 2040
 
         # 切り出した縦ピクセルのノイズを除去
-        im_slice[st:ed] = [round(np.mean(im_slice_org[i-1:i+2])) for i in range(st, ed)]
+        # im_slice[st:ed] = [round(np.mean(im_slice_org[i-1:i+2])) for i in range(st, ed)]
+
+        # 高速化のために修正中👇
+        kernel = np.ones(3) / 3
+        im_slice_padded = np.pad(im_slice_org, (1, 1), 'constant', constant_values=0)
+        im_slice[st:ed] = np.round(np.convolve(im_slice_padded, kernel, 'valid')[st-1:ed-1])
 
         # 理想的なエッジ配列に近い場所をサーチ
-        slope_val_u, slope_val_l, slope_idx_u, slope_idx_l = [], [], [], []
-        for i in range(st, ed):
-            diff1 = np.sum(abs(im_slice[i-7:i+8].astype(int) - self.sigmoid_edge_u.astype(int)))
-            slope_val_u.append(diff1)
-            slope_idx_u.append(i)
-            diff2 = np.sum(abs(im_slice[i-7:i+8].astype(int) - self.sigmoid_edge_l.astype(int)))
-            slope_val_l.append(diff2)
-            slope_idx_l.append(i)
-        slope_val_u = np.array(slope_val_u)
-        slope_val_l = np.array(slope_val_l)
-        # slope_sort_u = np.argsort(slope_val_u)    # 未使用
-        # slope_sort_l = np.argsort(slope_val_l)    # 未使用
+        # ここから元のコード
+        # slope_val_u, slope_val_l, slope_idx_u, slope_idx_l = [], [], [], []
+        # for i in range(st, ed):
+        #     diff1 = np.sum(abs(im_slice[i-7:i+8].astype(int) - self.sigmoid_edge_u.astype(int)))
+        #     slope_val_u.append(diff1)
+        #     slope_idx_u.append(i)
+        #     diff2 = np.sum(abs(im_slice[i-7:i+8].astype(int) - self.sigmoid_edge_l.astype(int)))
+        #     slope_val_l.append(diff2)
+        #     slope_idx_l.append(i)
+        # slope_val_u = np.array(slope_val_u)
+        # slope_val_l = np.array(slope_val_l)
+        # # slope_sort_u = np.argsort(slope_val_u)    # 未使用
+        # # slope_sort_l = np.argsort(slope_val_l)    # 未使用
+        # ここまで元のコード👆
+        
+        # 高速化のために修正中👇
+        window_size = 15  # window size is 15 in the original code because i-7:i+8 creates a window of size 15
+        im_slice_windows = np.lib.stride_tricks.sliding_window_view(im_slice.astype(int), (window_size,))
 
+        diff_u = np.abs(im_slice_windows - self.sigmoid_edge_u.astype(int))
+        slope_val_u = np.sum(diff_u, axis=1)
+
+        diff_l = np.abs(im_slice_windows - self.sigmoid_edge_l.astype(int))
+        slope_val_l = np.sum(diff_l, axis=1)
+        # ここまで修正中👆
+
+        # ここから元のコード
         list_idx, list_val = [], []
         for idx_u, val_u in enumerate(slope_val_u):
             for idx_l, val_l in enumerate(slope_val_l):
@@ -222,6 +253,27 @@ class pixel(trolley):
                 ):
                     list_idx.append([idx_l+st, idx_u+st, -1])  # 摺面が立ち下があり→立上りの場合
                     list_val.append(val_u + val_l)
+        # ここまで元のコード👆
+        
+        # 高速化のために修正中👇
+        idx_u, idx_l = np.ogrid[:len(slope_val_u), :len(slope_val_l)]
+        val_u, val_l = slope_val_u[:, None], slope_val_l[None, :]
+        total_val = val_u + val_l
+
+        # Conditions for the upper < lower case
+        cond1 = (idx_u < idx_l) & (0 <= (idx_l - idx_u) <= 35) & (total_val <= 400)
+        list_idx1 = np.array([idx_u[cond1]+st, idx_l[cond1]+st, np.ones(np.sum(cond1))]).T
+        list_val1 = total_val[cond1]
+
+        # Conditions for the lower < upper case
+        cond2 = (idx_l < idx_u) & (0 <= (idx_u - idx_l) <= 35) & (total_val <= 400)
+        list_idx2 = np.array([idx_l[cond2]+st, idx_u[cond2]+st, -np.ones(np.sum(cond2))]).T
+        list_val2 = total_val[cond2]
+
+        # Combine the results
+        list_idx = np.concatenate([list_idx1, list_idx2])
+        list_val = np.concatenate([list_val1, list_val2])
+        # ここまで修正中👆
 
         search_list = []
         for i in np.argsort(list_val):
@@ -708,7 +760,8 @@ class pixel(trolley):
         self.last_lower_line.append(value_l)
         return
 
-    def infer_trolley_edge(self, image_path, trolley2, trolley3):
+    @my_logger
+    def infer_trolley_edge(self, trolley2, trolley3):
         """ 各x座標ごとにピクセルエッジの計算を実施
             trolley1インスタンスでの実行を想定
         Args:
@@ -735,11 +788,6 @@ class pixel(trolley):
             self.update_result_dic(ix)
             trolley2.update_result_dic(ix)
             trolley3.update_result_dic(ix)
-
-            # デバッグ用
-            # if ix % 100 == 0:
-            #     print(f"{ix}> last_state          :{self.last_state}")
-            #     print(f"{ix}> estimated_upper_edge:{self.estimated_upper_edge[ix]} ")
 
         return
 

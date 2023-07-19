@@ -203,7 +203,7 @@ def get_s3_image_list(path):
 
 
 # @st.experimental_singleton(show_spinner=True)
-def get_file_content_as_string(img_dir_name, path):
+def get_S3_file_content_as_string(img_dir_name, path):
     """ S3バケットからファイルを取得してくる
     Args:
         img_dir_name (str): backet内の画像ディレクトリ名(例)imgs/
@@ -287,7 +287,7 @@ def S3_EBS_imgs_dir_Compare(S3_dir_list, EBS_dir_list, df_key):
     # S3列とTTS列の作成
     df['S3'] = df['線区名'].apply(lambda x: '○' if x in S3_dir_list else '×')
     df['TTSシステム'] = df['線区名'].apply(lambda x: '○' if x in EBS_dir_list else '×')
-    
+
     if df_key:
         df_filtered = df[df['線区名'].str.contains(df_key)].copy()
     else:
@@ -374,7 +374,7 @@ def trim_trolley_dict(config, trolley_dict, img_path):
         デバッグ用のprint文はコメントアウトしています。
         必要な場合は有効化してください。
     """
-    for trolley_id in config.trolley_ids:
+    for trolley_id in config.trolley_ids[:len(trolley_dict[img_path])]:
         # print(trolley_id)
         for key in trolley_dict[img_path][trolley_id].keys():
             if not trolley_dict[img_path][trolley_id][key]:
@@ -397,7 +397,7 @@ def trim_trolley_dict(config, trolley_dict, img_path):
     return trolley_dict
 
 
-def read_trolley_dict(config, trolley_dict, img_idx, img_path, thin_out):
+def read_trolley_dict(config, trolley_dict, img_idx, img_path, column_name, thin_out):
     """ 画像パスごとにデータを読み込む
     Args:
         config: 設定用ファイル
@@ -412,25 +412,31 @@ def read_trolley_dict(config, trolley_dict, img_idx, img_path, thin_out):
 
     # Step1: trolley_dictをデータフレームとして読み込む
     df_trolley = pd.DataFrame()
+    # trolley_idごとにデータフレームとして読み込む
     for idx, trolley_id in enumerate(config.trolley_ids):
-        column_name = [trolley_id + "_" + key for key in list(trolley_dict[img_path][trolley_id].keys())]
-        df = pd.DataFrame(trolley_dict[img_path][trolley_id]).copy()
-        df.columns = column_name
+        if trolley_id in trolley_dict[img_path]:
+            # trolley_idに対応する結果がある場合
+            # データフレームを読み込む
+            df = pd.DataFrame(trolley_dict[img_path][trolley_id]).copy()
+            # データフレームとresult_keysを比較して、不足する列を追加する
+            diff_list = list(set(config.result_keys) - set(list(df.columns)))
+            for column in diff_list:
+                df[column] = pd.Series([np.nan]*config.max_len, index=df.index)
+            # result_keysと同じ順番に並び替える
+            df = df.reindex(columns=config.result_keys, copy=False)
+        else:
+            # trolley_idに対応する結果が無い場合
+            # 空のデータフレームを作成する
+            df_forNoneTrolley = pd.DataFrame(index=range(config.max_len), columns=config.result_keys)
+
         # dfとdf_trolleyを連結する
         if not idx:
             df_trolley = df.copy()
-            # trolley1のときだけ劣名をixに変更
-            df_trolley = df_trolley.rename(columns={trolley_id + "_ix": 'ix'})
         else:
             df_trolley = pd.concat([df_trolley, df], axis=1).copy()
 
-    # Step2: 読み込まれたデータフレームを整形する
-    # trolleyX_ixの列を削除
-    for col in df_trolley.columns:
-        # 列名に'_ix'が含まれる場合
-        if '_ix' in col:
-            # その列を削除
-            df_trolley = df_trolley.drop(col, axis=1)
+    # Step2: 読み込まれたデータフレームの列名を変更する
+    df_trolley.columns = column_name
 
     # Step3: インデックスや画像名等の情報を記録する
     # 線区名、カメラ名、画像名を取得
@@ -510,6 +516,13 @@ def trolley_dict_to_csv(config, rail_fpath, camera_num, base_images, thin_out, w
 
     # 読み込んだ辞書からデータフレームを作成する
     dfs = pd.DataFrame()
+    # CSVの列名を準備する
+    column_name = [
+        f"{trolley_id}_{key}"
+        for trolley_id in config.trolley_ids
+        for key in config.result_keys
+    ]
+    # trolley_dictの内容を読み込む
     for img_idx, img_path in enumerate(base_images):
         # 変換の進捗をプログレスバーに表示する
         progress_bar.progress(img_idx / len(base_images))
@@ -517,9 +530,7 @@ def trolley_dict_to_csv(config, rail_fpath, camera_num, base_images, thin_out, w
         # log_view.write(f"{img_idx}> img_path: {img_path}")
         if len(trolley_dict[img_path]):
             # 解析結果があるとき
-            df_trolley = read_trolley_dict(config, trolley_dict, img_idx, img_path, thin_out).copy()
-            # ixの値が連番になるように修正
-            df_trolley['ix'] = df_trolley['ix'] + 1000 * img_idx
+            df_trolley = read_trolley_dict(config, trolley_dict, img_idx, img_path, column_name, thin_out).copy()
         elif img_idx:
             # img_pathの結果が空のとき & img_idxが0以外のとき
             df_trolley = trolley_dict_fillna(img_idx, img_path, dfs.columns).copy()

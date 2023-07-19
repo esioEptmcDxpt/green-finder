@@ -1,6 +1,8 @@
 import datetime
 import traceback
 import streamlit as st
+import numpy as np
+from PIL import Image
 import shelve
 import copy
 from .config import appProperties
@@ -16,6 +18,8 @@ def track_pixel(rail_fpath, camera_num, base_images, idx, xin, test_num, log_vie
         idx (int): 画像のインデックス
         xin (int): 摺動面中心の位置指定値
     """
+    print('<<< track pixel run >>>')
+
     config = appProperties('config.yml')
     auto_edge = False
     y_init_l, y_init_u = 0, 0    # カルマンフィルタと整合させるためダミーで作成
@@ -27,7 +31,11 @@ def track_pixel(rail_fpath, camera_num, base_images, idx, xin, test_num, log_vie
     for file_idx, image_path in enumerate(base_images[idx:], idx):
         dt01 = datetime.datetime.now()
 
+        # パスから画像ファイル名だけを抽出する
         image_name = image_path.split('/')[-1]
+
+        # 計算用の画像配列を取得
+        im_org = np.array(Image.open(image_path))
 
         # pixelクラスが無い場合、インスタンスを生成
         # pixel_instance_1 = pixel(1, y_init_l, y_init_u)
@@ -49,9 +57,12 @@ def track_pixel(rail_fpath, camera_num, base_images, idx, xin, test_num, log_vie
         try:
             log_view.write(f'{file_idx + 1}枚目の画像を処理中です。画像名は{image_name}')
             # 画像を読み込む
-            pixel_instance_1.load_picture(image_path)
-            pixel_instance_2.load_picture(image_path)
-            pixel_instance_3.load_picture(image_path)
+            pixel_instance_1.load_picture(im_org)
+            # pixel_instance_2.load_picture(im_org)
+            # pixel_instance_3.load_picture(im_org)
+            # 画像の読込結果を他のインスタンスにもコピーする
+            pixel_instance_2.load_picture_duplicate(pixel_instance_1)
+            pixel_instance_3.load_picture_duplicate(pixel_instance_1)
 
             # 初期位置の設定 一番最初の画像でだけ実行する
             if file_idx == idx:
@@ -63,7 +74,7 @@ def track_pixel(rail_fpath, camera_num, base_images, idx, xin, test_num, log_vie
             # st.write(f'last_state:{pixel_instance_1.last_state}')
 
             # x座標(ix)ごとにトロリ線検出
-            pixel_instance_1.infer_trolley_edge(image_path, pixel_instance_2, pixel_instance_3)
+            pixel_instance_1.infer_trolley_edge(pixel_instance_2, pixel_instance_3)
 
         except Exception as e:
             # 途中で妙な値を拾った場合

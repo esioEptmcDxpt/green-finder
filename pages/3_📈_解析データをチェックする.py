@@ -80,7 +80,7 @@ def check_graph(config):
                     thin_out,
                     thin_out,    # ウィンドウサイズを指定する場合はwindowにする
                     log_view,
-                    progress_bar)    
+                    progress_bar)
             log_view.success("グラフ用CSVファイルを作成しました")
         except Exception as e:
             log_view.error("解析結果ファイルがありません")

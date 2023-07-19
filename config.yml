@@ -22,20 +22,23 @@ default:
     - trolley2
     - trolley3
   result_keys: 
-    - ix
-    - upper_boundary
-    - lower_boundary
+    # - ix
     - estimated_upper_edge
     - estimated_lower_edge
     - estimated_width
-    - estimated_slope
-    - estimated_upper_edge_variance
-    - estimated_lower_edge_variance
-    - estimated_slope_variance
     - brightness_center
     - brightness_mean
     - brightness_std
-    - current_state
+    - estimated_slope    # pixel
+    - upper_boundary    # pixel
+    - lower_boundary    # pixel
+    - estimated_upper_edge_variance    # kalman
+    - estimated_lower_edge_variance    # kalman
+    - estimated_slope_variance    # kalman
+    - trolley_end_reason
+    - mask_edgelog_1
+    - mask_edgelog_2
+    # - current_state
   result_keys_kalman:
     - estimated_upper_edge
     - estimated_lower_edge
@@ -65,6 +68,7 @@ format_func:
     Yamate: 山手線
     Utsunomiya: 宇都宮線
     Kawagoe: 川越線
+    Takasaki: 高崎線
   station_names:
     st: 構内
     Omiya: 大宮
@@ -72,6 +76,27 @@ format_func:
     Nishioomiya: 西大宮
     Sashiougi: 指扇
     Minamifuruya: 南古谷
+    Miyahara: 宮原
+    Ageo: 上尾
+    Kitaageo: 北上尾
+    Okegawa: 桶川
+    Kitamoto: 北本
+    Kounosu: 鴻巣
+    Kitakounosu: 北鴻巣
+    Fukiage: 吹上
+    Gyouda: 行田
+    Kumagaya: 熊谷
+    KumagayaFT: 熊谷貨物タ
+    Kagohara: 籠原
+    Fukaya: 深谷
+    Okabe: 岡部
+    Honjo: 本庄
+    Jinbohara: 神保原
+    Shinmachi: 新町
+    Kitafujioka: 北藤岡
+    Kuragano: 倉賀野
+    TakasakiSY: 高崎操
+    Takasaki: 高崎
     Tokyo: 東京
     Kanda: 神田
     Ochanomizu: 御茶ノ水
@@ -91,7 +116,6 @@ format_func:
     Ogikubo: 荻窪
     Nishiogikubo: 西荻窪
     Kichijoji: 吉祥寺
-    Miyahara: 宮原
     Ueno: 上野
     Nippori: 日暮里
     Tabata: 田端

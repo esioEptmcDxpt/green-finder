@@ -96,22 +96,23 @@ def ohc_wear_analysis(config):
         st.write("🖥️解析結果")
         st.write("解析結果を表示中")
         try:
-            out_img = vis.out_image_load(rail_fpath, camera_num, base_images[idx], config)
+            out_img = vis.out_image_load(rail_fpath, camera_num, base_images[idx], cam_img, config)
         except Exception as e:
             out_img = []
         if not out_img:
             st.error("解析結果がありません")
         else:
             st.image(out_img)
-    # with col3:
+
+    st.sidebar.markdown("# ___Step3___ 解析を実行する")
+    trace_method = st.sidebar.radio(
+        "システムを選択",
+        ("ピクセルトレース", "カルマンフィルタ")
+    )
+
     if st.sidebar.button("📈初期値入力用メモリ付画像を表示する"):
         fig = vis.plot_fig(base_images[idx])
         log_view.pyplot(fig)
-
-    trace_method = st.sidebar.radio(
-        "システムを選択", 
-        ("ピクセルトレース", "カルマンフィルタ")
-    )
 
     # ピクセルトレースを実行
     if trace_method == "ピクセルトレース":

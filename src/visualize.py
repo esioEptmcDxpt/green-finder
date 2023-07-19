@@ -47,18 +47,19 @@ def ohc_image_load(image_path):
 
 
 # @st.cache
-def out_image_load(rail_fpath, camera_num, image_path, config):
+def out_image_load(rail_fpath, camera_num, image_path, img, config):
     """
     Args:
         rail_fpath(str): shelveファイルのパス
         camera_num(str): 選択されたカメラ番号(例)HD11
-        image_path(str): 画像パス名(例)base_images[idx]で指定
-        config(dict): 設定ファイル
+        image_path(str): 画像ファイルパス
+        img (PIL Image): PIL画像オブジェクト(例)cam_img
+        config(instance): 設定ファイル
     Return:
         out_img(PIL Image): 結果を重ね合わせた画像データ
     """
     # オリジナル画像データを取得する
-    img = Image.open(image_path)
+    # img = Image.open(image_path)
 
     # 画像をnumpy配列に変換
     img_array = np.array(img)
@@ -73,11 +74,17 @@ def out_image_load(rail_fpath, camera_num, image_path, config):
     # shelveファイルを開いて辞書にセットする
     with shelve.open(rail_fpath) as rail:
         trolley_dict = copy.deepcopy(rail[camera_num][image_path])
+    
+    # 解析結果をチェックする
+    trolley_count = len(trolley_dict)
+    if not trolley_count:
+        # 解析結果が無ければ関数を抜ける
+        return []
 
-    # データを描画
-    # trolley_idのひとつめのixを使用する
-    x_values = trolley_dict[config.trolley_ids[0]]["ix"]
-    for trolley_id in config.trolley_ids:
+    # データを描画 
+    x_values = list(range(config.max_len))
+    for trolley_id in config.trolley_ids[:trolley_count]:
+        # trolley_idの数だけ繰り返す
         upper_edge = trolley_dict[trolley_id]["estimated_upper_edge"]
         lower_edge = trolley_dict[trolley_id]["estimated_lower_edge"]
         for x, y1, y2 in zip(x_values, upper_edge, lower_edge):
@@ -89,7 +96,6 @@ def out_image_load(rail_fpath, camera_num, image_path, config):
                 color_lower = [0, 255, 0] if background_brightness < 128 else [255, 0, 0]  # 緑または赤
                 img_array[y2, x] = color_lower
 
-    # out_img
     return Image.fromarray(img_array)
 
 
