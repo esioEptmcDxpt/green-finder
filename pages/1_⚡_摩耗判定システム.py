@@ -147,7 +147,7 @@ def ohc_wear_analysis(config):
     elif trace_method == "カルマンフィルタ":
         # カルマンフィルタの初期値設定
         form = st.sidebar.form(key="kalman_init")
-        trolley_id = form.selectbox("トロリ線のIDを入力してください", ("trolley1", "trolley2"))
+        trolley_id = form.selectbox("トロリ線のIDを入力してください", ("trolley1", "trolley2", "trolley3"))
         x_init = form.number_input("横方向の初期座標を入力してください", 0, 999)
         y_init_l = form.number_input("上記X座標でのエッジ位置（上端）の座標を入力してください", 0, 1999)
         y_init_u = form.number_input("上記X座標でのエッジ位置（下端）の座標を入力してください", 0, 1999)
