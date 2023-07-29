@@ -27,6 +27,8 @@ def ohc_wear_analysis(config):
 
     # 画像保管線区の選択
     st.sidebar.markdown("# ___Step1___ 線区を選択")
+
+    # 検索ボックスによる対象フォルダの絞り込み
     dir_search = st.sidebar.checkbox("検索ボックス表示")
     if dir_search:
         dir_area_key = st.sidebar.text_input("線区 検索キーワード").lower()
@@ -40,7 +42,8 @@ def ohc_wear_analysis(config):
             images_path_filtered = images_path
     else:
         images_path_filtered = images_path
-    
+
+    # 対象フォルダの選択
     dir_area = st.sidebar.selectbox("線区のフォルダ名を選択してください", images_path_filtered)
     if dir_area is None:
         st.error("No frames fit the criteria. Please select different label or number.")
@@ -68,11 +71,11 @@ def ohc_wear_analysis(config):
 
     # 結果保存用のshelveファイル(rail)の保存パスを指定
     rail_fpath = outpath + "/rail.shelve"
-    with shelve.open(rail_fpath) as rail:
-        # 線区名を記録する
-        rail["name"] = dir_area
-        # 解析結果が既にある場合は初期化しない
-        helpers.rail_camera_initialize(rail, camera_num, base_images, config.trolley_ids)
+    # with shelve.open(rail_fpath) as rail:
+    #     # 線区名を記録する
+    #     rail["name"] = dir_area
+    #     # 解析結果が既にある場合は初期化しない
+    #     helpers.rail_camera_initialize(rail, camera_num, base_images, config.trolley_ids)
 
     # ファイルインデックスを指定する
     if not base_images:
@@ -148,7 +151,7 @@ def ohc_wear_analysis(config):
     elif trace_method == "カルマンフィルタ":
         # カルマンフィルタの初期値設定
         form = st.sidebar.form(key="kalman_init")
-        trolley_id = form.selectbox("トロリ線のIDを入力してください", ("trolley1", "trolley2"))
+        trolley_id = form.selectbox("トロリ線のIDを入力してください", ("trolley1", "trolley2", "trolley3"))
         x_init = form.number_input("横方向の初期座標を入力してください", 0, 999)
         y_init_l = form.number_input("上記X座標でのエッジ位置（上端）の座標を入力してください", 0, 1999)
         y_init_u = form.number_input("上記X座標でのエッジ位置（下端）の座標を入力してください", 0, 1999)

@@ -74,7 +74,7 @@ def out_image_load(rail_fpath, camera_num, image_path, img, config):
     # shelveファイルを開いて辞書にセットする
     with shelve.open(rail_fpath) as rail:
         trolley_dict = copy.deepcopy(rail[camera_num][image_path])
-    
+
     # 解析結果をチェックする
     trolley_count = len(trolley_dict)
     if not trolley_count:

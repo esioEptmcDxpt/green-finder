@@ -58,8 +58,6 @@ def track_pixel(rail_fpath, camera_num, base_images, idx, xin, test_num, log_vie
             log_view.write(f'{file_idx + 1}枚目の画像を処理中です。画像名は{image_name}')
             # 画像を読み込む
             pixel_instance_1.load_picture(im_org)
-            # pixel_instance_2.load_picture(im_org)
-            # pixel_instance_3.load_picture(im_org)
             # 画像の読込結果を他のインスタンスにもコピーする
             pixel_instance_2.load_picture_duplicate(pixel_instance_1)
             pixel_instance_3.load_picture_duplicate(pixel_instance_1)
