@@ -137,12 +137,6 @@ def rail_camera_initialize(rail, camera_num, base_images, trolley_ids):
     #     # railを初期化
     #     rail[camera_num] = {image_path: {trolley_id: {} for trolley_id in trolley_ids} for image_path in base_images}
     
-    with shelve.open(rail_fpath) as rail:
-        # 線区名を記録する
-        rail["name"] = dir_area
-        rail_dict = copy.deepcopy()
-    
-    
     # 修正前のコード👇
     if len(rail) < 2:    # 初めてrailが生成された場合は"name"だけなのでlen(rail)は1
         rail_check = False
