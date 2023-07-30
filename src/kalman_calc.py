@@ -36,7 +36,7 @@ def track_kalman(rail_fpath, camera_num, base_images, idx, trolley_id, x_init, y
         # ループの最初は入力した初期値を使い、それ以降は処理時の最後の値を使用するように変更
         count += 1
         if count == 1:
-            st.text(f"{count}枚目の画像を処理中です。画像名は{image_name}")
+            st.text(f"{idx + count}枚目の画像を処理中です。画像名は{image_name}")
 
             try:
                 kalman_instance = kalman(trolley_id, y_l, y_u, x_init)
@@ -82,7 +82,7 @@ def track_kalman(rail_fpath, camera_num, base_images, idx, trolley_id, x_init, y
                     rail[camera_num][image_path] = rail_dict
 
         else:
-            st.text(f"{count}枚目の画像を処理中です。画像名は{image_name}")
+            st.text(f"{idx + count}枚目の画像を処理中です。画像名は{image_name}")
             y_l = int(kalman_instance.last_state[0])
             y_u = int(kalman_instance.last_state[1])
 

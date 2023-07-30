@@ -131,28 +131,35 @@ def rail_camera_initialize(rail, camera_num, base_images, trolley_ids):
         base_images (str): 画像のファイルパスのリスト
         trolley_ids (str): trolley_idのテンプレ (trolley1, trolley2 ...)
     """
-    if len(rail) < 2 or not any(len(rail[camera_num].get(image_path, {})) > 0 for image_path in base_images):
-        print('rail initilize')
-        print(f'dir_area: {rail["name"]}')
-        # railを初期化
-        rail[camera_num] = {image_path: {trolley_id: {} for trolley_id in trolley_ids} for image_path in base_images}
-    
-    # 修正前のコード👇
-    # if len(rail) < 2:    # 初めてrailが生成された場合は"name"だけなのでlen(rail)は1
-    #     rail_check = False
-    # else:    # 一度でも解析されるとtrolley_idが追加されるため1以上
-    #     rail_check = any(len(rail[camera_num][image_path]) > 0 for image_path in base_images)
-    # if not rail_check:
+    # if len(rail) < 2 or not any(len(rail[camera_num].get(image_path, {})) > 0 for image_path in base_images):
     #     print('rail initilize')
     #     print(f'dir_area: {rail["name"]}')
     #     # railを初期化
-    #     # base_imagesと同じ長さの空のdictionaryを作成してrailを初期化
-    #     blankdict_size = [{}] * len(base_images)
-    #     rail[camera_num] = dict(zip(base_images, blankdict_size))
-    #     # trolley_idsと同じ長さの空のdictionaryを作成してrailを初期化
-    #     blankdict_size = [{}] * len(trolley_ids)
-    #     for image_path in base_images:
-    #         rail[camera_num][image_path] = dict(zip(trolley_ids, blankdict_size))
+    #     rail[camera_num] = {image_path: {trolley_id: {} for trolley_id in trolley_ids} for image_path in base_images}
+    
+    with shelve.open(rail_fpath) as rail:
+        # 線区名を記録する
+        rail["name"] = dir_area
+        rail_dict = copy.deepcopy()
+    
+    
+    # 修正前のコード👇
+    if len(rail) < 2:    # 初めてrailが生成された場合は"name"だけなのでlen(rail)は1
+        rail_check = False
+    else:    # 一度でも解析されるとtrolley_idが追加されるため1以上
+        # rail_check = any(len(rail[camera_num][image_path]) > 0 for image_path in base_images)
+        rail_check = any(key in image_path for key in trolley[camera_num].keys() for image_path in base_images)
+    if not rail_check:
+        print('rail initilize')
+        print(f'dir_area: {rail["name"]}')
+        # railを初期化
+        # base_imagesと同じ長さの空のdictionaryを作成してrailを初期化
+        blankdict_size = [{}] * len(base_images)
+        rail[camera_num] = dict(zip(base_images, blankdict_size))
+        # trolley_idsと同じ長さの空のdictionaryを作成してrailを初期化
+        blankdict_size = [{}] * len(trolley_ids)
+        for image_path in base_images:
+            rail[camera_num][image_path] = dict(zip(trolley_ids, blankdict_size))
     return
 
 
