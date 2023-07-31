@@ -242,6 +242,7 @@ class kalman(trolley):
             self.update_Kalman(ix, img)
 
             if len(self.trolley_end_reason) > 0:
+                self.ix = ix
                 break
 
 

@@ -83,18 +83,20 @@ def out_image_load(rail_fpath, camera_num, image_path, img, config):
 
     # データを描画 
     x_values = list(range(config.max_len))
-    for trolley_id in config.trolley_ids[:trolley_count]:
+    for trolley_id in config.trolley_ids:
         # trolley_idの数だけ繰り返す
-        upper_edge = trolley_dict[trolley_id]["estimated_upper_edge"]
-        lower_edge = trolley_dict[trolley_id]["estimated_lower_edge"]
-        for x, y1, y2 in zip(x_values, upper_edge, lower_edge):
-            # estimated_upper_edgeとestimated_lower_edgeが0でない場合のみ色を変更
-            if y1 != 0:
-                color_upper = [0, 255, 0] if background_brightness < 128 else [255, 0, 0]  # 緑または赤
-                img_array[y1, x] = color_upper
-            if y2 != 0:
-                color_lower = [0, 255, 0] if background_brightness < 128 else [255, 0, 0]  # 緑または赤
-                img_array[y2, x] = color_lower
+        if trolley_id in trolley_dict.keys():
+            # trolley_idが存在する場合だけ実行
+            upper_edge = trolley_dict[trolley_id]["estimated_upper_edge"]
+            lower_edge = trolley_dict[trolley_id]["estimated_lower_edge"]
+            for x, y1, y2 in zip(x_values, upper_edge, lower_edge):
+                # estimated_upper_edgeとestimated_lower_edgeが0でない場合のみ色を変更
+                if y1 != 0:
+                    color_upper = [0, 255, 0] if background_brightness < 128 else [255, 0, 0]  # 緑または赤
+                    img_array[y1, x] = color_upper
+                if y2 != 0:
+                    color_lower = [0, 255, 0] if background_brightness < 128 else [255, 0, 0]  # 緑または赤
+                    img_array[y2, x] = color_lower
 
     return Image.fromarray(img_array)
 
