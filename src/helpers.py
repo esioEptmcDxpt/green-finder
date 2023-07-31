@@ -142,7 +142,7 @@ def rail_camera_initialize(rail, camera_num, base_images, trolley_ids):
         rail_check = False
     else:    # 一度でも解析されるとtrolley_idが追加されるため1以上
         # rail_check = any(len(rail[camera_num][image_path]) > 0 for image_path in base_images)
-        rail_check = any(key in image_path for key in trolley[camera_num].keys() for image_path in base_images)
+        rail_check = any(key in image_path for key in rail[camera_num].keys() for image_path in base_images)
     if not rail_check:
         print('rail initilize')
         print(f'dir_area: {rail["name"]}')
