@@ -242,7 +242,6 @@ class kalman(trolley):
             self.update_Kalman(ix, img)
 
             if len(self.trolley_end_reason) > 0:
-                self.ix = ix    # 停止時のixを記録する
                 break
 
 

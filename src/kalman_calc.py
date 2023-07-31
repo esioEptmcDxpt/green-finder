@@ -36,7 +36,7 @@ def track_kalman(rail_fpath, camera_num, base_images, idx, trolley_id, x_init, y
         # ループの最初は入力した初期値を使い、それ以降は処理時の最後の値を使用するように変更
         count += 1
         if count == 1:
-            st.text(f"{idx + count}枚目の画像を処理中です。画像名は{image_name}")
+            st.text(f"{count}枚目の画像を処理中です。画像名は{image_name}")
 
             try:
                 kalman_instance = kalman(trolley_id, y_l, y_u, x_init)
@@ -48,7 +48,7 @@ def track_kalman(rail_fpath, camera_num, base_images, idx, trolley_id, x_init, y
             finally:
                 if x_init > 0:
                     kalman_dict = {trolley_id: 
-                                   {key: value for key, value in vars(kalman_instance).items() if key in config.result_keys}
+                                    {key: value for key, value in vars(kalman_instance).items() if key in config.result_keys_kalman}
                                    }
 
                     # 途中開始する場合、値を埋めるために処理を追加
@@ -70,8 +70,8 @@ def track_kalman(rail_fpath, camera_num, base_images, idx, trolley_id, x_init, y
                                 kalman_dict[trolley_id][key] = trolley_dict[trolley_id][key][0:x_init] + kalman_dict[trolley_id][key]
 
                 else:
-                    kalman_dict = {trolley_id:
-                                   {key: value for key, value in vars(kalman_instance).items() if key in config.result_keys}
+                    kalman_dict = {trolley_id: 
+                                    {key: value for key, value in vars(kalman_instance).items() if key in config.result_keys_kalman}
                                    }
 
                 with shelve.open(rail_fpath, writeback=True) as rail:
@@ -80,7 +80,7 @@ def track_kalman(rail_fpath, camera_num, base_images, idx, trolley_id, x_init, y
                     rail[camera_num][image_path] = rail_dict
 
         else:
-            st.text(f"{idx + count}枚目の画像を処理中です。画像名は{image_name}")
+            st.text(f"{count}枚目の画像を処理中です。画像名は{image_name}")
             y_l = int(kalman_instance.last_state[0])
             y_u = int(kalman_instance.last_state[1])
 
@@ -92,8 +92,8 @@ def track_kalman(rail_fpath, camera_num, base_images, idx, trolley_id, x_init, y
                 st.error("予期せぬ理由で処理が途中終了しました。管理者に問い合わせてください")
                 break
             finally:
-                kalman_dict = {trolley_id:
-                               {key: value for key, value in vars(kalman_instance).items() if key in config.result_keys}
+                kalman_dict = {trolley_id: 
+                                {key: value for key, value in vars(kalman_instance).items() if key in config.result_keys_kalman}
                               }
                 with shelve.open(rail_fpath, writeback=True) as rail:
                     rail_dict = copy.deepcopy(rail[camera_num][image_path])
