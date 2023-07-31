@@ -113,9 +113,28 @@ def ohc_wear_analysis(config):
         ("ピクセルトレース", "カルマンフィルタ")
     )
 
-    if st.sidebar.button("📈初期値入力用メモリ付画像を表示する"):
-        fig = vis.plot_fig(base_images[idx])
-        log_view.pyplot(fig)
+    # メモリ付き画像を表示
+    support_line = st.sidebar.checkbox("補助線を使用")
+    if support_line:
+        form_support_line = st.sidebar.form(key="support_line_form")
+        hori_pos = form_support_line.number_input("補助線の横位置", 0, 999, 0)
+        # 選択したシステムによって横線の本数を変更
+        vert_pos = [0, 0]
+        if trace_method == "ピクセルトレース":
+            vert_pos[0] = form_support_line.number_input("補助線の縦位置", 0, 2047, 1000)
+        if trace_method == "カルマンフィルタ":
+            vert_pos[0] = form_support_line.number_input("補助線の縦位置(上側)", 0, 2047, 1000)
+            vert_pos[1] = form_support_line.number_input("補助線の縦位置(下側)", 0, 2047, 1500)
+        spline_submit = form_support_line.form_submit_button("📈初期値入力用メモリ付画像を表示する")
+        if spline_submit:
+            fig = vis.plot_fig(base_images[idx], vert_pos, hori_pos)
+            log_view.pyplot(fig)
+    else:
+        hori_pos = 0
+        vert_pos = [0, 0]
+        if st.sidebar.button("📈初期値入力用メモリ付画像を表示する"):
+            fig = vis.plot_fig(base_images[idx], vert_pos, hori_pos)
+            log_view.pyplot(fig)
 
     # ピクセルトレースを実行
     if trace_method == "ピクセルトレース":

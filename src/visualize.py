@@ -13,7 +13,7 @@ import src.helpers as helpers
 
 
 # @st.cache(hash_funcs={matplotlib.figure.Figure: lambda _: None})
-def plot_fig(image_path):
+def plot_fig(image_path, vert_pos, hori_pos):
     """ メモリ付き画像を生成する
     Args:
         image_path(str): 元の画像パス
@@ -25,6 +25,8 @@ def plot_fig(image_path):
     margin = 0.05
     xpixels, ypixels = 1000, 2200
     mag = 2
+    LINECOLOR = 'red'
+    LINEWIDTH = 0.5
 
     figsize = mag * (1 + margin) * ypixels / dpi, mag * (1 + margin) * xpixels / dpi
 
@@ -33,6 +35,16 @@ def plot_fig(image_path):
     ax.set_yticks(range(0, 2200, 50))
     ax.minorticks_on()
     ax.imshow(im_base, interpolation="none")
+
+    # 指定位置に線を描画する
+    # 数値が0で無ければ描画する
+    if hori_pos:
+        ax.axvline(x=hori_pos, color='red', linewidth=LINEWIDTH)
+    if vert_pos[0]:
+        ax.axhline(y=vert_pos[0], color='red', linewidth=LINEWIDTH)
+    if vert_pos[1]:
+        ax.axhline(y=vert_pos[1], color='red', linewidth=LINEWIDTH)
+
     return fig
 
 
