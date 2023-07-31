@@ -117,6 +117,7 @@ def ohc_wear_analysis(config):
     support_line = st.sidebar.checkbox("補助線を使用")
     if support_line:
         form_support_line = st.sidebar.form(key="support_line_form")
+        form_support_line.write(" 0 にすると線を表示しません")
         hori_pos = form_support_line.number_input("補助線の横位置", 0, 999, 0)
         # 選択したシステムによって横線の本数を変更
         vert_pos = [0, 0]
