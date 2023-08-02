@@ -147,6 +147,7 @@ class kalman(trolley):
         mask_int = [np.int8(i) for i in self.mask]
 
         # 保存する
+        self.ix.append(ix)
         self.estimated_upper_edge.append(upper_edge)
         self.estimated_lower_edge.append(lower_edge)
         self.estimated_width.append(width)
@@ -242,7 +243,6 @@ class kalman(trolley):
             self.update_Kalman(ix, img)
 
             if len(self.trolley_end_reason) > 0:
-                self.ix = ix
                 break
 
 
