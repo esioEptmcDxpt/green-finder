@@ -22,7 +22,7 @@ default:
     - trolley2
     - trolley3
   result_keys: 
-    # - ix
+    - ix
     - estimated_upper_edge
     - estimated_lower_edge
     - estimated_width
@@ -40,6 +40,7 @@ default:
     - mask_edgelog_2
     # - current_state
   result_keys_kalman:
+    - ix
     - estimated_upper_edge
     - estimated_lower_edge
     - measured_upper_edge

@@ -49,7 +49,7 @@ def track_kalman(rail_fpath, camera_num, base_images, idx, trolley_id, x_init, y
             finally:
                 if x_init > 0:
                     kalman_dict = {trolley_id: 
-                                    {key: value for key, value in vars(kalman_instance).items() if key in config.result_keys_kalman}
+                                    {key: value for key, value in vars(kalman_instance).items() if key in config.result_keys}
                                    }
 
                     # 途中開始する場合、値を埋めるために処理を追加
@@ -72,7 +72,7 @@ def track_kalman(rail_fpath, camera_num, base_images, idx, trolley_id, x_init, y
 
                 else:
                     kalman_dict = {trolley_id: 
-                                    {key: value for key, value in vars(kalman_instance).items() if key in config.result_keys_kalman}
+                                    {key: value for key, value in vars(kalman_instance).items() if key in config.result_keys}
                                    }
 
                 with shelve.open(rail_fpath, writeback=True) as rail:
@@ -94,7 +94,7 @@ def track_kalman(rail_fpath, camera_num, base_images, idx, trolley_id, x_init, y
                 break
             finally:
                 kalman_dict = {trolley_id: 
-                                {key: value for key, value in vars(kalman_instance).items() if key in config.result_keys_kalman}
+                                {key: value for key, value in vars(kalman_instance).items() if key in config.result_keys}
                               }
                 with shelve.open(rail_fpath, writeback=True) as rail:
                     rail_dict = copy.deepcopy(rail[camera_num][image_path])
