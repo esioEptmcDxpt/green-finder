@@ -67,6 +67,10 @@ class appProperties:
         return self.config['default']['result_keys_kalman']
 
     @property
+    def columns_list(self):
+        return self.config['default']['columns_list']
+
+    @property
     def camera_name_to_type(self):
         return self.config['format_func']['camera_name_to_type']
 

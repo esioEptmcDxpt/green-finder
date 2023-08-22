@@ -34,7 +34,6 @@ def ohc_wear_analysis(config):
         dir_area_key = st.sidebar.text_input("線区 検索キーワード").lower()
         images_path_filtered = [path for path in images_path if dir_area_key in path.lower()]
         if dir_area_key:
-
             if not images_path_filtered:
                 st.sidebar.error("対象データがありません。検索キーワードを変更してください。")
                 st.stop()
@@ -47,6 +46,7 @@ def ohc_wear_analysis(config):
     dir_area = st.sidebar.selectbox("線区のフォルダ名を選択してください", images_path_filtered)
     if dir_area is None:
         st.error("No frames fit the criteria. Please select different label or number.")
+        st.stop()
 
     # 選択された線区情報を表示する
     vis.rail_info_view(dir_area, config, main_view)

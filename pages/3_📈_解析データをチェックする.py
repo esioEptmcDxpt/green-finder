@@ -12,8 +12,7 @@ def check_graph(config):
     """
     # マルチページの設定
     st.set_page_config(page_title="解析データチェッカー")
-    st.sidebar.markdown("# 解析データチェッカー")
-    st.sidebar.write("👇順番に実行")
+    st.sidebar.header("解析データチェッカー")
 
     # メインページのコンテナを配置する
     main_view = st.container()
@@ -24,17 +23,31 @@ def check_graph(config):
     images_path = helpers.list_imagespath_nonCache(config.output_dir)
 
     # 画像保管線区の選択
-    st.sidebar.markdown("# ① 解析対象を指定する")
-    dir_area = st.sidebar.selectbox("線区のフォルダ名を選択してください", images_path)
+    st.sidebar.markdown("# ___Step1___ 線区を選択")
+
+    # 検索ボックスによる対象フォルダの絞り込み
+    dir_search = st.sidebar.checkbox("検索ボックス表示")
+    if dir_search:
+        dir_area_key = st.sidebar.text_input("線区 検索キーワード").lower()
+        images_path_filtered = [path for path in images_path if dir_area_key in path.lower()]
+        if dir_area_key:
+            if not images_path_filtered:
+                st.sidebar.error("対象データがありません。検索キーワードを変更してください。")
+                st.stop()
+        else:
+            images_path_filtered = images_path
+    else:
+        images_path_filtered = images_path
+
+    # 対象フォルダの選択
+    dir_area = st.sidebar.selectbox("線区のフォルダ名を選択してください", images_path_filtered)
     if dir_area is None:
         st.error("No frames fit the criteria. Please select different label or number.")
+        st.stop()
 
-    rail_name, st_name, updown_name, measurement_date, measurement_time = helpers.rail_message(dir_area, config)
-    with main_view.container():
-        st.write(f"現在の線区：{rail_name} {st_name}({updown_name})")
-        st.write(f"　　測定日：{measurement_date} ＜{measurement_time}＞")
-        st.success("##### 👈別の線区を表示する場合は、再度「線区フォルダを決定」してください")
-
+    # 選択された線区情報を表示する
+    vis.rail_info_view(dir_area, config, main_view)
+    
     # 解析対象のカメラ番号を選択する
     camera_name = st.sidebar.selectbox(
                     "解析対象のカメラを選択してください",
@@ -59,17 +72,17 @@ def check_graph(config):
     st.sidebar.dataframe(df)
 
     # CSV変換
-    st.sidebar.markdown("# ② グラフ用CSVデータを作成")
-    thin_out = st.sidebar.number_input("画像間引き間隔(1～1000で指定)",
-                                       min_value=1,
-                                       max_value=1000,
-                                       value=100)
-    # window = st.sidebar.number_input("標準偏差計算のウィンドウサイズを指定",
-    #                                 min_value=1,
-    #                                 value=1000)
-    if st.sidebar.button("グラフ用CSVファイルを作成"):
+    st.sidebar.markdown("# ___Step2___ 結果をCSVデータに変換")
+    # thin_out = st.sidebar.number_input("画像間引き間隔(1～1000で指定)",
+    #                                    min_value=1,
+    #                                    max_value=1000,
+    #                                    value=100)
+    window = st.sidebar.number_input("標準偏差計算のウィンドウサイズを指定",
+                                    min_value=1,
+                                    value=100)
+    if st.sidebar.button("CSVファイルを作成"):
         try:
-            log_view.write("変換ステータス...")
+            log_view.write("一生懸命変換しています🐁...")
             progress_bar = log_view.progress(0)
             with st.spinner("CSVファイルに変換中..."):
                 helpers.trolley_dict_to_csv(
@@ -77,8 +90,8 @@ def check_graph(config):
                     rail_fpath,
                     camera_num,
                     base_images,
-                    thin_out,
-                    thin_out,    # ウィンドウサイズを指定する場合はwindowにする
+                    # thin_out,
+                    window,    # ウィンドウサイズを指定する場合はwindowにする
                     log_view,
                     progress_bar)
             log_view.success("グラフ用CSVファイルを作成しました")
@@ -102,13 +115,21 @@ def check_graph(config):
 
     # グラフ表示
     # スライダーでグラフ化する範囲を指定（サイドバーに表示）
-    st.sidebar.markdown("# ③ グラフを表示する")
+    st.sidebar.markdown("# ___Step3___ グラフを表示する")
     form_graph = st.sidebar.form(key="graph_init")
     # img_num = form_graph.select_slider("グラフ化する画像を指定",
     #                                    options=list(range(len(base_images))),
     #                                    value=(0, 50))
-    graph_height = form_graph.text_input("グラフの表示高さを指定する(単位:px)", "200")
-    graph_width = form_graph.text_input("グラフの表示幅を指定する(単位:px)", "700")
+    graph_height = form_graph.number_input("グラフの表示高さを指定する(単位:px)",
+                                           min_value=1,
+                                           value=200)
+    graph_width = form_graph.number_input("グラフの表示幅を指定する(単位:px)",
+                                          min_value=1,
+                                          value=700)
+    graph_thinout = form_graph.number_input("表示データ間引き間隔(基本:100)",
+                                       min_value=1,
+                                       # max_value=1000,
+                                       value=100)
     form_graph.warning("＜確認＞CSVは作成済ですか？")
     submit = form_graph.form_submit_button("グラフを作成する")
     if submit:
@@ -118,7 +139,8 @@ def check_graph(config):
                 config,
                 rail_fpath,
                 graph_height,
-                graph_width
+                graph_width,
+                graph_thinout
             )
             # グラフを表示
             graph_view.bokeh_chart(grid, use_container_width=True)

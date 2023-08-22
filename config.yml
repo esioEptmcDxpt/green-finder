@@ -21,11 +21,13 @@ default:
     - trolley1
     - trolley2
     - trolley3
-  result_keys: 
-    - ix
+  result_keys:
+    # - ix
+    - measured_upper_edge
+    - measured_lower_edge
     - estimated_upper_edge
     - estimated_lower_edge
-    - estimated_width
+    # - estimated_width    # lower-upperで計算する
     - brightness_center
     - brightness_mean
     - brightness_std
@@ -51,6 +53,31 @@ default:
     - estimated_upper_edge_variance
     - estimated_lower_edge_variance
     - estimated_slope_variance
+    - trolley_end_reason
+    - mask_edgelog_1
+    - mask_edgelog_2
+  columns_list:
+    - image_idx
+    - ix
+    - measurement_area
+    - camera_num
+    - image_name
+    - trolley_id
+    - measured_upper_edge
+    - measured_lower_edge
+    - estimated_upper_edge
+    - estimated_lower_edge
+    - estimated_width
+    - estimated_width_std
+    - brightness_center
+    - brightness_mean
+    - brightness_std
+    - estimated_slope    # pixel
+    - upper_boundary    # pixel
+    - lower_boundary    # pixel
+    - estimated_upper_edge_variance    # kalman
+    - estimated_lower_edge_variance    # kalman
+    - estimated_slope_variance    # kalman
     - trolley_end_reason
     - mask_edgelog_1
     - mask_edgelog_2
@@ -126,7 +153,21 @@ format_func:
     Tamachi: 田町
     Shinagawa: 品川
     Oosaki: 大崎
+    Akihabara: 秋葉原
+    Okachimachi: 御徒町
+    Nishinippori: 西日暮里
+    Komagome: 駒込
+    Sugamo: 巣鴨
+    Ootsuka: 大塚
+    Ikebukuro: 池袋
+    Mejiro: 目白
     Takadanobaba: 高田馬場
+    Shinookubo: 新大久保
+    Harajuku: 原宿
+    Shibuya: 渋谷
+    Ebisu: 恵比寿
+    Meguro: 目黒
+    Gotanda: 五反田
   rail_type_names:
     up: 上り
     down: 下り

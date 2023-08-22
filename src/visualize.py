@@ -128,13 +128,14 @@ def rail_info_view(dir_area, config, main_view):
     return
 
 
-def plot_fig_bokeh(config, rail_fpath, graph_height, graph_width):
+def plot_fig_bokeh(config, rail_fpath, graph_height, graph_width, graph_thinout):
     """
     Args:
         config: 設定ファイル
         rail_fpath(str): shelveファイルのパス
         graph_height(int): グラフ1枚当たりの高さ
         graph_width(int): グラフ1枚当たりの幅
+        graph_thinout(int): データフレームを間引く間隔
     """
     y_max = 2048
 
@@ -144,6 +145,10 @@ def plot_fig_bokeh(config, rail_fpath, graph_height, graph_width):
 
     # CSVファイルからデータフレームを作成する
     df_csv = pd.read_csv(csv_fpath, encoding='cp932')
+
+    # データを間引く
+    # そのままだとメモリ不足等で表示不可…
+    df_csv = df_csv[::graph_thinout]
 
     # CSVから作成したデータフレームをbokeh形式で読み込む
     source = ColumnDataSource(data=df_csv)
