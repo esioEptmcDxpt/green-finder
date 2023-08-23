@@ -71,6 +71,10 @@ class appProperties:
         return self.config['default']['columns_list']
 
     @property
+    def csv_dtype(self):
+        return self.config['default']['csv_dtype']
+
+    @property
     def camera_name_to_type(self):
         return self.config['format_func']['camera_name_to_type']
 

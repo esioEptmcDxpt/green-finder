@@ -116,16 +116,30 @@ def check_graph(config):
     # グラフ表示
     # スライダーでグラフ化する範囲を指定（サイドバーに表示）
     st.sidebar.markdown("# ___Step3___ グラフを表示する")
+    ix_set_flag = st.sidebar.checkbox("横方向の表示範囲を指定")
     form_graph = st.sidebar.form(key="graph_init")
     # img_num = form_graph.select_slider("グラフ化する画像を指定",
     #                                    options=list(range(len(base_images))),
     #                                    value=(0, 50))
+    # グラフサイズ単位 bokeh:px, pyplot:インチ
     graph_height = form_graph.number_input("グラフの表示高さを指定する(単位:px)",
                                            min_value=1,
-                                           value=200)
+                                           value=200)    # bokeh
+                                           # value=10)    # pyplot
     graph_width = form_graph.number_input("グラフの表示幅を指定する(単位:px)",
                                           min_value=1,
-                                          value=700)
+                                          value=700)    # bokeh
+                                          # value=8)    # pyplot
+    if ix_set_flag:
+        ix_view_range_start = form_graph.number_input("横方向の表示位置を指定(開始)",
+                                                     min_value=0,
+                                                     value=0)
+        ix_view_range_end = form_graph.number_input("横方向の表示位置を指定(終了)",
+                                                     min_value=0,
+                                                     value=10000000)
+    else:
+        ix_view_range_start = 0
+        ix_view_range_end = 100
     graph_thinout = form_graph.number_input("表示データ間引き間隔(基本:100)",
                                        min_value=1,
                                        # max_value=1000,
@@ -133,17 +147,37 @@ def check_graph(config):
     form_graph.warning("＜確認＞CSVは作成済ですか？")
     submit = form_graph.form_submit_button("グラフを作成する")
     if submit:
+        if ix_view_range_start <= ix_view_range_end:
+            ix_view_range = (ix_view_range_start, ix_view_range_end)
+            # log_view.write(f'ix_view_range:{ix_view_range} {type(ix_view_range)}')
+        else:
+            log_view.error("横方向の表示位置の入力が誤っています")
+            st.stop()
         with st.spinner("グラフ作成中"):
             # グラフデータを作成する
+            # for bokeh
             grid = vis.plot_fig_bokeh(
                 config,
                 rail_fpath,
                 graph_height,
                 graph_width,
-                graph_thinout
+                graph_thinout,
+                ix_set_flag,
+                ix_view_range
             )
-            # グラフを表示
             graph_view.bokeh_chart(grid, use_container_width=True)
+            # for matplotlib
+            # fig, (ax1, ax2, ax3, ax4) = vis.plot_fig_plt(
+            #     config,
+            #     rail_fpath,
+            #     camera_num,
+            #     graph_height,
+            #     graph_width,
+            #     graph_thinout,
+            #     ix_set_flag,
+            #     ix_view_range
+            # )
+            # graph_view.pyplot(fig)
     return
 
 

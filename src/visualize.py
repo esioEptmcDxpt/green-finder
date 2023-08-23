@@ -4,8 +4,10 @@ import copy
 import matplotlib
 import numpy as np
 import pandas as pd
-from bokeh.plotting import figure, gridplot
+from bokeh.plotting import figure, gridplot, show
+from bokeh.layouts import column
 from bokeh.models import ColumnDataSource, FuncTickFormatter
+from bokeh.models import NumeralTickFormatter
 from bokeh.palettes import d3
 import streamlit as st
 from PIL import Image
@@ -128,7 +130,7 @@ def rail_info_view(dir_area, config, main_view):
     return
 
 
-def plot_fig_bokeh(config, rail_fpath, graph_height, graph_width, graph_thinout):
+def plot_fig_bokeh(config, rail_fpath, graph_height, graph_width, graph_thinout, ix_set_flag, ix_view_range):
     """
     Args:
         config: 設定ファイル
@@ -144,11 +146,16 @@ def plot_fig_bokeh(config, rail_fpath, graph_height, graph_width, graph_thinout)
     # st.write(f"csv_fpath: {csv_fpath}")
 
     # CSVファイルからデータフレームを作成する
-    df_csv = pd.read_csv(csv_fpath, encoding='cp932')
+    # df_csv = pd.read_csv(csv_fpath, encoding='cp932')
+    df_csv = pd.read_csv(csv_fpath, engine='c', dtype=config.csv_dtype)    # 列の型を指定
 
     # データを間引く
     # そのままだとメモリ不足等で表示不可…
     df_csv = df_csv[::graph_thinout]
+    
+    # ユーザ入力に基づいて表示範囲を限定する
+    if ix_set_flag:
+        df_csv = df_csv.query(f'{ix_view_range[0]} <= ix <= {ix_view_range[1]}').copy()
 
     # CSVから作成したデータフレームをbokeh形式で読み込む
     source = ColumnDataSource(data=df_csv)
@@ -156,43 +163,33 @@ def plot_fig_bokeh(config, rail_fpath, graph_height, graph_width, graph_thinout)
     # グラフの色情報を設定する
     # グラフの数に合わせて12色だけ取得する
     # edge(upper,lower),width,width_std,brightness=4 -> 3*5=15
-    colors = d3["Category20"][15]
+    colors = d3["Category20"][20]
 
     # ツールチップを設定
     TOOLTIPS_EDGE=[
-        ('image_index', '@img_idx'),
+        ('image_index', '@image_idx'),
         ('image_name', '@image_name'),
         ('ix', '@ix'),
-        ('upper_edge1', '@trolley1_estimated_upper_edge'),
-        ('lower_edge1', '@trolley1_estimated_lower_edge'),
-        ('upper_edge2', '@trolley2_estimated_upper_edge'),
-        ('lower_edge2', '@trolley2_estimated_lower_edge'),
-        ('upper_edge3', '@trolley3_estimated_upper_edge'),
-        ('lower_edge3', '@trolley3_estimated_lower_edge'),
+        ('upper_edge', '@estimated_upper_edge'),
+        ('lower_edge', '@estimated_lower_edge'),
     ]
     TOOLTIPS_WIDTH=[
-        ('image_index', '@img_idx'),
+        ('image_index', '@image_idx'),
         ('image_name', '@image_name'),
         ('ix', '@ix'),
-        ('estimated_width1', '@trolley1_estimated_width'),
-        ('estimated_width2', '@trolley2_estimated_width'),
-        ('estimated_width3', '@trolley3_estimated_width'),
+        ('estimated_width', '@estimated_width'),
     ]
     TOOLTIPS_WIDTH_STD=[
-        ('image_index', '@img_idx'),
+        ('image_index', '@image_idx'),
         ('image_name', '@image_name'),
         ('ix', '@ix'),
-        ('estimated_width_std1', '@trolley1_estimated_width_std'),
-        ('estimated_width_std2', '@trolley2_estimated_width_std'),
-        ('estimated_width_std3', '@trolley3_estimated_width_std'),
+        ('estimated_width_std', '@estimated_width_std'),
     ]
     TOOLTIPS_BRIGHTNESS=[
-        ('image_index', '@img_idx'),
+        ('image_index', '@image_idx'),
         ('image_name', '@image_name'),
         ('ix', '@ix'),
-        ('brightness_center1', '@trolley1_brightness_center'),
-        ('brightness_center2', '@trolley2_brightness_center'),
-        ('brightness_center3', '@trolley3_brightness_center'),
+        ('brightness_center', '@brightness_center'),
     ]
 
     # グラフを作成
@@ -239,54 +236,42 @@ def plot_fig_bokeh(config, rail_fpath, graph_height, graph_width, graph_thinout)
     # グラフにデータを追加
     # 列名と変数名を紐づける
     x_values = "ix"
-    upper_edge1 = "trolley1_estimated_upper_edge"
-    lower_edge1 = "trolley1_estimated_lower_edge"
-    upper_edge2 = "trolley2_estimated_upper_edge"
-    lower_edge2 = "trolley2_estimated_lower_edge"
-    upper_edge3 = "trolley3_estimated_upper_edge"
-    lower_edge3 = "trolley3_estimated_lower_edge"
-    estimated_width1 = "trolley1_estimated_width"
-    estimated_width2 = "trolley2_estimated_width"
-    estimated_width3 = "trolley3_estimated_width"
-    estimated_width_std1 = "trolley1_estimated_width_std"
-    estimated_width_std2 = "trolley2_estimated_width_std"
-    estimated_width_std3 = "trolley3_estimated_width_std"
-    brightness_center1 = "trolley1_brightness_center"
-    brightness_center2 = "trolley2_brightness_center"
-    brightness_center3 = "trolley3_brightness_center"
+    upper_edge = "estimated_upper_edge"
+    lower_edge = "estimated_lower_edge"
+    estimated_width = "estimated_width"
+    estimated_width_std = "estimated_width_std"
+    brightness_center = "brightness_center"
+
     # 各グラフに描画する要素を指定
     edges = [
-        (p_edge, upper_edge1, "upper_edge1"),
-        (p_edge, upper_edge2, "upper_edge2"),
-        (p_edge, upper_edge3, "upper_edge3"),
-        (p_edge, lower_edge1, "lower_edge1"),
-        (p_edge, lower_edge2, "lower_edge2"),
-        (p_edge, lower_edge3, "lower_edge3")
+        (p_edge, upper_edge, "upper_edge"),
+        (p_edge, lower_edge, "lower_edge")
     ]
     widths = [
-        (p_width, estimated_width1, "estimated_width1"),
-        (p_width, estimated_width2, "estimated_width2"),
-        (p_width, estimated_width3, "estimated_width3")
+        (p_width, estimated_width, "estimated_width")
     ]
     width_stds = [
-        (p_width_std, estimated_width_std1, "estimated_width_std1"),
-        (p_width_std, estimated_width_std2, "estimated_width_std2"),
-        (p_width_std, estimated_width_std3, "estimated_width_std3")
+        (p_width_std, estimated_width_std, "estimated_width_std")
     ]
     centers = [
-        (p_center, brightness_center1, "brightness_center1"),
-        (p_center, brightness_center2, "brightness_center2"),
-        (p_center, brightness_center3, "brightness_center3")
+        (p_center, brightness_center, "brightness_center")
     ]
-    # グラフに要素を追加
-    for i, (p, line_data, label_name) in enumerate(edges + widths + width_stds + centers):
-        p.line(
-            x_values,
-            line_data,
-            legend_label=label_name,
-            line_color=colors[i],
-            source=source
-        )
+    
+    # trolley_idのユニークな値を取得
+    unique_trolleys = df_csv['trolley_id'].unique()
+    
+    for trolley_id in unique_trolleys:
+        trolley_df = df_csv[df_csv['trolley_id'] == trolley_id]
+        source = ColumnDataSource(data=trolley_df)
+
+        for i, (p, line_data, label_name) in enumerate(edges + widths + width_stds + centers):
+            p.line(
+                x_values,
+                line_data,
+                legend_label=f"{label_name}_{trolley_id}",
+                line_color=colors[i % len(colors)],  # もし色の数が足りない場合は循環するように
+                source=source
+            )
 
     # 軸・凡例の条件を指定する
     # 軸表示用のフォーマット関数
@@ -304,3 +289,66 @@ def plot_fig_bokeh(config, rail_fpath, graph_height, graph_width, graph_thinout)
         p.yaxis.formatter = formatter
 
     return grid
+
+
+def plot_fig_plt(config, rail_fpath, camera_num, graph_height, graph_width, graph_thinout, ix_set_flag, ix_view_range):
+    """
+    Args:
+        config: 設定ファイル
+        rail_fpath(str): shelveファイルのパス
+        graph_height(int): グラフ1枚当たりの高さ
+        graph_width(int): グラフ1枚当たりの幅
+        graph_thinout(int): データフレームを間引く間隔
+        ix_set_flag(boolen): x軸方向の表示範囲を指定するフラグ
+        ix_view_range(tuple): x軸方向の表示範囲
+    """
+    # 初期設定
+    csv_fpath = rail_fpath.replace(".shelve", ".csv")    # CSVファイルの保存パスを指定
+    title_text = f'Analysis data on Camera:{camera_num}'    # タイトル共通ヘッダ
+
+    # CSVを読み込む
+    df = pd.read_csv(csv_fpath)
+    # 表示するixの範囲を指定しない場合は、ixの最小・最大を適用
+    if not ix_set_flag:
+        ix_view_range = (int(df['ix'].min()), int(df['ix'].max()))
+
+    # グラフ描画エリアを設定
+    fig, (ax1, ax2, ax3, ax4) = matplotlib.pyplot.subplots(4, 1, figsize=(graph_width, graph_height))
+    matplotlib.pyplot.subplots_adjust(hspace=graph_height / 25)    # グラフ間の間隔を調整
+
+    fig.suptitle(title_text)
+    ax1.set_ylabel('estimated_edge')
+    ax2.set_ylabel('width')
+    ax3.set_ylabel('width_std')
+    ax4.set_xlabel('ix')
+    ax4.set_ylabel('brightness_std')
+
+    # グラフの要素を追加, trolley_idごとに追加
+    for trolleyid in df['trolley_id'].unique():
+        df_temp = df.query(f'trolley_id == "{trolleyid}"').copy()
+        x = df_temp.query(
+            f'{ix_view_range[0]} <= ix <= {ix_view_range[1]}'
+        )['ix']
+        ax1.plot(x, df_temp.query(
+            f'{ix_view_range[0]} <= ix <= {ix_view_range[1]}'
+        )['estimated_upper_edge'], label=trolleyid)
+        ax1.plot(x, df_temp.query(
+            f'{ix_view_range[0]} <= ix <= {ix_view_range[1]}'
+        )['estimated_lower_edge'], label=trolleyid)
+        ax2.plot(x, df_temp.query(
+            f'{ix_view_range[0]} <= ix <= {ix_view_range[1]}'
+        )['estimated_width'], label=trolleyid)
+        ax3.plot(x, df_temp.query(
+            f'{ix_view_range[0]} <= ix <= {ix_view_range[1]}'
+        )['estimated_width_std'], label=trolleyid)
+        ax4.plot(x, df_temp.query(
+            f'{ix_view_range[0]} <= ix <= {ix_view_range[1]}'
+        )['brightness_std'], label=trolleyid)
+
+    # 凡例を有効化する
+    ax1.legend()
+    ax2.legend()
+    ax3.legend()
+    ax4.legend()
+
+    return fig, (ax1, ax2, ax3, ax4)

@@ -81,6 +81,31 @@ default:
     - trolley_end_reason
     - mask_edgelog_1
     - mask_edgelog_2
+  csv_dtype:
+    image_idx: int32
+    ix: int32
+    measurement_area: str
+    camera_num: str
+    image_name: str
+    trolley_id: str
+    measured_upper_edge: float32
+    measured_lower_edge: float32
+    estimated_upper_edge: float32
+    estimated_lower_edge: float32
+    estimated_width: float32
+    estimated_width_std: float32
+    brightness_center: float32
+    brightness_mean: float32
+    brightness_std: float32
+    estimated_slope: float32
+    upper_boundary: float32
+    lower_boundary: float32
+    estimated_upper_edge_variance: float32
+    estimated_lower_edge_variance: float32
+    estimated_slope_variance: float32
+    trolley_end_reason: str
+    mask_edgelog_1: float32
+    mask_edgelog_2: float32
 
 format_func:
   camera_name_to_type:

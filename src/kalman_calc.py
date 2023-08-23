@@ -105,21 +105,21 @@ def track_kalman(rail_fpath, camera_num, base_images, idx, trolley_id, x_init, y
             if kalman_instance.error_flg == 1:
                 st.error(kalman_instance.trolley_end_reason[0])
                 st.markdown(f"{trolley_id}にて再試行の閾値を超えました。\n \
-                            最後に推定した際のx座標は {kalman_instance.ix[-1]} , \n \
+                            最後に推定した際のx座標は {kalman_instance.ix} , \n \
                             y座標上部は {int(kalman_instance.last_state[0])} , \n \
                             y座標下部は {int(kalman_instance.last_state[1])} \n \
                             画像がピンボケしているなど、推定しにくい条件である可能性があります。再実行しても修正されない場合、他のカメラ番号で実行してください。") 
             elif kalman_instance.error_flg == 2:
                 st.error(kalman_instance.trolley_end_reason[0])
                 st.markdown(f"{trolley_id}にて計算中に推定線幅が閾値を超えました。\n \
-                            最後に推定した際のx座標は {kalman_instance.ix[-1]} , \n \
+                            最後に推定した際のx座標は {kalman_instance.ix} , \n \
                             y座標上部は {int(kalman_instance.last_state[0])} , \n \
                             y座標下部は {int(kalman_instance.last_state[1])} \n \
                             入力幅が大きすぎないか、確認して再実行、もしくは異常が疑われますのでご確認下さい。")
             elif kalman_instance.error_flg == 3:
                 st.error(kalman_instance.trolley_end_reason[0])
                 st.markdown(f"{trolley_id}にて計算中に画面の上端、もしくは下端に到達しました。\n \
-                            最後に推定した際のx座標は {kalman_instance.ix[-1]} , \n \
+                            最後に推定した際のx座標は {kalman_instance.ix} , \n \
                             y座標上部は {int(kalman_instance.last_state[0])} , \n \
                             y座標下部は {int(kalman_instance.last_state[1])} \n \
                             入力した初期値が上端・下端になっていないか、確認してください。")
