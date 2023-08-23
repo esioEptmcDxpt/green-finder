@@ -28,7 +28,15 @@ def track_kalman(rail_fpath, camera_num, base_images, idx, trolley_id, x_init, y
     for image_path in base_images[idx:]:
         image_name = image_path.split('/')[-1]
 
+        base_db = pd.read_csv(filepath, delimiter=',', index=False)
+        
+        # 同一の画像パスとトロリIDを持つデータが存在しているかチェック
+        if image_path, trolley_id in set(base_db[['image_path', 'trolley_id']]:
+            
+        
+
         with shelve.open(rail_fpath, writeback=True) as rail:
+            df['image_path'] == 
             trolley_dict = copy.deepcopy(rail[camera_num][image_path])
             if trolley_id not in trolley_dict.keys():
                 trolley_dict = {trolley_id: {}}
