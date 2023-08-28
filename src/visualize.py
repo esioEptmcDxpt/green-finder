@@ -86,16 +86,17 @@ def out_image_load(rail_fpath, camera_num, image_path, img, config):
     background_brightness = random_pixels.mean()
 
     # shelveファイルを開いて辞書にセットする
-    with shelve.open(rail_fpath) as rail:
+    with shelve.open(rail_fpath, flag='r') as rail:
         trolley_dict = copy.deepcopy(rail[camera_num][image_path])
 
     # 解析結果をチェックする
     trolley_count = len(trolley_dict)
     if not trolley_count:
         # 解析結果が無ければ関数を抜ける
+        print("<out_image_load>trolley is None")
         return []
 
-    # データを描画 
+    # データを描画
     x_values = list(range(config.max_len))
     for trolley_id in config.trolley_ids:
         # trolley_idの数だけ繰り返す

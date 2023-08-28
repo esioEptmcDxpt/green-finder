@@ -276,6 +276,20 @@ def imgs_dir_remove(path):
         print("An error occurred: ", e)
     return
 
+def file_remove(path):
+    """ pathで指定したディレクトリを削除する
+    Args:
+        path (str): 削除したいディレクトリのパス
+    """
+    try:
+        # ファイルを削除
+        os.remove(path)
+    except FileNotFoundError:
+        st.error("対象のファイルが見つかりません")
+    except Exception as e:
+        print("An error occurred: ", e)
+    return
+
 
 # @st.cache()
 def S3_EBS_imgs_dir_Compare(S3_dir_list, EBS_dir_list, df_key):
@@ -305,7 +319,6 @@ def S3_EBS_imgs_dir_Compare(S3_dir_list, EBS_dir_list, df_key):
     return df_filtered
 
 
-@st.cache()
 def check_camera_dirs(dir_area, config):
     """ Outputディレクトリ内の結果ファイルの有無を確認する
     Args:

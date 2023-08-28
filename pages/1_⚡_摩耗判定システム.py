@@ -22,7 +22,7 @@ def ohc_wear_analysis(config):
     # フォルダ直下の画像保管用ディレクトリのリスト
     # images_path = helpers.list_imagespath(config.image_dir)
     # 他ページでの結果を反映するためnonCacheを使用
-    
+
     images_path = helpers.list_imagespath_nonCache(config.image_dir)
 
     # 画像保管線区の選択
@@ -64,7 +64,6 @@ def ohc_wear_analysis(config):
 
     # outputディレクトリを指定
     outpath = config.output_dir + "/" + dir_area + "/" + camera_num
-    os.makedirs(outpath, exist_ok=True)
 
     # imagesフォルダ内の画像一覧取得
     base_images = helpers.list_images(target_dir)
@@ -228,6 +227,9 @@ def ohc_wear_analysis(config):
 
     # 解析結果があるかをサイドバーに表示する
     st.sidebar.markdown("# 参考 結果有無👇")
+    result_delete = st.sidebar.button("結果データを削除する")
+    if result_delete:
+        helpers.imgs_dir_remove(outpath + '/')
     df = helpers.check_camera_dirs(dir_area, config)
     st.sidebar.dataframe(df)
 

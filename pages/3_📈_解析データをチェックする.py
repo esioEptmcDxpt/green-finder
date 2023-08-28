@@ -1,4 +1,5 @@
 import streamlit as st
+import os
 import time
 import src.helpers as helpers
 import src.visualize as vis
@@ -67,10 +68,6 @@ def check_graph(config):
     # 結果保存用のshelveファイル(rail)の保存パスを指定
     rail_fpath = outpath + "/rail.shelve"
 
-    # 解析結果があるかをサイドバーに表示する
-    df = helpers.check_camera_results(dir_area, config)
-    st.sidebar.dataframe(df)
-
     # CSV変換
     st.sidebar.markdown("# ___Step2___ 結果をCSVデータに変換")
     # thin_out = st.sidebar.number_input("画像間引き間隔(1～1000で指定)",
@@ -94,7 +91,7 @@ def check_graph(config):
                     window,    # ウィンドウサイズを指定する場合はwindowにする
                     log_view,
                     progress_bar)
-            log_view.success("グラフ用CSVファイルを作成しました")
+            log_view.success("CSVファイルを作成しました")
         except Exception as e:
             log_view.error("解析結果ファイルがありません")
             log_view.write(f"Error> {e}")
@@ -104,14 +101,22 @@ def check_graph(config):
     try:
         with open(csv_fpath) as csv:
             st.sidebar.download_button(
-                label="グラフ用CSVファイルをダウンロード",
+                label="CSVファイルをダウンロード",
                 data=csv,
                 file_name=dir_area + "_" + camera_num + "_output.csv",
                 mime="text/csv"
             )
     except Exception as e:
-        log_view.error("グラフ用CSVファイルがありません")
+        log_view.error("CSVファイルがありません")
         log_view.write(f"Error> {e}")
+    # CSV削除
+    csv_delete_btn = st.sidebar.button("CSVファイルを削除する")
+    if csv_delete_btn:
+        if os.path.exists(csv_fpath):
+            helpers.file_remove(csv_fpath)
+            log_view.error("CSVファイルを削除しました")
+        else:
+            log_view.error("削除するCSVファイルがありません")
 
     # グラフ表示
     # スライダーでグラフ化する範囲を指定（サイドバーに表示）
@@ -178,6 +183,12 @@ def check_graph(config):
             #     ix_view_range
             # )
             # graph_view.pyplot(fig)
+
+
+    # 解析結果があるかをサイドバーに表示する
+    df = helpers.check_camera_results(dir_area, config)
+    st.sidebar.dataframe(df)
+
     return
 
 
