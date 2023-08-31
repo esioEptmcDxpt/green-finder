@@ -336,7 +336,7 @@ def check_camera_dirs(dir_area, config):
         # ディレクトリ内のファイルをチェック
         try:
             for file in os.listdir(dir_path):
-                if "rail.shelve" in file:  # ファイル名に"rail.shelve"が含まれるかをチェック
+                if "rail.csv" in file:  # ファイル名に"rail.shelve"が含まれるかをチェック
                     result.append([f"{camera_name}_{camera_type}", "○"])
                     break
             else:  # ディレクトリ内に"rail.shelve"が含まれるファイルがない場合
@@ -513,6 +513,141 @@ def check_camera_results(dir_area, config):
     
 #     return df_trolley
 
+@my_logger
+def result_csv_load(config, rail_fpath):
+    """ 結果CSVファイルをデータフレームとして読み込む
+    Args:
+        config(instance): 設定ファイル
+        rail_fpath(str) : 結果ファイルの保存パス
+    Return:
+        df_csv(DataFrame): CSVファイルから作成したデータフレーム
+    """
+    # 結果CSVファイルがあれば読み込む
+    # 無ければ空のデータフレームを作成する
+    if os.path.exists(rail_fpath):
+        df_csv = pd.read_csv(rail_fpath)
+    else:
+        df_csv = pd.DataFrame(columns=config.columns_list)
+    return df_csv
+
+
+@my_logger
+def result_csv_crop(df_csv, dir_area, camera_num, image_name, trolley_id):
+    """ 解析対象画像の結果だけにデータフレームの行を絞り込む
+    Args:
+        df_csv(DataFrame): 対象のデータフレーム
+        dir_area(str)    : 線区名
+        camera_num(str)  : カメラ番号
+        image_name(str)  : 画像ファイル名（拡張子付き）
+        trolley_id(str)  : トロリーID
+    Return:
+        df_csv_crop(DataFrame): 絞込み後のデータフレーム
+    """
+    condition = (
+        (df_csv['measurement_area'] == dir_area) &
+        (df_csv['camera_num'] == camera_num) &
+        (df_csv['image_name'] == image_name) &
+        (df_csv['trolley_id'] == trolley_id)
+    )
+    # conditionで指定した条件に合う行だけを抽出してコピー
+    return df_csv.loc[condition, :].copy()
+
+
+@my_logger
+def result_dict_to_csv(result_dict, idx, count, dir_area, camera_num, image_name, trolley_id, ix_list):
+    """ 解析後のインスタンスから作成した辞書ファイルを結果CSVファイルに保存する
+    Args:
+        config(instance) : 設定ファイル
+        df_csv(DataFrame): 結果CSVファイルから作成したデータフレーム
+        rail_fpath(str)  : 結果CSVファイルの保存パス
+        result_dict(dict): インスタンスから生成した辞書
+        idx(int)         : 画像インデックス
+        image_path(str)  : 画像パス
+        image_name(str)  : 画像ファイル名
+        trolley_id(str)  : トロリーID
+        window(int)      : 標準偏差を計算するときのウィンドウサイズ
+    Return:
+        df_csv(DataFrame): 結果を更新後のデータフレーム
+    """
+    # インスタンスの内容をデータフレームとして読み込む
+    df = pd.DataFrame.from_dict(result_dict[trolley_id], orient='index').T
+
+    # データフレームにインデックス・画像名等を挿入
+    df.insert(0, 'image_idx', idx + count - 1)
+    df.insert(1, 'ix', ix_list[:len(df)])
+    df['ix'] = df['ix'] + (idx + count - 1) * 1000
+    df.insert(2, 'measurement_area', dir_area)
+    df.insert(3, 'camera_num', camera_num)
+    df.insert(4, 'image_name', image_name)
+    df.insert(5, 'trolley_id', trolley_id)
+    df.insert([df.columns.get_loc(c) for c in df.columns if 'estimated_lower_edge' in c][0] + 1,
+              'estimated_width', df['estimated_lower_edge'] - df['estimated_upper_edge'])
+    return df
+
+@my_logger
+def dfcsv_update(df_csv, df, x_init, condition, count):
+    """ 解析結果dfの内容をdf_csvに追記/更新する
+    Args:
+        df_csv(DataFrame): 結果CSVファイルを読み込んだデータフレーム
+        df(DataFrame): インスタンスから変換したデータフレーム（画像ごと）
+        x_init(int): 解析開始時のx座標
+        condition(Pandas Series): 指定条件への一致状態を記録した変数（画像ごと）
+        count(int): 解析開始からの画像カウント（1枚目はcount=1）
+    Return:
+        df_csv(DataFrame): 結果CSVファイルを読み込んだデータフレーム
+    """
+    # 一致する行の値を新しいデータフレームの値で更新する
+    if count == 1:
+        if not len(df_csv.loc[condition, :]) == 0:
+            # print("前回の結果を更新します")
+            # dfの内容でdf_tempの条件に一致する行を更新
+            index_to_update = df_csv[condition].index
+            df_csv.loc[index_to_update[x_init:len(df)], df.columns] = df.loc[index_to_update[x_init:len(df)] - index_to_update[0]].values
+        else:
+            # print("新しい結果を追記します")
+            df_csv = pd.concat([df_csv, df], ignore_index=True)
+    else:
+        if not len(df_csv.loc[condition, :]) == 0:
+            # print("前回の結果を更新します")
+            # dfの内容でdf_tempの条件に一致する行を更新
+            index_to_update = df_csv[condition].index
+            df_csv.loc[index_to_update[:len(df)], df.columns] = df.loc[index_to_update[:len(df)] - index_to_update[0]].values
+        else:
+            # print("新しい結果を追記します")
+            df_csv = pd.concat([df_csv, df], ignore_index=True)
+    return df_csv
+
+@my_logger
+def window2min_periods(window):
+    """ 標準偏差を計算するためのウィンドウサイズからmin_periodsを設定する
+    Args:
+        window(int): ウィンドウサイズ
+    Return:
+        min_periods(int): 最小計算範囲
+    """
+    if window <= 2:
+        window = 2
+        min_periods = 1
+    elif window > 2:
+        min_periods = int(window / 2)
+    return min_periods
+
+def dfcsv_std_calc(df_csv, col_name, col_name_std, window, min_periods, col_name_ref):
+    """ df_csvにおけるwidthの標準偏差を計算してdf_csvに追記する
+    Args:
+        df_csv(DataFrame): 結果CSVファイルを読み込んだデータフレーム
+        col_name(str): 計算対象の列名
+        col_name_std(str): 標準偏差を記録する列名
+        window(int): ウィンドウサイズ
+        min_periods(int): 最小計算範囲
+        col_name_ref(str): NaNが含まれる行を除外する際に確認対象にする列名
+    Return:
+        df_csv(DataFrame): 標準偏差を追記したデータフレーム
+    """
+    # estimated_upper_edgeがNaNでない行だけ選択して標準偏差を計算
+    non_nan_rows = df_csv[col_name_ref].notna()
+    df_csv.loc[non_nan_rows, col_name_std] = df_csv.loc[non_nan_rows, col_name].rolling(window=window, min_periods=min_periods).std()
+    return df_csv
 
 # @my_logger
 def trolley_dict_to_csv(config, rail_fpath, camera_num, base_images, window, log_view, progress_bar):
@@ -541,9 +676,6 @@ def trolley_dict_to_csv(config, rail_fpath, camera_num, base_images, window, log
     # st.sidebar.write(f"window:{window}")
     # st.sidebar.write(f"min_periods:{min_periods}")
 
-    # ix記録用のリストを準備
-    ix_list = [int(x) for x in range(1000)]
-
     # shelveファイルを読み込む
     with shelve.open(rail_fpath, flag='r') as rail:
         # trolley_dict = copy.deepcopy(rail[camera_num])
@@ -571,7 +703,7 @@ def trolley_dict_to_csv(config, rail_fpath, camera_num, base_images, window, log
                     
             # データフレームにインデックス・画像名等を挿入
             df.insert(0, 'image_idx', idx)
-            df.insert(1, 'ix', ix_list)
+            df.insert(1, 'ix', config.ix_list)
             df['ix'] = df['ix'] + idx * 1000
             df.insert(2, 'measurement_area', dir_area)
             df.insert(3, 'camera_num', camera_num)

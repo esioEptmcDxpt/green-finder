@@ -4,13 +4,14 @@ import copy
 import matplotlib
 import numpy as np
 import pandas as pd
+import gc
 from bokeh.plotting import figure, gridplot, show
 from bokeh.layouts import column
 from bokeh.models import ColumnDataSource, FuncTickFormatter
 from bokeh.models import NumeralTickFormatter
 from bokeh.palettes import d3
 import streamlit as st
-from PIL import Image
+from PIL import Image, ImageDraw, ImageFont
 import src.helpers as helpers
 
 
@@ -61,7 +62,7 @@ def ohc_image_load(image_path):
 
 
 # @st.cache
-def out_image_load(rail_fpath, camera_num, image_path, img, config):
+def out_image_load(rail_fpath, dir_area, camera_num, image_name, img, config):
     """
     Args:
         rail_fpath(str): shelveファイルのパス
@@ -86,12 +87,24 @@ def out_image_load(rail_fpath, camera_num, image_path, img, config):
     background_brightness = random_pixels.mean()
 
     # shelveファイルを開いて辞書にセットする
-    with shelve.open(rail_fpath, flag='r') as rail:
-        trolley_dict = copy.deepcopy(rail[camera_num][image_path])
+    # with shelve.open(rail_fpath, flag='r') as rail:
+    #     trolley_dict = copy.deepcopy(rail[camera_num][image_path])
+
+    # csvファイルを開いてデータフレームにセットする
+    df_csv = helpers.result_csv_load(config, rail_fpath).copy()
 
     # 解析結果をチェックする
-    trolley_count = len(trolley_dict)
-    if not trolley_count:
+    # trolley_count = len(trolley_dict)
+    # image_pathの検索条件を作成し、フィルタリングする
+    condition = (
+        (df_csv['measurement_area'] == dir_area) &
+        (df_csv['camera_num'] == camera_num) &
+        (df_csv['image_name'] == image_name)# &
+        # (df_csv['trolley_id'] == trolley_id)
+    )
+    df_csv_filtered = df_csv.loc[condition, :].copy()
+    # if not trolley_count:
+    if not len(df_csv_filtered):
         # 解析結果が無ければ関数を抜ける
         print("<out_image_load>trolley is None")
         return []
@@ -100,10 +113,20 @@ def out_image_load(rail_fpath, camera_num, image_path, img, config):
     x_values = list(range(config.max_len))
     for trolley_id in config.trolley_ids:
         # trolley_idの数だけ繰り返す
-        if trolley_id in trolley_dict.keys():
+        # フィルタ条件を作成
+        condition = (
+            (df_csv['measurement_area'] == dir_area) &
+            (df_csv['camera_num'] == camera_num) &
+            (df_csv['image_name'] == image_name) &
+            (df_csv['trolley_id'] == trolley_id)
+        )
+        # if trolley_id in trolley_dict.keys():
+        if trolley_id in set(list(df_csv_filtered['trolley_id'])):
             # trolley_idが存在する場合だけ実行
-            upper_edge = trolley_dict[trolley_id]["estimated_upper_edge"]
-            lower_edge = trolley_dict[trolley_id]["estimated_lower_edge"]
+            # upper_edge = trolley_dict[trolley_id]["estimated_upper_edge"]
+            # lower_edge = trolley_dict[trolley_id]["estimated_lower_edge"]
+            upper_edge = [int(i) for i in df_csv_filtered["estimated_upper_edge"]]
+            lower_edge = [int(i) for i in df_csv_filtered["estimated_lower_edge"]]
             for x, y1, y2 in zip(x_values, upper_edge, lower_edge):
                 # estimated_upper_edgeとestimated_lower_edgeが0でない場合のみ色を変更
                 if y1 != 0:
@@ -131,6 +154,92 @@ def rail_info_view(dir_area, config, main_view):
     return
 
 
+def ohc_img_concat(base_images, idx, concat_nums, font_size):
+    """
+    Args:
+        base_images(list): imgs/xxx/HDxxディレクトリ内の画像ファイルパス
+        idx(int): 1枚目の画像インデックス
+        concat_nums(int): 横方向に結合する枚数
+        font_size(int): 追記する文字のサイズ
+    Return:
+        result_img(PIL Image): 結合後の画像オブジェクト
+    """
+    # 番号を追記
+    font = ImageFont.truetype('/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf', size=font_size)
+
+    for count, image_path in enumerate(base_images[idx:(idx + concat_nums)]):
+        if not count:
+            result_img = Image.open(image_path)
+            draw = ImageDraw.Draw(result_img)
+            draw.text((10, 10), str(idx + count + 1), fill='red', font=font)
+        else:
+            next_img = Image.open(image_path)
+            # 画像を結合
+            temp_img = Image.new('RGB', (result_img.width + next_img.width, result_img.height))
+            temp_img.paste(im=result_img, box=(0, 0))
+            temp_img.paste(im=next_img, box=(result_img.width, 0))
+
+            # 番号を追記
+            draw = ImageDraw.Draw(temp_img)
+            draw.text((result_img.width + 10, 10), str(idx + count + 1), fill='red', font=font)
+
+            # 不要な画像と画像オブジェクトを削除
+            del result_img
+            del next_img
+            del draw
+            gc.collect()
+
+            # 結果を保存
+            result_img = temp_img
+    return result_img
+
+
+def out_image_concat(rail_fpath, dir_area, camera_num, base_images, idx, concat_nums, font_size, config):
+    """
+    """
+    # 番号を追記
+    font = ImageFont.truetype('/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf', size=font_size)
+
+    for count, image_path in enumerate(base_images[idx:(idx + concat_nums)]):
+        image_name = image_path.split('/')[-1]
+        if not count:
+            result_img = Image.open(image_path)
+            # 結果を追記する
+            try:
+                result_img = out_image_load(rail_fpath, dir_area, camera_num, image_name, result_img, config)
+            except:
+                continue
+            draw = ImageDraw.Draw(result_img)
+            draw.text((10, 10), str(idx + count + 1), fill='red', font=font)
+        else:
+            next_img = Image.open(image_path)
+            # 結果を追記する
+            try:
+                next_img = out_image_load(rail_fpath, dir_area, camera_num, image_name, next_img, config)
+            except:
+                continue
+            # 画像を結合
+            temp_img = Image.new('RGB', (result_img.width + next_img.width, result_img.height))
+            temp_img.paste(im=result_img, box=(0, 0))
+            temp_img.paste(im=next_img, box=(result_img.width, 0))
+
+            # 番号を追記
+            draw = ImageDraw.Draw(temp_img)
+            draw.text((result_img.width + 10, 10), str(idx + count + 1), fill='red', font=font)
+
+            # 不要な画像と画像オブジェクトを削除
+            del result_img
+            del next_img
+            del draw
+            gc.collect()
+
+            # 結果を保存
+            result_img = temp_img
+    return result_img
+
+
+
+
 def plot_fig_bokeh(config, rail_fpath, graph_height, graph_width, graph_thinout, ix_set_flag, ix_view_range):
     """
     Args:
@@ -143,12 +252,12 @@ def plot_fig_bokeh(config, rail_fpath, graph_height, graph_width, graph_thinout,
     y_max = 2048
 
     # CSVファイルの保存パスを指定
-    csv_fpath = rail_fpath.replace(".shelve", ".csv")
+    # csv_fpath = rail_fpath.replace(".shelve", ".csv")
     # st.write(f"csv_fpath: {csv_fpath}")
 
     # CSVファイルからデータフレームを作成する
     # df_csv = pd.read_csv(csv_fpath, encoding='cp932')
-    df_csv = pd.read_csv(csv_fpath, engine='c', dtype=config.csv_dtype)    # 列の型を指定
+    df_csv = pd.read_csv(rail_fpath, engine='c', dtype=config.csv_dtype)    # 列の型を指定
 
     # データを間引く
     # そのままだとメモリ不足等で表示不可…
@@ -304,11 +413,11 @@ def plot_fig_plt(config, rail_fpath, camera_num, graph_height, graph_width, grap
         ix_view_range(tuple): x軸方向の表示範囲
     """
     # 初期設定
-    csv_fpath = rail_fpath.replace(".shelve", ".csv")    # CSVファイルの保存パスを指定
+    # csv_fpath = rail_fpath.replace(".shelve", ".csv")    # CSVファイルの保存パスを指定
     title_text = f'Analysis data on Camera:{camera_num}'    # タイトル共通ヘッダ
 
     # CSVを読み込む
-    df = pd.read_csv(csv_fpath)
+    df = pd.read_csv(rail_fpath)
     # 表示するixの範囲を指定しない場合は、ixの最小・最大を適用
     if not ix_set_flag:
         ix_view_range = (int(df['ix'].min()), int(df['ix'].max()))

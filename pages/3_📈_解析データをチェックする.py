@@ -66,61 +66,62 @@ def check_graph(config):
     base_images = helpers.list_images(target_dir)
 
     # 結果保存用のshelveファイル(rail)の保存パスを指定
-    rail_fpath = outpath + "/rail.shelve"
+    # rail_fpath = outpath + "/rail.shelve"
+    rail_fpath = outpath + "/rail.csv"
 
-    # CSV変換
-    st.sidebar.markdown("# ___Step2___ 結果をCSVデータに変換")
-    # thin_out = st.sidebar.number_input("画像間引き間隔(1～1000で指定)",
-    #                                    min_value=1,
-    #                                    max_value=1000,
-    #                                    value=100)
-    window = st.sidebar.number_input("標準偏差計算のウィンドウサイズを指定",
-                                    min_value=1,
-                                    value=100)
-    if st.sidebar.button("CSVファイルを作成"):
-        try:
-            log_view.write("一生懸命変換しています🐁...")
-            progress_bar = log_view.progress(0)
-            with st.spinner("CSVファイルに変換中..."):
-                helpers.trolley_dict_to_csv(
-                    config,
-                    rail_fpath,
-                    camera_num,
-                    base_images,
-                    # thin_out,
-                    window,    # ウィンドウサイズを指定する場合はwindowにする
-                    log_view,
-                    progress_bar)
-            log_view.success("CSVファイルを作成しました")
-        except Exception as e:
-            log_view.error("解析結果ファイルがありません")
-            log_view.write(f"Error> {e}")
+    # # CSV変換
+    # st.sidebar.markdown("# ___Step2___ 結果をCSVデータに変換")
+    # # thin_out = st.sidebar.number_input("画像間引き間隔(1～1000で指定)",
+    # #                                    min_value=1,
+    # #                                    max_value=1000,
+    # #                                    value=100)
+    # window = st.sidebar.number_input("標準偏差計算のウィンドウサイズを指定",
+    #                                 min_value=1,
+    #                                 value=100)
+    # if st.sidebar.button("CSVファイルを作成"):
+    #     try:
+    #         log_view.write("一生懸命変換しています🐁...")
+    #         progress_bar = log_view.progress(0)
+    #         with st.spinner("CSVファイルに変換中..."):
+    #             helpers.trolley_dict_to_csv(
+    #                 config,
+    #                 rail_fpath,
+    #                 camera_num,
+    #                 base_images,
+    #                 # thin_out,
+    #                 window,    # ウィンドウサイズを指定する場合はwindowにする
+    #                 log_view,
+    #                 progress_bar)
+    #         log_view.success("CSVファイルを作成しました")
+    #     except Exception as e:
+    #         log_view.error("解析結果ファイルがありません")
+    #         log_view.write(f"Error> {e}")
 
     # CSVダウンロード
-    csv_fpath = rail_fpath.replace(".shelve", ".csv")
-    try:
-        with open(csv_fpath) as csv:
-            st.sidebar.download_button(
-                label="CSVファイルをダウンロード",
-                data=csv,
-                file_name=dir_area + "_" + camera_num + "_output.csv",
-                mime="text/csv"
-            )
-    except Exception as e:
-        log_view.error("CSVファイルがありません")
-        log_view.write(f"Error> {e}")
-    # CSV削除
-    csv_delete_btn = st.sidebar.button("CSVファイルを削除する")
-    if csv_delete_btn:
-        if os.path.exists(csv_fpath):
-            helpers.file_remove(csv_fpath)
-            log_view.error("CSVファイルを削除しました")
-        else:
-            log_view.error("削除するCSVファイルがありません")
+    # csv_fpath = rail_fpath.replace(".shelve", ".csv")
+    # try:
+    #     with open(csv_fpath) as csv:
+    #         st.sidebar.download_button(
+    #             label="CSVファイルをダウンロード",
+    #             data=csv,
+    #             file_name=dir_area + "_" + camera_num + "_output.csv",
+    #             mime="text/csv"
+    #         )
+    # except Exception as e:
+    #     log_view.error("CSVファイルがありません")
+    #     log_view.write(f"Error> {e}")
+    # # CSV削除
+    # csv_delete_btn = st.sidebar.button("CSVファイルを削除する")
+    # if csv_delete_btn:
+    #     if os.path.exists(rail_fpath):
+    #         helpers.file_remove(rail_fpath)
+    #         log_view.error("CSVファイルを削除しました")
+    #     else:
+    #         log_view.error("削除するCSVファイルがありません")
 
     # グラフ表示
     # スライダーでグラフ化する範囲を指定（サイドバーに表示）
-    st.sidebar.markdown("# ___Step3___ グラフを表示する")
+    st.sidebar.markdown("# ___Step2___ グラフを表示する")
     ix_set_flag = st.sidebar.checkbox("横方向の表示範囲を指定")
     form_graph = st.sidebar.form(key="graph_init")
     # img_num = form_graph.select_slider("グラフ化する画像を指定",
@@ -186,7 +187,26 @@ def check_graph(config):
 
 
     # 解析結果があるかをサイドバーに表示する
-    df = helpers.check_camera_results(dir_area, config)
+    st.sidebar.markdown("# 参考 結果有無👇")
+    try:
+        with open(rail_fpath) as csv:
+            st.sidebar.download_button(
+                label="CSVファイルをダウンロード",
+                data=csv,
+                file_name=dir_area + "_" + camera_num + "_output.csv",
+                mime="text/csv"
+            )
+    except Exception as e:
+        st.sidebar.error("CSVファイルがありません")
+        st.sidebar.write(f"Error> {e}")
+    csv_delete_btn = st.sidebar.button("結果CSVデータを削除する")
+    if csv_delete_btn:
+        if os.path.exists(rail_fpath):
+            helpers.file_remove(rail_fpath)
+            log_view.error("CSVファイルを削除しました")
+        else:
+            log_view.error("削除するCSVファイルがありません")
+    df = helpers.check_camera_dirs(dir_area, config)
     st.sidebar.dataframe(df)
 
     return
