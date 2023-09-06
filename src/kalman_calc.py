@@ -7,9 +7,8 @@ import src.helpers as helpers
 from src.kalman import kalman
 
 
-def track_kalman(rail_fpath, camera_num, base_images, idx, trolley_id, x_init, y_init_u, y_init_l, progress_bar):
+def track_kalman(rail_fpath, camera_num, base_images, df_csv, idx, trolley_id, x_init, y_init_u, y_init_l, status_view, progress_bar):
     """カルマンフィルタ計算用のラッパー
-
     Args:
         rail (object): shelveファイル
         camera_num (int): カメラのNo
@@ -37,9 +36,6 @@ def track_kalman(rail_fpath, camera_num, base_images, idx, trolley_id, x_init, y
         # 解析条件を記録
         image_name = image_path.split('/')[-1]
         dir_area, camera_num = image_path.split("/")[1:3]    # image_pathから線区情報を読取る
-        
-        # プログレスバーを更新
-        progress_bar.progress((idx + count -1) / len(base_images))
 
         # df_csvで、指定された条件に一致する行を特定する用の条件
         condition = (
@@ -58,9 +54,11 @@ def track_kalman(rail_fpath, camera_num, base_images, idx, trolley_id, x_init, y
 
         # ループの最初は入力した初期値を使い、それ以降は処理時の最後の値を使用するように変更
         count += 1
+        # 進捗＆プログレスバーを更新
+        status_view.write(f"解析の進捗：{idx + count}/{len(base_images)}")
+        progress_bar.progress((idx + count -1) / len(base_images))
         if count == 1:
             st.text(f"{idx + count}枚目の画像を処理中です。画像名は{image_name}")
-
             try:
                 kalman_instance = kalman(trolley_id, y_l, y_u, x_init)
                 kalman_instance.infer_trolley_edge(image_path)
@@ -73,28 +71,31 @@ def track_kalman(rail_fpath, camera_num, base_images, idx, trolley_id, x_init, y
                     kalman_dict = {trolley_id:
                                     {key: value for key, value in vars(kalman_instance).items() if key in config.result_keys}
                                    }
-
                     # 途中開始する場合、値を埋めるために処理を追加
                     # if len(trolley_dict[trolley_id]) == 0:
                     df_csv_trimmed = df_csv.loc[condition, :].copy()
-                    if len(df_csv_trimmed) == 0:
-                        for key in kalman_dict[trolley_id].keys():
-                            if key in ['estimated_upper_edge', 'estimated_lower_edge']:
-                                kalman_dict[trolley_id][key] = [np.int16(0) for i in range(x_init)] + kalman_dict[trolley_id][key]
-                            elif key in ['mask_edgelog_1', 'mask_edgelog_2']:
-                                kalman_dict[trolley_id][key] = [np.int8(0) for i in range(x_init)] + kalman_dict[trolley_id][key]
-                            elif key in ['trolley_end_reason']:
-                                continue
-                            else:
-                                kalman_dict[trolley_id][key] = [np.float16(0) for i in range(x_init)] + kalman_dict[trolley_id][key]
-                    else:
-                        for key in kalman_dict[trolley_id].keys():
-                            if key in ['trolley_end_reason']:
-                                continue
-                            else:
-                                # kalman_dict[trolley_id][key] = trolley_dict[trolley_id][key][0:x_init] + kalman_dict[trolley_id][key]
-                                kalman_dict[trolley_id][key] = list(df_csv_trimmed[key])[0:x_init] + kalman_dict[trolley_id][key]
-
+                    # if len(df_csv_trimmed) == 0:
+                    #     for key in kalman_dict[trolley_id].keys():
+                    #         if key in ['estimated_upper_edge', 'estimated_lower_edge']:
+                    #             kalman_dict[trolley_id][key] = [np.int16(0) for i in range(x_init)] + kalman_dict[trolley_id][key]
+                    #         elif key in ['mask_edgelog_1', 'mask_edgelog_2']:
+                    #             kalman_dict[trolley_id][key] = [np.int8(0) for i in range(x_init)] + kalman_dict[trolley_id][key]
+                    #         elif key in ['trolley_end_reason']:
+                    #             continue
+                    #         else:
+                    #             kalman_dict[trolley_id][key] = [np.float16(0) for i in range(x_init)] + kalman_dict[trolley_id][key]
+                    # else:
+                    #     for key in kalman_dict[trolley_id].keys():
+                    #         if key in ['trolley_end_reason']:
+                    #             continue
+                    #         else:
+                    #             # kalman_dict[trolley_id][key] = trolley_dict[trolley_id][key][0:x_init] + kalman_dict[trolley_id][key]
+                    #             kalman_dict[trolley_id][key] = list(df_csv_trimmed[key][0:x_init]) + kalman_dict[trolley_id][key]
+                    for key in kalman_dict[trolley_id].keys():
+                        if key in ['trolley_end_reason']:
+                            continue
+                        else:
+                            kalman_dict[trolley_id][key] = list(df_csv_trimmed[key][0:x_init]) + kalman_dict[trolley_id][key]
                 else:
                     kalman_dict = {trolley_id: 
                                     {key: value for key, value in vars(kalman_instance).items() if key in config.result_keys}
@@ -108,9 +109,9 @@ def track_kalman(rail_fpath, camera_num, base_images, idx, trolley_id, x_init, y
                 # CSVの場合
                 # インスタンスをデータフレームとして読み込む
                 # CSVと同じ列になるように画像/カメラの条件なども追記する
-                df = helpers.result_dict_to_csv(kalman_dict, idx, count, dir_area, camera_num, image_name, trolley_id, config.ix_list).copy()
+                df = helpers.result_dict_to_csv(config, kalman_dict, idx, count, dir_area, camera_num, image_name, trolley_id, config.ix_list).copy()
                 # 一致する行の値を新しいデータフレームの値で更新する
-                df_csv = helpers.dfcsv_update(df_csv, df, x_init, condition, count).copy()
+                df_csv = helpers.dfcsv_update(config, df_csv, df).copy()
 
         else:
             st.text(f"{idx + count}枚目の画像を処理中です。画像名は{image_name}")
@@ -136,9 +137,9 @@ def track_kalman(rail_fpath, camera_num, base_images, idx, trolley_id, x_init, y
                 # CSVの場合
                 # インスタンスをデータフレームとして読み込む
                 # CSVと同じ列になるように画像/カメラの条件なども追記する
-                df = helpers.result_dict_to_csv(kalman_dict, idx, count, dir_area, camera_num, image_name, trolley_id, config.ix_list).copy()
+                df = helpers.result_dict_to_csv(config, kalman_dict, idx, count, dir_area, camera_num, image_name, trolley_id, config.ix_list).copy()
                 # 一致する行の値を新しいデータフレームの値で更新する
-                df_csv = helpers.dfcsv_update(df_csv, df, x_init, condition, count).copy()
+                df_csv = helpers.dfcsv_update(config, df_csv, df).copy()
 
         # estimated_upper_edgeがNaNでない行だけ選択してestimated_widthの標準偏差を計算
         df_csv = helpers.dfcsv_std_calc(

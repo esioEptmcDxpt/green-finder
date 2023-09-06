@@ -16,14 +16,15 @@ import src.helpers as helpers
 
 
 # @st.cache(hash_funcs={matplotlib.figure.Figure: lambda _: None})
-def plot_fig(image_path, vert_pos, hori_pos):
+# def plot_fig(image_path, vert_pos, hori_pos):
+def plot_fig(im_base, vert_pos, hori_pos):
     """ メモリ付き画像を生成する
     Args:
         image_path(str): 元の画像パス
     Return:
         fig: pyplot形式の画像データ
     """
-    im_base = Image.open(image_path)
+    # im_base = Image.open(image_path)
     dpi = 200
     margin = 0.05
     xpixels, ypixels = 1000, 2200
@@ -106,7 +107,7 @@ def out_image_load(rail_fpath, dir_area, camera_num, image_name, img, config):
     # if not trolley_count:
     if not len(df_csv_filtered):
         # 解析結果が無ければ関数を抜ける
-        print("<out_image_load>trolley is None")
+        # print("<out_image_load>trolley is None")
         return []
 
     # データを描画
@@ -194,7 +195,7 @@ def ohc_img_concat(base_images, idx, concat_nums, font_size):
     return result_img
 
 
-def out_image_concat(rail_fpath, dir_area, camera_num, base_images, idx, concat_nums, font_size, config):
+def out_image_concat(rail_fpath, dir_area, camera_num, base_images, idx, concat_nums, font_size, config, status_view, progress_bar):
     """
     """
     # 番号を追記
@@ -203,38 +204,52 @@ def out_image_concat(rail_fpath, dir_area, camera_num, base_images, idx, concat_
     for count, image_path in enumerate(base_images[idx:(idx + concat_nums)]):
         image_name = image_path.split('/')[-1]
         if not count:
+            # st.write(f"{count}> {image_name}")
             result_img = Image.open(image_path)
             # 結果を追記する
-            try:
-                result_img = out_image_load(rail_fpath, dir_area, camera_num, image_name, result_img, config)
-            except:
-                continue
+            # try:
+            result_img = out_image_load(rail_fpath, dir_area, camera_num, image_name, result_img, config)
+            # except:
+            if not result_img:
+                # 結果画像が無い場合（[]の場合）は空の画像を作成する
+                result_img = Image.new('RGB', (config.img_width, config.img_height))
+            # 画像インデックスを追記する
             draw = ImageDraw.Draw(result_img)
             draw.text((10, 10), str(idx + count + 1), fill='red', font=font)
+            # result_img = init_img.copy()
+
         else:
+            # st.write(f"{count}> {image_name}")
             next_img = Image.open(image_path)
             # 結果を追記する
-            try:
-                next_img = out_image_load(rail_fpath, dir_area, camera_num, image_name, next_img, config)
-            except:
-                continue
+            # try:
+            next_img = out_image_load(rail_fpath, dir_area, camera_num, image_name, next_img, config)
+            # except:
+            if not next_img:
+                # 結果画像が無い場合（[]の場合）は空の画像を作成する
+                next_img = Image.new('RGB', (config.img_width, config.img_height))
+            # 画像インデックスを追記する
+            draw = ImageDraw.Draw(next_img)
+            draw.text((10, 10), str(idx + count + 1), fill='red', font=font)
             # 画像を結合
             temp_img = Image.new('RGB', (result_img.width + next_img.width, result_img.height))
             temp_img.paste(im=result_img, box=(0, 0))
             temp_img.paste(im=next_img, box=(result_img.width, 0))
-
-            # 番号を追記
-            draw = ImageDraw.Draw(temp_img)
-            draw.text((result_img.width + 10, 10), str(idx + count + 1), fill='red', font=font)
+            # 画像インデックスを追記する
+            # draw = ImageDraw.Draw(temp_img)
+            # draw.text((result_img.width + 10, 10), str(idx + count + 1), fill='red', font=font)
 
             # 不要な画像と画像オブジェクトを削除
-            del result_img
-            del next_img
-            del draw
+            # del result_img
+            # del next_img
+            # del draw
             gc.collect()
 
             # 結果を保存
-            result_img = temp_img
+            result_img = temp_img.copy()
+        # プログレスバーを更新
+        status_view.write(f"解析結果画像を表示します({count+1}/{concat_nums})")
+        progress_bar.progress((count + 1) / concat_nums)
     return result_img
 
 

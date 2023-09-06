@@ -122,7 +122,9 @@ def ohc_wear_analysis(config):
     # メモリ付き画像を表示
     support_line = st.sidebar.checkbox("補助線を使用")
     if support_line:
+        # 補助線を使用する場合
         form_support_line = st.sidebar.form(key="support_line_form")
+        result_line_draw = form_support_line.checkbox("結果を重ねて描画", value=True)
         form_support_line.write(" 0 にすると線を表示しません")
         hori_pos = form_support_line.number_input("補助線の横位置", 0, 999, 0)
         # 選択したシステムによって横線の本数を変更
@@ -133,14 +135,20 @@ def ohc_wear_analysis(config):
             vert_pos[0] = form_support_line.number_input("補助線の縦位置(上側)", 0, 2047, 1000)
             vert_pos[1] = form_support_line.number_input("補助線の縦位置(下側)", 0, 2047, 1500)
         spline_submit = form_support_line.form_submit_button("📈初期値入力用メモリ付画像を表示する")
+        # グラフ付画像の描画を実行
         if spline_submit:
-            fig = vis.plot_fig(base_images[idx], vert_pos, hori_pos)
+            if (not result_line_draw) | (not out_img):
+                # 元のカメラ画像 または 結果が無い場合
+                fig = vis.plot_fig(cam_img, vert_pos, hori_pos)
+            else:
+                fig = vis.plot_fig(out_img, vert_pos, hori_pos)
             log_view.pyplot(fig)
     else:
+        # 補助線を使用しない場合
         hori_pos = 0
         vert_pos = [0, 0]
         if st.sidebar.button("📈初期値入力用メモリ付画像を表示する"):
-            fig = vis.plot_fig(base_images[idx], vert_pos, hori_pos)
+            fig = vis.plot_fig(cam_img, vert_pos, hori_pos)
             log_view.pyplot(fig)
 
     # ピクセルトレースを実行
@@ -198,13 +206,16 @@ def ohc_wear_analysis(config):
             # trolley_dict = helpers.load_shelves(rail_fpath, camera_num, base_images, idx)
             df_csv = helpers.result_csv_load(config, rail_fpath)
             # df_csvで、指定された条件に一致する行を特定する用の条件
+            image_name = base_images[idx].split('/')[-1]
             condition = (
                 (df_csv['measurement_area'] == dir_area) &
                 (df_csv['camera_num'] == camera_num) &
-                (df_csv['image_name'] == base_images[idx]) &
+                (df_csv['image_name'] == image_name) &
                 (df_csv['trolley_id'] == trolley_id)
             )
 
+            status_view = st.empty()
+            status_view.write(f"解析の進捗：{idx+1}/{len(base_images)}")
             progress_bar = log_view.progress(0)
             # if trolley_id in trolley_dict.keys():
             if len(df_csv.loc[condition, :]) > 0:
@@ -219,11 +230,13 @@ def ohc_wear_analysis(config):
                             rail_fpath,
                             camera_num,
                             base_images,
+                            df_csv,
                             idx,
                             trolley_id,
                             x_init,
                             y_init_u,
                             y_init_l,
+                            status_view,
                             progress_bar,
                         )
             else:
@@ -236,11 +249,13 @@ def ohc_wear_analysis(config):
                         rail_fpath,
                         camera_num,
                         base_images,
+                        df_csv,
                         idx,
                         trolley_id,
                         x_init,
                         y_init_u,
                         y_init_l,
+                        status_view,
                         progress_bar,
                     )
 

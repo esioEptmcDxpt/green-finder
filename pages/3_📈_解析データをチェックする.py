@@ -146,7 +146,7 @@ def check_graph(config):
     else:
         ix_view_range_start = 0
         ix_view_range_end = 100
-    graph_thinout = form_graph.number_input("表示データ間引き間隔(基本:100)",
+    graph_thinout = form_graph.number_input("表示データ間引き間隔(基本:100, 間引き無し:1)",
                                        min_value=1,
                                        # max_value=1000,
                                        value=100)

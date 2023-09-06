@@ -29,6 +29,9 @@ class appProperties:
         self.missing_count_limit = self.config['measurement']['missing_count_limit']
         self.width_exceed_limit = self.config['measurement']['width_exceed_limit']
         self.max_len = self.config['results']['max_len']
+        self.img_width = self.config['results']['img_width']
+        self.img_height = self.config['results']['img_height']
+        self.ix_list = self.config['results']['ix_list']
 
     @property
     def image_dir(self):
@@ -73,10 +76,6 @@ class appProperties:
     @property
     def csv_dtype(self):
         return self.config['default']['csv_dtype']
-    
-    @property
-    def ix_list(self):
-        return self.config['results']['ix_list']
 
     @property
     def camera_name_to_type(self):

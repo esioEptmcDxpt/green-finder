@@ -291,7 +291,7 @@ def file_remove(path):
     return
 
 
-# @st.cache()
+# @st.cache
 def S3_EBS_imgs_dir_Compare(S3_dir_list, EBS_dir_list, df_key):
     """ 2つのリストからデータの有無をまとめたデータフレームを作成
     Args:
@@ -513,7 +513,7 @@ def check_camera_results(dir_area, config):
     
 #     return df_trolley
 
-@my_logger
+# @my_logger
 def result_csv_load(config, rail_fpath):
     """ 結果CSVファイルをデータフレームとして読み込む
     Args:
@@ -531,7 +531,7 @@ def result_csv_load(config, rail_fpath):
     return df_csv
 
 
-@my_logger
+# @my_logger
 def result_csv_crop(df_csv, dir_area, camera_num, image_name, trolley_id):
     """ 解析対象画像の結果だけにデータフレームの行を絞り込む
     Args:
@@ -553,8 +553,8 @@ def result_csv_crop(df_csv, dir_area, camera_num, image_name, trolley_id):
     return df_csv.loc[condition, :].copy()
 
 
-@my_logger
-def result_dict_to_csv(result_dict, idx, count, dir_area, camera_num, image_name, trolley_id, ix_list):
+# @my_logger
+def result_dict_to_csv(config, result_dict, idx, count, dir_area, camera_num, image_name, trolley_id, ix_list):
     """ 解析後のインスタンスから作成した辞書ファイルを結果CSVファイルに保存する
     Args:
         config(instance) : 設定ファイル
@@ -582,10 +582,17 @@ def result_dict_to_csv(result_dict, idx, count, dir_area, camera_num, image_name
     df.insert(5, 'trolley_id', trolley_id)
     df.insert([df.columns.get_loc(c) for c in df.columns if 'estimated_lower_edge' in c][0] + 1,
               'estimated_width', df['estimated_lower_edge'] - df['estimated_upper_edge'])
+
+    # 不足する列を追加する
+    for i, col in enumerate(config.columns_list):
+        if col not in df.columns:
+            print(f"<debug>df insert {i}>{col}")
+            df.insert(i, col, pd.NA)
+
     return df
 
-@my_logger
-def dfcsv_update(df_csv, df, x_init, condition, count):
+# @my_logger
+def dfcsv_update(config, df_csv, df):
     """ 解析結果dfの内容をdf_csvに追記/更新する
     Args:
         df_csv(DataFrame): 結果CSVファイルを読み込んだデータフレーム
@@ -594,30 +601,27 @@ def dfcsv_update(df_csv, df, x_init, condition, count):
         condition(Pandas Series): 指定条件への一致状態を記録した変数（画像ごと）
         count(int): 解析開始からの画像カウント（1枚目はcount=1）
     Return:
-        df_csv(DataFrame): 結果CSVファイルを読み込んだデータフレーム
+        merged(DataFrame): 結果CSVファイルを読み込んだデータフレーム
     """
-    # 一致する行の値を新しいデータフレームの値で更新する
-    if count == 1:
-        if not len(df_csv.loc[condition, :]) == 0:
-            # print("前回の結果を更新します")
-            # dfの内容でdf_tempの条件に一致する行を更新
-            index_to_update = df_csv[condition].index
-            df_csv.loc[index_to_update[x_init:len(df)], df.columns] = df.loc[index_to_update[x_init:len(df)] - index_to_update[0]].values
-        else:
-            # print("新しい結果を追記します")
-            df_csv = pd.concat([df_csv, df], ignore_index=True)
-    else:
-        if not len(df_csv.loc[condition, :]) == 0:
-            # print("前回の結果を更新します")
-            # dfの内容でdf_tempの条件に一致する行を更新
-            index_to_update = df_csv[condition].index
-            df_csv.loc[index_to_update[:len(df)], df.columns] = df.loc[index_to_update[:len(df)] - index_to_update[0]].values
-        else:
-            # print("新しい結果を追記します")
-            df_csv = pd.concat([df_csv, df], ignore_index=True)
-    return df_csv
+    # グループ化のためのキーを定義
+    grouping_keys = ['measurement_area', 'camera_num', 'image_name', 'trolley_id', 'ix']
 
-@my_logger
+    # 指定のキーに基づいてdfをdf_csvにマージ
+    merged = pd.merge(df_csv, df, on=['measurement_area', 'camera_num', 'image_name', 'trolley_id', 'ix'], 
+                      how='outer', suffixes=('', '_new'))
+
+    # 一致する行があれば、dfの値でdf_csvの値を上書き
+    for col in df.columns:
+        if col not in grouping_keys:
+            merged[col] = merged[col + '_new'].combine_first(merged[col])
+            merged.drop(col + '_new', axis=1, inplace=True)
+
+    # df_csv(merged)のカラムの順番を合わせる
+    merged = merged[config.columns_list]
+
+    return merged
+
+# @my_logger
 def window2min_periods(window):
     """ 標準偏差を計算するためのウィンドウサイズからmin_periodsを設定する
     Args:
