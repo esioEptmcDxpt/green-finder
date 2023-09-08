@@ -27,7 +27,7 @@ def check_graph(config):
     st.sidebar.markdown("# ___Step1___ 線区を選択")
 
     # 検索ボックスによる対象フォルダの絞り込み
-    dir_search = st.sidebar.checkbox("検索ボックス表示")
+    dir_search = st.sidebar.checkbox("検索ボックス表示", value=True)
     if dir_search:
         dir_area_key = st.sidebar.text_input("線区 検索キーワード").lower()
         images_path_filtered = [path for path in images_path if dir_area_key in path.lower()]

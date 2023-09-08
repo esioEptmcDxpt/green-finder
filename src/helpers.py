@@ -586,7 +586,6 @@ def result_dict_to_csv(config, result_dict, idx, count, dir_area, camera_num, im
     # 不足する列を追加する
     for i, col in enumerate(config.columns_list):
         if col not in df.columns:
-            print(f"<debug>df insert {i}>{col}")
             df.insert(i, col, pd.NA)
 
     return df

@@ -390,11 +390,15 @@ def plot_fig_bokeh(config, rail_fpath, graph_height, graph_width, graph_thinout,
         source = ColumnDataSource(data=trolley_df)
 
         for i, (p, line_data, label_name) in enumerate(edges + widths + width_stds + centers):
-            p.line(
+            # p.line(
+            p.scatter(
                 x_values,
                 line_data,
                 legend_label=f"{label_name}_{trolley_id}",
-                line_color=colors[i % len(colors)],  # もし色の数が足りない場合は循環するように
+                # line_color=colors[i % len(colors)],  # もし色の数が足りない場合は循環するように
+                fill_color=colors[i % len(colors)],  # もし色の数が足りない場合は循環するように
+                marker="dot",
+                size=10,
                 source=source
             )
 
