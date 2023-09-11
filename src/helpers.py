@@ -5,6 +5,7 @@ import copy
 import shutil
 import boto3
 from botocore.exceptions import NoCredentialsError
+from concurrent.futures import ThreadPoolExecutor
 import datetime
 import shelve
 import streamlit as st
@@ -332,20 +333,72 @@ def check_camera_dirs(dir_area, config):
     # 各カメラのディレクトリをチェック
     for camera_name, camera_type in config.camera_name_to_type.items():
         # ディレクトリのパスを作成
-        dir_path = os.path.join(config.output_dir, dir_area, camera_type)
+        file_path = os.path.join(config.output_dir, dir_area, camera_type, "rail.csv")
         # ディレクトリ内のファイルをチェック
-        try:
-            for file in os.listdir(dir_path):
-                if "rail.csv" in file:  # ファイル名に"rail.shelve"が含まれるかをチェック
-                    result.append([f"{camera_name}_{camera_type}", "○"])
-                    break
-            else:  # ディレクトリ内に"rail.shelve"が含まれるファイルがない場合
-                result.append([f"{camera_name}_{camera_type}", "×"])
-        except FileNotFoundError:  # ディレクトリが存在しない場合
+        if os.path.exists(file_path):
+            result.append([f"{camera_name}_{camera_type}", "○"])
+        else:
             result.append([f"{camera_name}_{camera_type}", "×"])
     # 結果をPandasデータフレームに変換
     df = pd.DataFrame(result, columns=["カメラ番号", "結果有無"])
     return df
+
+def check_camera_dirs_addIdxLen(dir_area, config):
+    """ Outputディレクトリ内の結果ファイルの有無を確認する
+    Args:
+        dir_area (str): output内のディレクトリ名
+        config: configファイル
+    Return:
+        df (DataFrame): Pandasデータフレーム形式
+    """
+    result = []
+    # 各カメラのディレクトリをチェック
+    with ThreadPoolExecutor(max_workers=6) as executor:
+        for camera_name, camera_type in config.camera_name_to_type.items():
+            # ディレクトリのパスを作成
+            file_path = os.path.join(config.output_dir, dir_area, camera_type, "rail.csv")
+            res = executor.submit(read_csv_idx, camera_name, camera_type, file_path)
+            result.append(res.result())
+    # 結果をPandasデータフレームに変換
+    df = pd.DataFrame(result, columns=["カメラ番号", "結果有無", "最後のインデックス"])
+    return df
+
+
+def get_max_idx(file_path):
+    """ check_camera_dirs_addIdxLen用の関数
+    Args:
+        file_path(str): CSVファイルの保存パス
+    Return:
+        max_val(int): image_idxの最大値
+    """
+    # CSVファイルのimage_idxの最大値を取得する
+    max_val = float('-inf')
+    with open(file_path, 'r') as file:
+        # Skip header
+        file.readline()
+        for line in file:
+            try:
+                value = float(line.split(',', 1)[0])  # Split only at the first comma
+                if value > max_val:
+                    max_val = value
+            except ValueError:
+                continue
+    return max_val
+
+def read_csv_idx(camera_name, camera_type, file_path):
+    """ check_camera_dirs_addIdxLen用の関数
+    Args:
+        ile_path(str): CSVファイルの保存パス
+    Return:
+        result_list(list): 結果データフレーム追記用のリスト
+    """
+    if os.path.exists(file_path):
+        max_idx = get_max_idx(file_path)
+        result_list = [f"{camera_name}_{camera_type}", "○", int(max_idx)]
+    else:
+        result_list = [f"{camera_name}_{camera_type}", "×", 0]
+    return result_list
+
 
 
 def check_camera_results(dir_area, config):

@@ -27,7 +27,7 @@ def eda_tool(config):
     st.sidebar.markdown("# ___Step1___ 線区を選択")
 
     # 検索ボックスによる対象フォルダの絞り込み
-    dir_search = st.sidebar.checkbox("検索ボックス表示")
+    dir_search = st.sidebar.checkbox("検索ボックス表示", value=False)
     if dir_search:
         dir_area_key = st.sidebar.text_input("線区 検索キーワード").lower()
         images_path_filtered = [path for path in images_path if dir_area_key in path.lower()]
@@ -69,6 +69,34 @@ def eda_tool(config):
     # 結果保存用のCSVファイル(rail)の保存パスを指定
     # rail_fpath = outpath + "/rail.shelve"
     rail_fpath = outpath + "/rail.csv"
+    
+    
+    # 解析結果があるかをサイドバーに表示する
+    st.sidebar.markdown("# 参考 結果有無👇")
+    try:
+        with open(rail_fpath) as csv:
+            st.sidebar.download_button(
+                label="CSVファイルをダウンロード",
+                data=csv,
+                file_name=dir_area + "_" + camera_num + "_output.csv",
+                mime="text/csv"
+            )
+    except Exception as e:
+        st.sidebar.error("CSVファイルがありません")
+        st.sidebar.write(f"Error> {e}")
+    csv_delete_btn = st.sidebar.button("結果CSVデータを削除する")
+    if csv_delete_btn:
+        if os.path.exists(rail_fpath):
+            helpers.file_remove(rail_fpath)
+            log_view.error("CSVファイルを削除しました")
+        else:
+            log_view.error("削除するCSVファイルがありません")
+    idx_result_check = st.sidebar.checkbox("解析済みインデックスを表示する", value=True)
+    if idx_result_check:
+        df = helpers.check_camera_dirs_addIdxLen(dir_area, config)
+    else:
+        df = helpers.check_camera_dirs(dir_area, config)
+    st.sidebar.dataframe(df)
         
     return
 

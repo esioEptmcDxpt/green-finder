@@ -29,7 +29,7 @@ def ohc_wear_analysis(config):
     st.sidebar.markdown("# ___Step1___ 線区を選択")
 
     # 検索ボックスによる対象フォルダの絞り込み
-    dir_search = st.sidebar.checkbox("検索ボックス表示", value=True)
+    dir_search = st.sidebar.checkbox("検索ボックス表示", value=False)
     if dir_search:
         dir_area_key = st.sidebar.text_input("線区 検索キーワード").lower()
         images_path_filtered = [path for path in images_path if dir_area_key in path.lower()]
@@ -144,11 +144,18 @@ def ohc_wear_analysis(config):
                 fig = vis.plot_fig(out_img, vert_pos, hori_pos)
             log_view.pyplot(fig)
     else:
+        form_graph_img = st.sidebar.form(key="graph_img_form")
+        result_line_draw = form_graph_img.checkbox("結果を重ねて描画", value=True)
         # 補助線を使用しない場合
         hori_pos = 0
         vert_pos = [0, 0]
-        if st.sidebar.button("📈初期値入力用メモリ付画像を表示する"):
-            fig = vis.plot_fig(cam_img, vert_pos, hori_pos)
+        spline_submit = form_graph_img.form_submit_button("📈初期値入力用メモリ付画像を表示する")
+        if spline_submit:
+            if (not result_line_draw) | (not out_img):
+                # 元のカメラ画像 または 結果が無い場合
+                fig = vis.plot_fig(cam_img, vert_pos, hori_pos)
+            else:
+                fig = vis.plot_fig(out_img, vert_pos, hori_pos)
             log_view.pyplot(fig)
 
     # ピクセルトレースを実行
@@ -279,7 +286,11 @@ def ohc_wear_analysis(config):
             log_view.error("CSVファイルを削除しました")
         else:
             log_view.error("削除するCSVファイルがありません")
-    df = helpers.check_camera_dirs(dir_area, config)
+    idx_result_check = st.sidebar.checkbox("解析済みインデックスを表示する", value=True)
+    if idx_result_check:
+        df = helpers.check_camera_dirs_addIdxLen(dir_area, config)
+    else:
+        df = helpers.check_camera_dirs(dir_area, config)
     st.sidebar.dataframe(df)
 
 

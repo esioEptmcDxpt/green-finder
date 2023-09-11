@@ -95,8 +95,7 @@ def out_image_load(rail_fpath, dir_area, camera_num, image_name, img, config):
     df_csv = helpers.result_csv_load(config, rail_fpath).copy()
 
     # 解析結果をチェックする
-    # trolley_count = len(trolley_dict)
-    # image_pathの検索条件を作成し、フィルタリングする
+    # フィルタリング用の画像名の検索条件を作成する
     condition = (
         (df_csv['measurement_area'] == dir_area) &
         (df_csv['camera_num'] == camera_num) &
@@ -104,30 +103,18 @@ def out_image_load(rail_fpath, dir_area, camera_num, image_name, img, config):
         # (df_csv['trolley_id'] == trolley_id)
     )
     df_csv_filtered = df_csv.loc[condition, :].copy()
-    # if not trolley_count:
     if not len(df_csv_filtered):
         # 解析結果が無ければ関数を抜ける
-        # print("<out_image_load>trolley is None")
         return []
 
     # データを描画
     x_values = list(range(config.max_len))
     for trolley_id in config.trolley_ids:
         # trolley_idの数だけ繰り返す
-        # フィルタ条件を作成
-        condition = (
-            (df_csv['measurement_area'] == dir_area) &
-            (df_csv['camera_num'] == camera_num) &
-            (df_csv['image_name'] == image_name) &
-            (df_csv['trolley_id'] == trolley_id)
-        )
-        # if trolley_id in trolley_dict.keys():
         if trolley_id in set(list(df_csv_filtered['trolley_id'])):
             # trolley_idが存在する場合だけ実行
-            # upper_edge = trolley_dict[trolley_id]["estimated_upper_edge"]
-            # lower_edge = trolley_dict[trolley_id]["estimated_lower_edge"]
-            upper_edge = [int(i) for i in df_csv_filtered["estimated_upper_edge"]]
-            lower_edge = [int(i) for i in df_csv_filtered["estimated_lower_edge"]]
+            upper_edge = [int(i) for i in df_csv_filtered[(df_csv_filtered['trolley_id'] == trolley_id)]['estimated_upper_edge']]
+            lower_edge = [int(i) for i in df_csv_filtered[(df_csv_filtered['trolley_id'] == trolley_id)]['estimated_lower_edge']]
             for x, y1, y2 in zip(x_values, upper_edge, lower_edge):
                 # estimated_upper_edgeとestimated_lower_edgeが0でない場合のみ色を変更
                 if y1 != 0:
@@ -273,14 +260,25 @@ def plot_fig_bokeh(config, rail_fpath, graph_height, graph_width, graph_thinout,
     # CSVファイルからデータフレームを作成する
     # df_csv = pd.read_csv(csv_fpath, encoding='cp932')
     df_csv = pd.read_csv(rail_fpath, engine='c', dtype=config.csv_dtype)    # 列の型を指定
+    # df_csv = pd.DataFrame(columns=config.columns_list)    # 空のデータフレームを作成
+    # reader = pd.read_csv(rail_fpath, engine='c', dtype=config.csv_dtype, chunksize=10000)
+    # for r in reader:
+    #     df_csv = pd.concat([df_csv, r], ignore_index=True)
 
     # データを間引く
     # そのままだとメモリ不足等で表示不可…
-    df_csv = df_csv[::graph_thinout]
-    
+    # df_csv = df_csv[::graph_thinout]
+    if graph_thinout != 1:
+        labels = (df_csv.index // graph_thinout)
+        df_grp = df_csv.groupby(labels).max()    # 間引き間隔での最大値を求める
+        df_csv = df_grp.reset_index(drop=True).copy()
+
+    # ユーザ用にimage_indexを調整する
+    df_csv['image_idx'] = df_csv['image_idx'] + 1
+
     # ユーザ入力に基づいて表示範囲を限定する
     if ix_set_flag:
-        df_csv = df_csv.query(f'{ix_view_range[0]} <= ix <= {ix_view_range[1]}').copy()
+        df_csv = df_csv.query(f'{ix_view_range[0]} <= image_idx <= {ix_view_range[1]}').copy()
 
     # CSVから作成したデータフレームをbokeh形式で読み込む
     source = ColumnDataSource(data=df_csv)
@@ -381,10 +379,10 @@ def plot_fig_bokeh(config, rail_fpath, graph_height, graph_width, graph_thinout,
     centers = [
         (p_center, brightness_center, "brightness_center")
     ]
-    
+
     # trolley_idのユニークな値を取得
     unique_trolleys = df_csv['trolley_id'].unique()
-    
+
     for trolley_id in unique_trolleys:
         trolley_df = df_csv[df_csv['trolley_id'] == trolley_id]
         source = ColumnDataSource(data=trolley_df)
