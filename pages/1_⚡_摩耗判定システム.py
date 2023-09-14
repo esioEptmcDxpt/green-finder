@@ -196,6 +196,7 @@ def ohc_wear_analysis(config):
         x_init = form.number_input("横方向の初期座標を入力してください", 0, 999)
         y_init_l = form.number_input("上記X座標でのエッジ位置（上端）の座標を入力してください", 0, 1999)
         y_init_u = form.number_input("上記X座標でのエッジ位置（下端）の座標を入力してください", 0, 1999)
+        test_num = form.number_input(f"解析する画像枚数を入力してください(1～{len(base_images)-idx})", 1, len(base_images)-idx, len(base_images)-idx)
         submit = form.form_submit_button("カルマンフィルタ実行")
 
         if submit:
@@ -239,6 +240,7 @@ def ohc_wear_analysis(config):
                             base_images,
                             df_csv,
                             idx,
+                            test_num,
                             trolley_id,
                             x_init,
                             y_init_u,
@@ -258,6 +260,7 @@ def ohc_wear_analysis(config):
                         base_images,
                         df_csv,
                         idx,
+                        test_num,
                         trolley_id,
                         x_init,
                         y_init_u,

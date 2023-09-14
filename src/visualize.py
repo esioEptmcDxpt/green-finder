@@ -87,10 +87,6 @@ def out_image_load(rail_fpath, dir_area, camera_num, image_name, img, config):
     ]
     background_brightness = random_pixels.mean()
 
-    # shelveファイルを開いて辞書にセットする
-    # with shelve.open(rail_fpath, flag='r') as rail:
-    #     trolley_dict = copy.deepcopy(rail[camera_num][image_path])
-
     # csvファイルを開いてデータフレームにセットする
     df_csv = helpers.result_csv_load(config, rail_fpath).copy()
 
@@ -174,7 +170,7 @@ def ohc_img_concat(base_images, idx, concat_nums, font_size):
             # 不要な画像と画像オブジェクトを削除
             del result_img
             del next_img
-            del draw
+            # del draw
             gc.collect()
 
             # 結果を保存
@@ -194,24 +190,18 @@ def out_image_concat(rail_fpath, dir_area, camera_num, base_images, idx, concat_
             # st.write(f"{count}> {image_name}")
             result_img = Image.open(image_path)
             # 結果を追記する
-            # try:
             result_img = out_image_load(rail_fpath, dir_area, camera_num, image_name, result_img, config)
-            # except:
             if not result_img:
                 # 結果画像が無い場合（[]の場合）は空の画像を作成する
                 result_img = Image.new('RGB', (config.img_width, config.img_height))
             # 画像インデックスを追記する
             draw = ImageDraw.Draw(result_img)
             draw.text((10, 10), str(idx + count + 1), fill='red', font=font)
-            # result_img = init_img.copy()
 
         else:
-            # st.write(f"{count}> {image_name}")
             next_img = Image.open(image_path)
             # 結果を追記する
-            # try:
             next_img = out_image_load(rail_fpath, dir_area, camera_num, image_name, next_img, config)
-            # except:
             if not next_img:
                 # 結果画像が無い場合（[]の場合）は空の画像を作成する
                 next_img = Image.new('RGB', (config.img_width, config.img_height))
@@ -222,9 +212,6 @@ def out_image_concat(rail_fpath, dir_area, camera_num, base_images, idx, concat_
             temp_img = Image.new('RGB', (result_img.width + next_img.width, result_img.height))
             temp_img.paste(im=result_img, box=(0, 0))
             temp_img.paste(im=next_img, box=(result_img.width, 0))
-            # 画像インデックスを追記する
-            # draw = ImageDraw.Draw(temp_img)
-            # draw.text((result_img.width + 10, 10), str(idx + count + 1), fill='red', font=font)
 
             # 不要な画像と画像オブジェクトを削除
             # del result_img
@@ -242,7 +229,7 @@ def out_image_concat(rail_fpath, dir_area, camera_num, base_images, idx, concat_
 
 
 
-def plot_fig_bokeh(config, rail_fpath, graph_height, graph_width, graph_thinout, ix_set_flag, ix_view_range):
+def plot_fig_bokeh(config, rail_fpath, graph_height, graph_width, graph_thinout, ix_set_flag, ix_view_range, scatter_size):
     """
     Args:
         config: 設定ファイル
@@ -250,6 +237,9 @@ def plot_fig_bokeh(config, rail_fpath, graph_height, graph_width, graph_thinout,
         graph_height(int): グラフ1枚当たりの高さ
         graph_width(int): グラフ1枚当たりの幅
         graph_thinout(int): データフレームを間引く間隔
+        ix_set_flag(bool): 横軸の表示範囲を指定するフラグ
+        ix_view_range(tuple): 横軸の表示範囲
+        scatter_size(int): 散布図のプロットサイズ
     """
     y_max = 2048
 
@@ -258,8 +248,9 @@ def plot_fig_bokeh(config, rail_fpath, graph_height, graph_width, graph_thinout,
     # st.write(f"csv_fpath: {csv_fpath}")
 
     # CSVファイルからデータフレームを作成する
-    # df_csv = pd.read_csv(csv_fpath, encoding='cp932')
     df_csv = pd.read_csv(rail_fpath, engine='c', dtype=config.csv_dtype)    # 列の型を指定
+
+    # CSVファイルの読込でメモリが不足する場合は以下のコードを使用する
     # df_csv = pd.DataFrame(columns=config.columns_list)    # 空のデータフレームを作成
     # reader = pd.read_csv(rail_fpath, engine='c', dtype=config.csv_dtype, chunksize=10000)
     # for r in reader:
@@ -267,7 +258,7 @@ def plot_fig_bokeh(config, rail_fpath, graph_height, graph_width, graph_thinout,
 
     # データを間引く
     # そのままだとメモリ不足等で表示不可…
-    # df_csv = df_csv[::graph_thinout]
+    # df_csv = df_csv[::graph_thinout]    # 単純に間引くと最大値を取り逃す可能性があるため修正
     if graph_thinout != 1:
         labels = (df_csv.index // graph_thinout)
         df_grp = df_csv.groupby(labels).max()    # 間引き間隔での最大値を求める
@@ -396,7 +387,7 @@ def plot_fig_bokeh(config, rail_fpath, graph_height, graph_width, graph_thinout,
                 # line_color=colors[i % len(colors)],  # もし色の数が足りない場合は循環するように
                 fill_color=colors[i % len(colors)],  # もし色の数が足りない場合は循環するように
                 marker="dot",
-                size=10,
+                size=scatter_size,
                 source=source
             )
 

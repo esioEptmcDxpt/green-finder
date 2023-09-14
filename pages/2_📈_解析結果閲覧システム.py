@@ -83,6 +83,7 @@ def result_image_view(config):
                                           min_value=1,
                                           value=700)    # bokeh
                                           # value=8)    # pyplot
+    scatter_size = form_graph.number_input("グラフのプロットサイズを指定する", min_value=1, value=10)
     if ix_set_flag:
         form_graph.write("表示範囲の画像インデックスを指定")
         ix_view_range_start = form_graph.number_input("開始インデックス",
@@ -137,6 +138,7 @@ def result_image_view(config):
                                               min_value=1,
                                               value=700)    # bokeh
                                               # value=8)    # pyplot
+        scatter_size = form_concat.number_input("グラフのプロットサイズを指定する", min_value=1, value=10)
         graph_thinout = form_concat.number_input("表示データ間引き間隔(基本:100, 間引き無し:1)",
                                            min_value=1,
                                            # max_value=1000,
@@ -169,7 +171,8 @@ def result_image_view(config):
                 graph_width,
                 graph_thinout,
                 ix_set_flag,
-                ix_view_range
+                ix_view_range,
+                scatter_size
             )
             graph_view.bokeh_chart(grid, use_container_width=True)
             # for matplotlib
@@ -233,7 +236,8 @@ def result_image_view(config):
                     graph_width,
                     graph_thinout,
                     ix_set_flag,
-                    ix_view_range
+                    ix_view_range,
+                    scatter_size
                 )
                 graph_view.bokeh_chart(grid, use_container_width=True)
                 # for matplotlib

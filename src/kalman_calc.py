@@ -7,13 +7,14 @@ import src.helpers as helpers
 from src.kalman import kalman
 
 
-def track_kalman(rail_fpath, camera_num, base_images, df_csv, idx, trolley_id, x_init, y_init_u, y_init_l, status_view, progress_bar):
+def track_kalman(rail_fpath, camera_num, base_images, df_csv, idx, test_num, trolley_id, x_init, y_init_u, y_init_l, status_view, progress_bar):
     """カルマンフィルタ計算用のラッパー
     Args:
         rail (object): shelveファイル
         camera_num (int): カメラのNo
         base_images (str): 画像ファイル
         idx (int): 処理したい対象の画像ファイルの開始位置
+        test_num (int): 処理したい対象の画像ファイルの枚数
         trolley_id (str): 選択しているトロリID
         x_init (int): X座標の初期値
         y_init_u (int): 上部Y座標の初期指定値（最初期画像における手動入力）
@@ -32,7 +33,7 @@ def track_kalman(rail_fpath, camera_num, base_images, df_csv, idx, trolley_id, x
     df_csv = helpers.result_csv_load(config, rail_fpath).copy()
 
     count = 0
-    for image_path in base_images[idx:]:
+    for image_path in base_images[idx:(idx + test_num)]:
         # 解析条件を記録
         image_name = image_path.split('/')[-1]
         dir_area, camera_num = image_path.split("/")[1:3]    # image_pathから線区情報を読取る

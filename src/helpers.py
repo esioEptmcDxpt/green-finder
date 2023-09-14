@@ -394,7 +394,7 @@ def read_csv_idx(camera_name, camera_type, file_path):
     """
     if os.path.exists(file_path):
         max_idx = get_max_idx(file_path)
-        result_list = [f"{camera_name}_{camera_type}", "○", int(max_idx)]
+        result_list = [f"{camera_name}_{camera_type}", "○", int(max_idx) + 1]    # ユーザ向けに+1表示する
     else:
         result_list = [f"{camera_name}_{camera_type}", "×", 0]
     return result_list
