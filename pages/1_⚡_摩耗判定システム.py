@@ -22,7 +22,6 @@ def ohc_wear_analysis(config):
     # フォルダ直下の画像保管用ディレクトリのリスト
     # images_path = helpers.list_imagespath(config.image_dir)
     # 他ページでの結果を反映するためnonCacheを使用
-
     images_path = helpers.list_imagespath_nonCache(config.image_dir)
 
     # 画像保管線区の選択
