@@ -149,7 +149,7 @@ def ohc_img_concat(base_images, idx, concat_nums, font_size):
         result_img(PIL Image): 結合後の画像オブジェクト
     """
     # 番号を追記
-    font = ImageFont.truetype('/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf', size=font_size)
+    font = ImageFont.truetype('fonts/DejaVuSans-Bold.ttf', size=font_size)
 
     for count, image_path in enumerate(base_images[idx:(idx + concat_nums)]):
         if not count:
@@ -182,7 +182,7 @@ def out_image_concat(rail_fpath, dir_area, camera_num, base_images, idx, concat_
     """
     """
     # 番号を追記
-    font = ImageFont.truetype('/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf', size=font_size)
+    font = ImageFont.truetype('fonts/DejaVuSans-Bold.ttf', size=font_size)
 
     for count, image_path in enumerate(base_images[idx:(idx + concat_nums)]):
         image_name = image_path.split('/')[-1]

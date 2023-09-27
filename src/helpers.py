@@ -373,7 +373,7 @@ def get_max_idx(file_path):
     """
     # CSVファイルのimage_idxの最大値を取得する
     max_val = float('-inf')
-    with open(file_path, 'r') as file:
+    with open(file_path, 'r', encoding="utf-8") as file:
         # Skip header
         file.readline()
         for line in file:
@@ -733,7 +733,7 @@ def trolley_dict_to_csv(config, rail_fpath, camera_num, base_images, window, log
     # st.sidebar.write(f"min_periods:{min_periods}")
 
     # shelveファイルを読み込む
-    with shelve.open(rail_fpath, flag='r') as rail:
+    with shelve.open(rail_fpath, flag='r', encoding="utf-8") as rail:
         # trolley_dict = copy.deepcopy(rail[camera_num])
         trolley_dict = rail[camera_num]
 
@@ -868,6 +868,6 @@ def trolley_dict_to_csv(config, rail_fpath, camera_num, base_images, window, log
 
 def load_shelves(rail_fpath, camera_num, base_images, idx):
     image_path = base_images[idx]
-    with shelve.open(rail_fpath, writeback=True) as rail:
+    with shelve.open(rail_fpath, writeback=True, encoding="utf-8") as rail:
         trolley_dict = copy.deepcopy(rail[camera_num][image_path])
     return trolley_dict

@@ -20,7 +20,7 @@ class appProperties:
         max_len: 画像1枚あたりの横ピクセル数（結果データフレーム作成で使用）
     """
     def __init__(self, config_path):
-        with open(config_path, 'r') as yml:
+        with open(config_path, 'r', encoding="utf-8") as yml:
             self.config = yaml.safe_load(yml)
 
         self.missing_threshold = self.config['measurement']['missing_threshold']

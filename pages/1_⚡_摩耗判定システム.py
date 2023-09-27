@@ -112,11 +112,11 @@ def ohc_wear_analysis(config):
     st.sidebar.markdown("# ___Step3___ 解析を実行する")
     # 暫定的にカルマンフィルタに限定
     
-    # trace_method = st.sidebar.radio(
-    #     "システムを選択",
-    #     ("ピクセルトレース", "カルマンフィルタ")
-    # )
-    trace_method = "カルマンフィルタ"
+    trace_method = st.sidebar.radio(
+        "システムを選択",
+        ("カルマンフィルタ", "ピクセルトレース")
+    )
+    # trace_method = "カルマンフィルタ"
 
     # メモリ付き画像を表示
     support_line = st.sidebar.checkbox("補助線を使用")

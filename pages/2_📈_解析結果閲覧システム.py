@@ -159,7 +159,7 @@ def result_image_view(config):
         if ix_view_range_start <= ix_view_range_end:
             ix_view_range = (ix_view_range_start, ix_view_range_end)
         else:
-            log_view.error("横方向の表示位置の入力が誤っています")
+            st.error("横方向の表示位置の入力が誤っています")
             st.stop()
         with st.spinner("グラフ作成中"):
             # グラフデータを作成する
@@ -227,7 +227,7 @@ def result_image_view(config):
                 if ix_view_range_start <= ix_view_range_end:
                     ix_view_range = (ix_view_range_start, ix_view_range_end)
                 else:
-                    log_view.error("横方向の表示位置の入力が誤っています")
+                    st.error("横方向の表示位置の入力が誤っています")
                     st.stop()
                 grid = vis.plot_fig_bokeh(
                     config,
@@ -274,9 +274,9 @@ def result_image_view(config):
     if csv_delete_btn:
         if os.path.exists(rail_fpath):
             helpers.file_remove(rail_fpath)
-            log_view.error("CSVファイルを削除しました")
+            st.error("CSVファイルを削除しました")
         else:
-            log_view.error("削除するCSVファイルがありません")
+            st.error("削除するCSVファイルがありません")
     idx_result_check = st.sidebar.checkbox("解析済みインデックスを表示する", value=True)
     if idx_result_check:
         df = helpers.check_camera_dirs_addIdxLen(dir_area, config)
