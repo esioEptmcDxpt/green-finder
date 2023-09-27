@@ -65,7 +65,7 @@ def data_loader(config):
                 dt02 = datetime.datetime.now()
                 prc_time = dt02 - dt01
                 st.write(f"(参考)処理時間> {prc_time}")
-            
+
             st.warning("<参考用>線区フォルダの情報👇")
             # カメラ
             s3_camera_list = helpers.get_s3_dir_list(config.image_dir + "/" + s3_rail_path)

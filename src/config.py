@@ -20,7 +20,7 @@ class appProperties:
         max_len: 画像1枚あたりの横ピクセル数（結果データフレーム作成で使用）
     """
     def __init__(self, config_path):
-        with open(config_path, 'r') as yml:
+        with open(config_path, 'r', encoding="utf-8") as yml:
             self.config = yaml.safe_load(yml)
 
         self.missing_threshold = self.config['measurement']['missing_threshold']
@@ -29,6 +29,9 @@ class appProperties:
         self.missing_count_limit = self.config['measurement']['missing_count_limit']
         self.width_exceed_limit = self.config['measurement']['width_exceed_limit']
         self.max_len = self.config['results']['max_len']
+        self.img_width = self.config['results']['img_width']
+        self.img_height = self.config['results']['img_height']
+        self.ix_list = self.config['results']['ix_list']
 
     @property
     def image_dir(self):
@@ -65,6 +68,14 @@ class appProperties:
     @property
     def result_keys_kalman(self):
         return self.config['default']['result_keys_kalman']
+
+    @property
+    def columns_list(self):
+        return self.config['default']['columns_list']
+
+    @property
+    def csv_dtype(self):
+        return self.config['default']['csv_dtype']
 
     @property
     def camera_name_to_type(self):

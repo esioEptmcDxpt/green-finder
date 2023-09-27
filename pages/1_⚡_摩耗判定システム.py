@@ -22,17 +22,17 @@ def ohc_wear_analysis(config):
     # フォルダ直下の画像保管用ディレクトリのリスト
     # images_path = helpers.list_imagespath(config.image_dir)
     # 他ページでの結果を反映するためnonCacheを使用
-    
     images_path = helpers.list_imagespath_nonCache(config.image_dir)
 
     # 画像保管線区の選択
     st.sidebar.markdown("# ___Step1___ 線区を選択")
-    dir_search = st.sidebar.checkbox("検索ボックス表示")
+
+    # 検索ボックスによる対象フォルダの絞り込み
+    dir_search = st.sidebar.checkbox("検索ボックス表示", value=False)
     if dir_search:
         dir_area_key = st.sidebar.text_input("線区 検索キーワード").lower()
         images_path_filtered = [path for path in images_path if dir_area_key in path.lower()]
         if dir_area_key:
-
             if not images_path_filtered:
                 st.sidebar.error("対象データがありません。検索キーワードを変更してください。")
                 st.stop()
@@ -41,9 +41,11 @@ def ohc_wear_analysis(config):
     else:
         images_path_filtered = images_path
     
+    # 対象フォルダの選択
     dir_area = st.sidebar.selectbox("線区のフォルダ名を選択してください", images_path_filtered)
     if dir_area is None:
         st.error("No frames fit the criteria. Please select different label or number.")
+        st.stop()
 
     # 選択された線区情報を表示する
     vis.rail_info_view(dir_area, config, main_view)
@@ -61,18 +63,18 @@ def ohc_wear_analysis(config):
 
     # outputディレクトリを指定
     outpath = config.output_dir + "/" + dir_area + "/" + camera_num
-    os.makedirs(outpath, exist_ok=True)
 
     # imagesフォルダ内の画像一覧取得
     base_images = helpers.list_images(target_dir)
 
-    # 結果保存用のshelveファイル(rail)の保存パスを指定
-    rail_fpath = outpath + "/rail.shelve"
-    with shelve.open(rail_fpath) as rail:
-        # 線区名を記録する
-        rail["name"] = dir_area
-        # 解析結果が既にある場合は初期化しない
-        helpers.rail_camera_initialize(rail, camera_num, base_images, config.trolley_ids)
+    # 結果保存用のCSVファイル(rail)の保存パスを指定
+    # rail_fpath = outpath + "/rail.shelve"
+    rail_fpath = outpath + "/rail.csv"
+    # with shelve.open(rail_fpath) as rail:
+    #     # 線区名を記録する
+    #     rail["name"] = dir_area
+    #     # 解析結果が既にある場合は初期化しない
+    #     helpers.rail_camera_initialize(rail, camera_num, base_images, config.trolley_ids)
 
     # ファイルインデックスを指定する
     if not base_images:
@@ -82,7 +84,9 @@ def ohc_wear_analysis(config):
         idx = st.sidebar.number_input(f"インデックス(1～{len(base_images)}で指定)",
                                       min_value=1,
                                       max_value=len(base_images)) - 1
-        st.sidebar.write(f"ファイル名:{base_images[idx]}")
+        st.sidebar.write(f"ファイルパス:{base_images[idx]}")
+        # 画像ファイル名を取得
+        image_name = base_images[idx].split('/')[-1]
 
     # メインページにカメラ画像を表示する
     col1, col2 = camera_view.columns(2)
@@ -96,22 +100,62 @@ def ohc_wear_analysis(config):
         st.write("🖥️解析結果")
         st.write("解析結果を表示中")
         try:
-            out_img = vis.out_image_load(rail_fpath, camera_num, base_images[idx], config)
+            out_img = vis.out_image_load(rail_fpath, dir_area, camera_num, image_name, cam_img, config)
         except Exception as e:
             out_img = []
+            st.write(e)
         if not out_img:
             st.error("解析結果がありません")
         else:
             st.image(out_img)
-    # with col3:
-    if st.sidebar.button("📈初期値入力用メモリ付画像を表示する"):
-        fig = vis.plot_fig(base_images[idx])
-        log_view.pyplot(fig)
+
+    st.sidebar.markdown("# ___Step3___ 解析を実行する")
+    # 暫定的にカルマンフィルタに限定
 
     trace_method = st.sidebar.radio(
         "システムを選択", 
-        ("ピクセルトレース", "カルマンフィルタ")
+        ("カルマンフィルタ", "ピクセルトレース")
     )
+    # trace_method = "カルマンフィルタ"
+
+    # メモリ付き画像を表示
+    support_line = st.sidebar.checkbox("補助線を使用")
+    if support_line:
+        # 補助線を使用する場合
+        form_support_line = st.sidebar.form(key="support_line_form")
+        result_line_draw = form_support_line.checkbox("結果を重ねて描画", value=True)
+        form_support_line.write(" 0 にすると線を表示しません")
+        hori_pos = form_support_line.number_input("補助線の横位置", 0, 999, 0)
+        # 選択したシステムによって横線の本数を変更
+        vert_pos = [0, 0]
+        if trace_method == "ピクセルトレース":
+            vert_pos[0] = form_support_line.number_input("補助線の縦位置", 0, 2047, 1000)
+        if trace_method == "カルマンフィルタ":
+            vert_pos[0] = form_support_line.number_input("補助線の縦位置(上側)", 0, 2047, 1000)
+            vert_pos[1] = form_support_line.number_input("補助線の縦位置(下側)", 0, 2047, 1500)
+        spline_submit = form_support_line.form_submit_button("📈初期値入力用メモリ付画像を表示する")
+        # グラフ付画像の描画を実行
+        if spline_submit:
+            if (not result_line_draw) | (not out_img):
+                # 元のカメラ画像 または 結果が無い場合
+                fig = vis.plot_fig(cam_img, vert_pos, hori_pos)
+            else:
+                fig = vis.plot_fig(out_img, vert_pos, hori_pos)
+            log_view.pyplot(fig)
+    else:
+        form_graph_img = st.sidebar.form(key="graph_img_form")
+        result_line_draw = form_graph_img.checkbox("結果を重ねて描画", value=True)
+        # 補助線を使用しない場合
+        hori_pos = 0
+        vert_pos = [0, 0]
+        spline_submit = form_graph_img.form_submit_button("📈初期値入力用メモリ付画像を表示する")
+        if spline_submit:
+            if (not result_line_draw) | (not out_img):
+                # 元のカメラ画像 または 結果が無い場合
+                fig = vis.plot_fig(cam_img, vert_pos, hori_pos)
+            else:
+                fig = vis.plot_fig(out_img, vert_pos, hori_pos)
+            log_view.pyplot(fig)
 
     # ピクセルトレースを実行
     if trace_method == "ピクセルトレース":
@@ -151,6 +195,7 @@ def ohc_wear_analysis(config):
         x_init = form.number_input("横方向の初期座標を入力してください", 0, 999)
         y_init_l = form.number_input("上記X座標でのエッジ位置（上端）の座標を入力してください", 0, 1999)
         y_init_u = form.number_input("上記X座標でのエッジ位置（下端）の座標を入力してください", 0, 1999)
+        test_num = form.number_input(f"解析する画像枚数を入力してください(1～{len(base_images)-idx})", 1, len(base_images)-idx, len(base_images)-idx)
         submit = form.form_submit_button("カルマンフィルタ実行")
 
         if submit:
@@ -158,17 +203,30 @@ def ohc_wear_analysis(config):
             os.makedirs(outpath, exist_ok=True)
 
             # shelveファイルの初期化
-            with shelve.open(rail_fpath) as rail:
-                # 線区名を記録する
-                rail["name"] = dir_area
-                # 解析結果が既にある場合は初期化しない
-                helpers.rail_camera_initialize(rail, camera_num, base_images, config.trolley_ids)
+            # with shelve.open(rail_fpath) as rail:
+            #     # 線区名を記録する
+            #     rail["name"] = dir_area
+            #     # 解析結果が既にある場合は初期化しない
+            #     helpers.rail_camera_initialize(rail, camera_num, base_images, config.trolley_ids)
 
             # 選択画像における処理結果が既に存在しているかチェック
-            trolley_dict = helpers.load_shelves(rail_fpath, camera_num, base_images, idx)
+            # trolley_dict = helpers.load_shelves(rail_fpath, camera_num, base_images, idx)
+            df_csv = helpers.result_csv_load(config, rail_fpath)
+            # df_csvで、指定された条件に一致する行を特定する用の条件
+            image_name = base_images[idx].split('/')[-1]
+            condition = (
+                (df_csv['measurement_area'] == dir_area) &
+                (df_csv['camera_num'] == camera_num) &
+                (df_csv['image_name'] == image_name) &
+                (df_csv['trolley_id'] == trolley_id)
+            )
 
-            if trolley_id in trolley_dict.keys():
-                st.warning('既に同じ画像での結果が存在していますが、初期化して実行します')
+            status_view = st.empty()
+            status_view.write(f"解析の進捗：{idx+1}/{len(base_images)}")
+            progress_bar = log_view.progress(0)
+            # if trolley_id in trolley_dict.keys():
+            if len(df_csv.loc[condition, :]) > 0:
+                st.warning('既に同じ画像での結果が存在していますが、上書きして実行します')
 
                 if st.button('計算停止ボタン ＜現在の計算が終わったら停止します＞'):
                     st.stop()
@@ -179,11 +237,15 @@ def ohc_wear_analysis(config):
                             rail_fpath,
                             camera_num,
                             base_images,
+                            df_csv,
                             idx,
+                            test_num,
                             trolley_id,
                             x_init,
                             y_init_u,
                             y_init_l,
+                            status_view,
+                            progress_bar,
                         )
             else:
                 if st.button(f'計算停止ボタン ＜現在の計算が終わったら停止します＞'):
@@ -195,16 +257,42 @@ def ohc_wear_analysis(config):
                         rail_fpath,
                         camera_num,
                         base_images,
+                        df_csv,
                         idx,
+                        test_num,
                         trolley_id,
                         x_init,
                         y_init_u,
                         y_init_l,
+                        status_view,
+                        progress_bar,
                     )
 
     # 解析結果があるかをサイドバーに表示する
     st.sidebar.markdown("# 参考 結果有無👇")
-    df = helpers.check_camera_dirs(dir_area, config)
+    try:
+        with open(rail_fpath) as csv:
+            st.sidebar.download_button(
+                label="CSVファイルをダウンロード",
+                data=csv,
+                file_name=dir_area + "_" + camera_num + "_output.csv",
+                mime="text/csv"
+            )
+    except Exception as e:
+        st.sidebar.error("CSVファイルがありません")
+        st.sidebar.write(f"Error> {e}")
+    csv_delete_btn = st.sidebar.button("結果CSVデータを削除する")
+    if csv_delete_btn:
+        if os.path.exists(rail_fpath):
+            helpers.file_remove(rail_fpath)
+            log_view.error("CSVファイルを削除しました")
+        else:
+            log_view.error("削除するCSVファイルがありません")
+    idx_result_check = st.sidebar.checkbox("解析済みインデックスを表示する", value=True)
+    if idx_result_check:
+        df = helpers.check_camera_dirs_addIdxLen(dir_area, config)
+    else:
+        df = helpers.check_camera_dirs(dir_area, config)
     st.sidebar.dataframe(df)
 
 
