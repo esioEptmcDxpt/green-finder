@@ -204,7 +204,7 @@ format_func:
     uchi: 内回り
   time_band_names:
     day: 昼間
-    knight: 夜間
+    night: 夜間
 
 measurement:
   missing_threshold: 5
