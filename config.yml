@@ -1,6 +1,7 @@
 default:
   image_dir: imgs
   output_dir: output
+  tdm_dir: TDM
   bucket: trolley-monitor
   readme_md: instructions.md
   camera_types: 
@@ -59,6 +60,8 @@ default:
   columns_list:
     - image_idx
     - ix
+    - pole_num
+    - kiro_tei
     - measurement_area
     - camera_num
     - image_name
@@ -205,6 +208,9 @@ format_func:
   time_band_names:
     day: 昼間
     night: 夜間
+  SenbetsuCd:
+    21: 下り線
+    22: 上り線
 
 measurement:
   missing_threshold: 5

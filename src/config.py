@@ -42,6 +42,10 @@ class appProperties:
         return self.config['default']['output_dir']
 
     @property
+    def tdm_dir(self):
+        return self.config['default']['tdm_dir']
+
+    @property
     def bucket(self):
         return self.config['default']['bucket']
 
@@ -97,6 +101,9 @@ class appProperties:
     def time_band_names(self):
         return self.config['format_func']['time_band_names']
 
+    @property
+    def SenbetsuCd(self):
+        return self.config['format_func']['SenbetsuCd']
 
 if __name__ == "__main__":
     config = appProperties('config.yml')

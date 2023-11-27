@@ -643,6 +643,50 @@ def result_dict_to_csv(config, result_dict, idx, count, dir_area, camera_num, im
 
     return df
 
+def experimental_result_dict_to_csv(config, result_dict, kiro_dict, idx, count, dir_area, camera_num, image_name, trolley_id, ix_list):
+    """ 解析後のインスタンスから作成した辞書ファイルを結果CSVファイルに保存する
+        ※高崎検証用 一部線区でのみ使用可能
+    Args:
+        config(instance) : 設定ファイル
+        df_csv(DataFrame): 結果CSVファイルから作成したデータフレーム
+        rail_fpath(str)  : 結果CSVファイルの保存パス
+        result_dict(dict): インスタンスから生成した辞書
+        idx(int)         : 画像インデックス
+        image_path(str)  : 画像パス
+        image_name(str)  : 画像ファイル名
+        trolley_id(str)  : トロリーID
+        window(int)      : 標準偏差を計算するときのウィンドウサイズ
+    Return:
+        df_csv(DataFrame): 結果を更新後のデータフレーム
+    """
+    # インスタンスの内容をデータフレームとして読み込む
+    df = pd.DataFrame.from_dict(result_dict[trolley_id], orient='index').T
+
+    # データフレームにインデックス・画像名等を挿入
+    df.insert(0, 'image_idx', idx + count - 1)
+    df.insert(1, 'ix', ix_list[:len(df)])
+    df['ix'] = df['ix'] + (idx + count - 1) * 1000
+    
+    # 編集中メモ
+    # 画像ファイルがマッチしない場合の処理を追加する
+    
+    df.insert(2, 'pole_num', kiro_dict[camera_num][image_name.split(".")[0]]['DenchuNo'])
+    df.insert(3, 'kiro_tei', kiro_dict[camera_num][image_name.split(".")[0]]['KiroTei'])
+    df.insert(4, 'measurement_area', dir_area)
+    df.insert(5, 'camera_num', camera_num)
+    df.insert(6, 'image_name', image_name)
+    df.insert(7, 'trolley_id', trolley_id)
+    df.insert([df.columns.get_loc(c) for c in df.columns if 'estimated_lower_edge' in c][0] + 1,
+              'estimated_width', df['estimated_lower_edge'] - df['estimated_upper_edge'])
+
+    # 不足する列を追加する
+    for i, col in enumerate(config.columns_list):
+        if col not in df.columns:
+            df.insert(i, col, pd.NA)
+
+    return df
+
+
 # @my_logger
 def dfcsv_update(config, df_csv, df):
     """ 解析結果dfの内容をdf_csvに追記/更新する
@@ -871,3 +915,18 @@ def load_shelves(rail_fpath, camera_num, base_images, idx):
     with shelve.open(rail_fpath, writeback=True, encoding="utf-8") as rail:
         trolley_dict = copy.deepcopy(rail[camera_num][image_path])
     return trolley_dict
+
+
+
+def default(o):
+    # 車モニの情報からJSONファイルを作成するときに使用
+    # JSONをdumpするときの対策
+    # 参考：https://qiita.com/yuji38kwmt/items/0a1503f127fc3be17be0
+    # print(f"{type(o)=}")
+    if isinstance(o, np.int64):
+        return int(o)
+    elif isinstance(o, np.bool_):
+        return bool(o)
+    elif isinstance(o, np.ndarray):
+        return list(o)
+    raise TypeError(repr(o) + " is not JSON serializable")
