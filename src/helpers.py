@@ -3,6 +3,7 @@ import glob
 import re
 import copy
 import shutil
+import json
 import boto3
 from botocore.exceptions import NoCredentialsError
 from concurrent.futures import ThreadPoolExecutor
@@ -643,14 +644,14 @@ def result_dict_to_csv(config, result_dict, idx, count, dir_area, camera_num, im
 
     return df
 
-def experimental_result_dict_to_csv(config, result_dict, kiro_dict, idx, count, dir_area, camera_num, image_name, trolley_id, ix_list):
+def experimental_result_dict_to_csv(config, result_dict, kiro_dict, kiro_init_dict, idx, count, dir_area, camera_num, image_name, trolley_id, ix_list):
     """ 解析後のインスタンスから作成した辞書ファイルを結果CSVファイルに保存する
         ※高崎検証用 一部線区でのみ使用可能
     Args:
         config(instance) : 設定ファイル
-        df_csv(DataFrame): 結果CSVファイルから作成したデータフレーム
-        rail_fpath(str)  : 結果CSVファイルの保存パス
         result_dict(dict): インスタンスから生成した辞書
+        kiro_dict(dict)  : 画像ごとのキロ程情報の辞書
+        kiro_init_dict(dict): 画像ファイル名がkiro_dictに含まれる範囲の情報を記録した辞書
         idx(int)         : 画像インデックス
         image_path(str)  : 画像パス
         image_name(str)  : 画像ファイル名
@@ -659,6 +660,14 @@ def experimental_result_dict_to_csv(config, result_dict, kiro_dict, idx, count, 
     Return:
         df_csv(DataFrame): 結果を更新後のデータフレーム
     """
+    # 画像ファイルとキロ程を紐づけるためのJSONファイルを辞書として読み込む
+    # with open(f"{config.tdm_dir}/{dir_area}.json", 'r') as file:
+    #     kiro_dict = json.load(file)
+
+    # キロ程の境界条件を取得
+    kiro_tei_init_head = kiro_init_dict['KiroTei_init'][0]
+    kiro_tei_init_tail = kiro_init_dict['KiroTei_init'][1]
+
     # インスタンスの内容をデータフレームとして読み込む
     df = pd.DataFrame.from_dict(result_dict[trolley_id], orient='index').T
 
@@ -666,12 +675,29 @@ def experimental_result_dict_to_csv(config, result_dict, kiro_dict, idx, count, 
     df.insert(0, 'image_idx', idx + count - 1)
     df.insert(1, 'ix', ix_list[:len(df)])
     df['ix'] = df['ix'] + (idx + count - 1) * 1000
-    
-    # 編集中メモ
-    # 画像ファイルがマッチしない場合の処理を追加する
-    
-    df.insert(2, 'pole_num', kiro_dict[camera_num][image_name.split(".")[0]]['DenchuNo'])
-    df.insert(3, 'kiro_tei', kiro_dict[camera_num][image_name.split(".")[0]]['KiroTei'])
+    fname = image_name.split(".")[0]
+
+    # -----------------------------------
+    """
+    画像ファイル名がマッチしない範囲のキロ程を計算して記録するコードを修正中
+    """
+    # -----------------------------------
+
+    if fname in kiro_dict[camera_num].keys():
+        DenchuNo = kiro_dict[camera_num][fname]['DenchuNo']
+        kiro_tei = kiro_dict[camera_num][fname]['KiroTei']
+        st.write(f"Match   > kiro_tei: {kiro_tei}")
+    else:
+        # 画像ファイル名がマッチしない場合のキロ程を指定
+        if idx + count - 1 <= kiro_init_dict['image_idx_init'][0]:
+            DenchuNo = 0
+            kiro_tei = kiro_tei_init_head - (kiro_init_dict['image_idx_init'][0] - (idx + count - 1)) * 2 / config.img_width
+        else:
+            DenchuNo = 1000
+            kiro_tei = kiro_tei_init_tail + ((idx + count - 1) - kiro_init_dict['image_idx_init'][1]) * 2 / config.img_width
+    kiro_tei_list = [kiro_tei + ix / config.img_width / 1000 * 2 for ix in config.ix_list]
+    df.insert(2, 'pole_num', DenchuNo)
+    df.insert(3, 'kiro_tei', kiro_tei_list[:len(df)])
     df.insert(4, 'measurement_area', dir_area)
     df.insert(5, 'camera_num', camera_num)
     df.insert(6, 'image_name', image_name)
@@ -685,6 +711,60 @@ def experimental_result_dict_to_csv(config, result_dict, kiro_dict, idx, count, 
             df.insert(i, col, pd.NA)
 
     return df
+
+def experimental_get_image_match(list_images, kiro_dict, camera_num):
+    """ ローカルの画像ファイル名リストについて、キロ程情報の辞書に含まれる範囲を取得する
+    Args:
+        list_images(list): ディレクトリ内のファイル名リスト
+        kiro_dict(dict): 車モニのデータベースから作成したキロ程情報の辞書
+        camera_num(str): 解析中のカメラ番号 (例)HD11
+    Return:
+        kiro_init_dict(dict): マッチした情報の辞書
+            keys:
+                image_name_init(list): 画像ファイル名[開始, 終了]
+                image_idx_init(list): 画像インデックス[開始, 終了]
+                DenchuNo_init(list): 電柱番号[開始, 終了]
+                KiroTei_init(list): キロ程[開始, 終了]
+    """
+    find_kiro_idx_head = 0
+    find_kiro_idx_tail = 0
+    find_image_name_head = ""
+    find_image_name_tail = ""
+    kiro_keys = set(kiro_dict[camera_num].keys())  # 辞書のキーをセットに変換
+
+    # find_kiro_idx_headを見つける
+    for idx, fname in enumerate(list_images):
+        image_name = re.split('[./]', fname)[-2]
+        if image_name.split(".")[0] in kiro_keys:
+            find_kiro_idx_head = idx
+            find_image_name_head = image_name
+            break
+
+    # find_kiro_idx_tailを見つける
+    for idx, fname in reversed(list(enumerate(list_images))):
+        image_name = re.split('[./]', fname)[-2]
+        if image_name.split(".")[0] in kiro_keys:
+            find_kiro_idx_tail = idx
+            find_image_name_tail = image_name
+            break
+
+    # find_kiro_idx_headが設定されていない場合の処理
+    if not find_kiro_idx_head:
+        find_kiro_idx_tail = len(list_images) - 1
+
+    kiro_init_dict = {
+        'image_name_init': [find_image_name_head, find_image_name_tail],
+        'image_idx_init': [find_kiro_idx_head, find_kiro_idx_tail],
+        'DenchuNo_init': [
+            kiro_dict[camera_num][find_image_name_head]['DenchuNo'],
+            kiro_dict[camera_num][find_image_name_tail]['DenchuNo']
+        ],
+        'KiroTei_init': [
+            kiro_dict[camera_num][find_image_name_head]['KiroTei'],
+            kiro_dict[camera_num][find_image_name_tail]['KiroTei']
+        ],
+    }
+    return kiro_init_dict
 
 
 # @my_logger

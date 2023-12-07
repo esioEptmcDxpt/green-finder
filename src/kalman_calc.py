@@ -33,6 +33,15 @@ def track_kalman(rail_fpath, camera_num, base_images, df_csv, idx, test_num, tro
     # 前回までの結果ファイルを読み込む
     df_csv = helpers.result_csv_load(config, rail_fpath).copy()
 
+    # 画像ファイルとキロ程を紐づけるためのJSONファイルを辞書として読み込む
+    dir_area = base_images[idx].split("/")[1]    # image_pathから線区情報を読取る
+    with open(f"{config.tdm_dir}/{dir_area}.json", 'r') as file:
+        kiro_dict = json.load(file)
+    # 画像ファイル名がkiro_dictに含まれる範囲をリストで取得 [idx_head, idx_tail]
+    kiro_init_dict = helpers.experimental_get_image_match(base_images, kiro_dict, camera_num)
+    # for debug
+    st.write(kiro_init_dict)
+
     count = 0
     for image_path in base_images[idx:(idx + test_num)]:
         # 解析条件を記録
@@ -117,10 +126,19 @@ def track_kalman(rail_fpath, camera_num, base_images, df_csv, idx, test_num, tro
                 # 車モニ マスターデータが必須
                 # -----------------------------------------------
                 # df = helpers.result_dict_to_csv(config, kalman_dict, idx, count, dir_area, camera_num, image_name, trolley_id, config.ix_list).copy()
-                # 画像ファイルとキロ程を紐づけるためのJSONファイルを辞書として読み込む
-                with open(f"{config.tdm_dir}/{dir_area}.json", 'r') as file:
-                    kiro_dict = json.load(file)
-                df = helpers.experimental_result_dict_to_csv(config, kalman_dict, kiro_dict, idx, count, dir_area, camera_num, image_name, trolley_id, config.ix_list).copy()
+                df = helpers.experimental_result_dict_to_csv(
+                    config,
+                    kalman_dict,
+                    kiro_dict,
+                    kiro_init_dict,
+                    idx,
+                    count,
+                    dir_area,
+                    camera_num,
+                    image_name,
+                    trolley_id,
+                    config.ix_list
+                ).copy()
                 # 一致する行の値を新しいデータフレームの値で更新する
                 df_csv = helpers.dfcsv_update(config, df_csv, df).copy()
 
@@ -154,10 +172,19 @@ def track_kalman(rail_fpath, camera_num, base_images, df_csv, idx, test_num, tro
                 # 車モニ マスターデータが必須
                 # -----------------------------------------------
                 # df = helpers.result_dict_to_csv(config, kalman_dict, idx, count, dir_area, camera_num, image_name, trolley_id, config.ix_list).copy()
-                # 画像ファイルとキロ程を紐づけるためのJSONファイルを辞書として読み込む
-                with open(f"{config.tdm_dir}/{dir_area}.json", 'r') as file:
-                    kiro_dict = json.load(file)
-                df = helpers.experimental_result_dict_to_csv(config, kalman_dict, kiro_dict, idx, count, dir_area, camera_num, image_name, trolley_id, config.ix_list).copy()
+                df = helpers.experimental_result_dict_to_csv(
+                    config,
+                    kalman_dict,
+                    kiro_dict,
+                    kiro_init_dict,
+                    idx,
+                    count,
+                    dir_area,
+                    camera_num,
+                    image_name,
+                    trolley_id,
+                    config.ix_list
+                ).copy()
                 # 一致する行の値を新しいデータフレームの値で更新する
                 df_csv = helpers.dfcsv_update(config, df_csv, df).copy()
 

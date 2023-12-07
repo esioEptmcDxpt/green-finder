@@ -409,6 +409,189 @@ def plot_fig_bokeh(config, rail_fpath, graph_height, graph_width, graph_thinout,
     return grid
 
 
+def experimental_plot_fig_bokeh(config, rail_fpath, graph_height, graph_width, graph_thinout, ix_set_flag, ix_view_range, scatter_size):
+    """ 高崎検証用 画像キロ程を利用するため、車モニ マスターデータが必須
+    Args:
+        config: 設定ファイル
+        rail_fpath(str): shelveファイルのパス
+        graph_height(int): グラフ1枚当たりの高さ
+        graph_width(int): グラフ1枚当たりの幅
+        graph_thinout(int): データフレームを間引く間隔
+        ix_set_flag(bool): 横軸の表示範囲を指定するフラグ
+        ix_view_range(tuple): 横軸の表示範囲
+        scatter_size(int): 散布図のプロットサイズ
+    """
+    y_max = 2048
+
+    # CSVファイルの保存パスを指定
+    # csv_fpath = rail_fpath.replace(".shelve", ".csv")
+    # st.write(f"csv_fpath: {csv_fpath}")
+
+    # CSVファイルからデータフレームを作成する
+    df_csv = pd.read_csv(rail_fpath, engine='c', dtype=config.csv_dtype)    # 列の型を指定
+
+    # CSVファイルの読込でメモリが不足する場合は以下のコードを使用する
+    # df_csv = pd.DataFrame(columns=config.columns_list)    # 空のデータフレームを作成
+    # reader = pd.read_csv(rail_fpath, engine='c', dtype=config.csv_dtype, chunksize=10000)
+    # for r in reader:
+    #     df_csv = pd.concat([df_csv, r], ignore_index=True)
+
+    # データを間引く
+    # そのままだとメモリ不足等で表示不可…
+    # df_csv = df_csv[::graph_thinout]    # 単純に間引くと最大値を取り逃す可能性があるため修正
+    if graph_thinout != 1:
+        labels = (df_csv.index // graph_thinout)
+        df_grp = df_csv.groupby(labels).max()    # 間引き間隔での最大値を求める
+        df_csv = df_grp.reset_index(drop=True).copy()
+
+    # ユーザ用にimage_indexを調整する
+    df_csv['image_idx'] = df_csv['image_idx'] + 1
+
+    # ユーザ入力に基づいて表示範囲を限定する
+    if ix_set_flag:
+        df_csv = df_csv.query(f'{ix_view_range[0]} <= image_idx <= {ix_view_range[1]}').copy()
+
+    # CSVから作成したデータフレームをbokeh形式で読み込む
+    source = ColumnDataSource(data=df_csv)
+
+    # グラフの色情報を設定する
+    # グラフの数に合わせて12色だけ取得する
+    # edge(upper,lower),width,width_std,brightness=4 -> 3*5=15
+    colors = d3["Category20"][20]
+
+    # ツールチップを設定
+    TOOLTIPS_EDGE=[
+        ('image_index', '@image_idx'),
+        ('image_name', '@image_name'),
+        ('kiro_tei', '@kiro_tei'),
+        ('upper_edge', '@estimated_upper_edge'),
+        ('lower_edge', '@estimated_lower_edge'),
+    ]
+    TOOLTIPS_WIDTH=[
+        ('image_index', '@image_idx'),
+        ('image_name', '@image_name'),
+        ('kiro_tei', '@kiro_tei'),
+        ('estimated_width', '@estimated_width'),
+    ]
+    TOOLTIPS_WIDTH_STD=[
+        ('image_index', '@image_idx'),
+        ('image_name', '@image_name'),
+        ('kiro_tei', '@kiro_tei'),
+        ('estimated_width_std', '@estimated_width_std'),
+    ]
+    TOOLTIPS_BRIGHTNESS=[
+        ('image_index', '@image_idx'),
+        ('image_name', '@image_name'),
+        ('kiro_tei', '@kiro_tei'),
+        ('brightness_center', '@brightness_center'),
+    ]
+
+    # グラフを作成
+    p_edge = figure(
+        title="Upper and Lower Edge",
+        sizing_mode="stretch_width",
+        y_range=(y_max, 0),
+        tooltips=TOOLTIPS_EDGE,
+        height=int(graph_height),
+        width=int(graph_width)
+    )
+    p_width = figure(
+        title="Width",
+        sizing_mode="stretch_width",
+        tooltips=TOOLTIPS_WIDTH,
+        x_range=p_edge.x_range,
+        height=int(graph_height),
+        width=int(graph_width)
+    )
+    p_width_std = figure(
+        title="Width Standard Deviation",
+        sizing_mode="stretch_width",
+        tooltips=TOOLTIPS_WIDTH_STD,
+        x_range=p_edge.x_range,
+        height=int(graph_height),
+        width=int(graph_width)
+    )
+    p_center = figure(
+        title="Brightness Center",
+        sizing_mode="stretch_width",
+        tooltips=TOOLTIPS_BRIGHTNESS,
+        x_range=p_edge.x_range,
+        height=int(graph_height),
+        width=int(graph_width)
+    )
+    plots = [[p_edge], [p_width], [p_width_std], [p_center]]
+
+    # グラフを表示する領域を作成
+    grid = gridplot(
+        plots,
+        toolbar_location="above"
+    )
+
+    # グラフにデータを追加
+    # 列名と変数名を紐づける
+    x_values = "kiro_tei"
+    upper_edge = "estimated_upper_edge"
+    lower_edge = "estimated_lower_edge"
+    estimated_width = "estimated_width"
+    estimated_width_std = "estimated_width_std"
+    brightness_center = "brightness_center"
+
+    # 各グラフに描画する要素を指定
+    edges = [
+        (p_edge, upper_edge, "upper_edge"),
+        (p_edge, lower_edge, "lower_edge")
+    ]
+    widths = [
+        (p_width, estimated_width, "estimated_width")
+    ]
+    width_stds = [
+        (p_width_std, estimated_width_std, "estimated_width_std")
+    ]
+    centers = [
+        (p_center, brightness_center, "brightness_center")
+    ]
+
+    # trolley_idのユニークな値を取得
+    unique_trolleys = df_csv['trolley_id'].unique()
+
+    for trolley_id in unique_trolleys:
+        trolley_df = df_csv[df_csv['trolley_id'] == trolley_id]
+        source = ColumnDataSource(data=trolley_df)
+
+        for i, (p, line_data, label_name) in enumerate(edges + widths + width_stds + centers):
+            p.line(
+            # p.scatter(
+                x_values,
+                line_data,
+                legend_label=f"{label_name}_{trolley_id}",
+                line_color=colors[i % len(colors)],  # もし色の数が足りない場合は循環するように
+                # fill_color=colors[i % len(colors)],  # もし色の数が足りない場合は循環するように
+                # marker="dot",
+                # size=scatter_size,
+                source=source
+            )
+
+    # 軸・凡例の条件を指定する
+    # 軸表示用のフォーマット関数
+    formatter_x = FuncTickFormatter(code="""
+        return tick.toLocaleString() + "km";
+    """)
+    formatter_y = FuncTickFormatter(code="""
+        return tick.toLocaleString() + "px";
+    """)
+    for p in [sublist[0] for sublist in plots]:
+        # p.legend.location = "top_left"    # グラフ内に表示
+        p.add_layout(p.legend[0], "right")    # グラフの外に表示
+        p.legend.click_policy = "hide"    # 凡例でグラフを非表示
+        # p.legend.click_policy = "mute"    # 凡例でグラフをミュート
+        p.xaxis.axis_label = "location"
+        # p.xaxis.formatter = NumeralTickFormatter(format="0,0")
+        p.xaxis.formatter = formatter_x
+        p.yaxis.formatter = formatter_y
+
+    return grid
+
+
 def plot_fig_plt(config, rail_fpath, camera_num, graph_height, graph_width, graph_thinout, ix_set_flag, ix_view_range):
     """
     Args:

@@ -164,7 +164,21 @@ def result_image_view(config):
         with st.spinner("グラフ作成中"):
             # グラフデータを作成する
             # for bokeh
-            grid = vis.plot_fig_bokeh(
+            # grid = vis.plot_fig_bokeh(
+            #     config,
+            #     rail_fpath,
+            #     graph_height,
+            #     graph_width,
+            #     graph_thinout,
+            #     ix_set_flag,
+            #     ix_view_range,
+            #     scatter_size
+            # )
+            # -----------------------------------------------
+            # 高崎検証のためコメントアウト
+            # 車モニ マスターデータが必須
+            # -----------------------------------------------
+            grid = vis.experimental_plot_fig_bokeh(
                 config,
                 rail_fpath,
                 graph_height,
