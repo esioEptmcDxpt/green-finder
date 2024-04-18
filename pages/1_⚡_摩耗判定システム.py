@@ -190,14 +190,15 @@ def ohc_wear_analysis(config):
     # カルマンフィルタを実行
     elif trace_method == "カルマンフィルタ":
         # カルマンフィルタの初期値設定
+        form_support_line = st.sidebar.form(key="detect_edge_form")    # 試作（初期エッジ自動検出）用フォーム
         form = st.sidebar.form(key="kalman_init")
+
         trolley_id = form.selectbox("トロリ線のIDを入力してください", ("trolley1", "trolley2", "trolley3"))
         x_init = form.number_input("横方向の初期座標を入力してください", 0, 999)
-        
+
         # # 試作で追加（初期エッジ自動検出） # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
         candidate_init = helpers.detect_init_edge(cam_img)
         candidate_len = len(candidate_init)
-        form_support_line = st.sidebar.form(key="detect_edge_form")
         num_init = form_support_line.number_input("初期値候補を選択してください", 1, candidate_len)
         num_init = num_init - 1
         init_edge_submit = form_support_line.form_submit_button("📈自動で初期値を入力する")
