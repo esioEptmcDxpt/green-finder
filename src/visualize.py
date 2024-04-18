@@ -653,3 +653,28 @@ def plot_fig_plt(config, rail_fpath, camera_num, graph_height, graph_width, grap
     ax4.legend()
 
     return fig, (ax1, ax2, ax3, ax4)
+
+
+def draw_marker(candidate_init, num, img, col):
+    with col:
+        img_array = np.array(img)
+
+        # 画像にマーカー描画
+        upper_edge = candidate_init[num][0]
+        lower_edge = candidate_init[num][1]
+        for i in range(20):
+            ixu = upper_edge - i
+            ixl = lower_edge + i
+            iy = round(i / 1.5)
+
+            img_array[ixu, 0:3] = [255, 0, 0]
+            img_array[ixu, iy:iy+3] = [255, 0, 0]
+
+            img_array[ixl, 0:3] = [255, 0, 0]
+            img_array[ixl, iy:iy+3] = [255, 0, 0]
+
+        cam_img_mk = Image.fromarray(img_array)
+        st.write("📸カメラ画像（自動エッジ検出）")
+        st.write(f"{num + 1}番目の候補をマーカーで表示")
+        st.image(cam_img_mk)
+    return

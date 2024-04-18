@@ -15,6 +15,7 @@ import pandas as pd
 from pathlib import Path
 from PIL import Image
 from src.logger import my_logger
+import random
 
 
 @st.cache
@@ -1010,3 +1011,97 @@ def default(o):
     elif isinstance(o, np.ndarray):
         return list(o)
     raise TypeError(repr(o) + " is not JSON serializable")
+
+    
+def detect_init_edge(img):
+    # 画像全体の平均輝度（背景輝度と同等とみなす）を算出
+    img_array = np.array(img)
+    img_flat = img_array[:, :, 0].flatten()
+    img_random = []
+    for i in range(1000): #全画素の平均は処理時間かかるのでランダム1000画素の輝度平均
+        x = random.randint(0, 2047999)
+        img_random.append(img_flat[x])
+
+    # そのままの平均輝度
+    avg_brightness1 = round(np.mean(img_random))
+
+    # 標準偏差σ2をMaxに変換
+    peakval = avg_brightness1 + np.std(img_flat) * 2.0
+    img_random2 = [val if val <= peakval else peakval for val in img_random]
+
+    # 標準偏差σ2をMaxに平均輝度を調整（そのままだと少し高めになってしまうため）
+    avg_brightness2 = round(np.mean(img_random2))
+    
+    img_slice = np.copy(img_array[:, 0, 0])
+
+    # 基準値の設定
+    base_max = max(img_slice).astype(int)              # 輝度Max値　＝　画像全体の輝度Max値
+    base_min = int(avg_brightness2)                    # 平均輝度
+
+    # 輝度データの平滑化
+    img_smooth1 = np.copy(img_slice)
+    img_smooth1[1:2046] = [round(np.mean(img_smooth1[idx-1:idx+2])) for idx in range(1, 2046)]
+    
+    img_flat = np.std(img_flat)
+    ex_center = round((base_max + base_min)/2)
+    ex_max = base_max - img_flat
+    ex_min = base_min + img_flat
+
+    img_smooth2 = np.copy(img_smooth1)
+
+    # 一定以上の輝度変化は輝度Maxもしくは平均輝度に張り付ける
+    # 輝度変化の位置と幅を記録
+    candidate_init = []
+    high_point = [None, None, None, 1]
+    low_point = [None, None, None, -1]
+    for idx in range(len(img_smooth1)):
+        if ex_max > img_smooth1[idx] > ex_center:
+            img_smooth2[idx] = base_max
+        elif ex_min < img_smooth1[idx] <= ex_center:
+            img_smooth2[idx] = base_min
+
+        if idx >= 1 and img_smooth2[idx] >= ex_max and img_smooth2[idx-1] <= ex_min:
+            high_point[0] = idx
+            low_point[1] = idx
+            if low_point[0] != None and abs(low_point[0] - low_point[1]) < 20:                # 摺面幅として明らかにあり得ない場合は除く
+
+                low_point[2] = abs(low_point[0] - low_point[1])
+                candidate_init.append(low_point)
+            low_point = [None, None, None, -1]
+        elif idx >= 1 and img_smooth2[idx] <= ex_min and img_smooth2[idx-1] >= ex_max:
+            high_point[1] = idx
+            low_point[0] = idx
+            if high_point[0] != None and abs(high_point[0] - high_point[1]) < 20:              # 摺面幅として明らかにあり得ない場合は除く
+                high_point[2] = abs(high_point[0] - high_point[1])
+                candidate_init.append(high_point)
+            high_point = [None, None, None, 1]
+            
+    # （補正）検出した点を傾きの中心にする
+    # for i, edge in enumerate(search_list):
+    for i, edge in enumerate(candidate_init):
+        if edge[3] == 1:
+            center_u = (max(img_slice[edge[0]-2:edge[0]+8]).astype(np.int16) + min(img_slice[edge[0]-7:edge[0]+3]).astype(np.int16)) / 2
+            idx_uu = np.argmin(img_slice[edge[0]-7:edge[0]+3]) + (edge[0]-7)
+            idx_ul = np.argmax(img_slice[edge[0]-2:edge[0]+8]) + (edge[0]-2)
+            center_l = (max(img_slice[edge[1]-7:edge[1]+3]).astype(np.int16) + min(img_slice[edge[1]-2:edge[1]+8]).astype(np.int16)) / 2
+            idx_lu = np.argmax(img_slice[edge[1]-7:edge[1]+3]) + (edge[1]-7)
+            idx_ll = np.argmin(img_slice[edge[1]-2:edge[1]+8]) + (edge[1]-2)
+        elif edge[3] == -1:
+            center_u = (max(img_slice[edge[0]-7:edge[0]+3]).astype(np.int16) + min(img_slice[edge[0]-2:edge[0]+8]).astype(np.int16)) / 2
+            idx_uu = np.argmax(img_slice[edge[0]-7:edge[0]+3]) + (edge[0]-7)
+            idx_ul = np.argmin(img_slice[edge[0]-2:edge[0]+8]) + (edge[0]-2)
+            center_l = (max(img_slice[edge[1]-2:edge[1]+8]).astype(np.int16) + min(img_slice[edge[1]-7:edge[1]+3]).astype(np.int16)) / 2
+            idx_lu = np.argmin(img_slice[edge[1]-7:edge[1]+2]) + (edge[1]-7)
+            idx_ll = np.argmax(img_slice[edge[1]-2:edge[1]+8]) + (edge[1]-2)
+        if idx_uu < idx_ul:
+            diff1 = abs(img_slice[idx_uu:idx_ul+1] - center_u)
+            idx_u_new = np.argmin(diff1) + idx_uu
+        else:
+            idx_u_new = edge[0]
+        if idx_lu < idx_ll:
+            diff2 = abs(img_slice[idx_lu:idx_ll+1] - center_l) 
+            idx_l_new = np.argmin(diff2) + idx_lu
+        else:
+            idx_l_new = edge[1]
+        candidate_init[i][0:2] = [idx_u_new, idx_l_new]
+    return candidate_init
