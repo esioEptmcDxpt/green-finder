@@ -1,7 +1,18 @@
 import time
+import logging
+import sys
+from pythonjsonlogger import jsonlogger
+import pandas as pd
+import src.helpers as helpers
 
 
 def my_logger(func):
+    """ for DEBUG 関数の実行時間を標準出力で出力する
+    Args:
+        func(func): 計測対象の関数
+    Return:
+        wrapper(func): 関数の実行結果
+    """
     def wrapper(*args, **kwargs):
         start = time.time()
         result = func(*args, **kwargs)
@@ -9,3 +20,102 @@ def my_logger(func):
         return result
 
     return wrapper
+
+
+def setup_logging(log_level=logging.INFO):
+    """ ロギングの初期設定を実行
+    """
+    handlers = []
+    formatter = jsonlogger.JsonFormatter("%(levelname)%(exc_info)%(message)")
+    # 標準出力でのログ
+    # sh = logging.StreamHandler(sys.stdout)
+    # sh.setFormatter(formatter)
+    # sh.setLevel(log_level)
+    # handlers.append(sh)
+
+    # JSONでのログ
+    h = logging.FileHandler("tts.log", mode="a")
+    h.setFormatter(jsonlogger.JsonFormatter())
+    h.setLevel(log_level)
+    handlers.append(h)
+
+    logging.basicConfig(level=log_level, handlers=handlers, force=True)
+
+
+def reset_logging():
+    """ 既存のログファイルを初期化する
+    """
+    fpath = "tts.log"
+    # tts.logを初期化する
+    with open(fpath, "w") as f:
+        f.write("")
+    st.error("ログファイルを削除しました")
+    st.stop()
+
+
+def load_logs(fpath):
+    """ ログファイルをデータフレームとして読み込む
+    Args:
+        fpath(str): ログファイルのパス
+    Return:
+        df(DataFrame): ログファイルを読み込んだデータフレーム
+    """
+    # ログファイルを読み込む
+    logs = []
+    with open('tts.log', 'r') as f:
+        for line in f:
+            try:
+                log = eval(line)
+                logs.append(log)
+            except:
+                pass
+    # DataFrameを出力
+    return pd.DataFrame(logs)
+
+
+def put_log(level, message, start, method, image_path, trolley_id, idx, count, error_message=None):
+    """ ログファイルに記録する
+    Args:
+        level(str): ログのレベル
+        message(str): ログに記録する第1パラメータ
+        start(datetime): 処理の開始時刻
+        method(str): 利用したアルゴリズム (kalman等)
+        image_path(str): 画像ファイルのパス
+        trolley_id(str): トロリーID
+        idx(int): 画像インデックス
+        count(int): 何枚目の画像を処理したときのログか
+        kiro_dict(dict): キロ程情報（車モニから取得）
+        error_message(str): エラーメッセージ
+    """
+    logger = logging.getLogger()
+
+    image_name = image_path.split('/')[-1]
+    dir_area, camera_num = image_path.split("/")[1:3]
+
+    extra = {
+        "log_level": level.upper(),
+        "start_time": time.strftime('%Y/%m/%d %H:%M:%S'),
+        "process_time": time.time() - start,
+        "method": method,
+        "measurement_area": dir_area,
+        "camera_num": camera_num,
+        "image_name": image_name,
+        "trolley_id": trolley_id,
+        "image_idx": idx + count - 1,
+        "image_count": count
+    }
+
+    if error_message:
+        extra["error"] = error_message
+
+    if level == "info":
+        logger.info(message, extra=extra)
+    # 基本はログレベルがINFOのためコメントアウト
+    # elif level == "debug":
+    #     logger.debug(message, extra=extra)
+    elif level == "warning":
+        logger.warning(message, extra=extra)
+    elif level == "error":
+        logger.error(message, extra=extra)
+
+    return
