@@ -14,7 +14,7 @@ import numpy as np
 import pandas as pd
 from pathlib import Path
 from PIL import Image
-from src.logger import my_logger
+# from src.logger import my_logger
 import random
 
 
@@ -687,7 +687,7 @@ def experimental_result_dict_to_csv(config, result_dict, kiro_dict, kiro_init_di
     if fname in kiro_dict[camera_num].keys():
         DenchuNo = kiro_dict[camera_num][fname]['DenchuNo']
         kiro_tei = kiro_dict[camera_num][fname]['KiroTei']
-        st.write(f"Match   > kiro_tei: {kiro_tei}")
+        # st.write(f"Match   > kiro_tei: {kiro_tei}")
     else:
         # 画像ファイル名がマッチしない場合のキロ程を指定
         if idx + count - 1 <= kiro_init_dict['image_idx_init'][0]:
@@ -790,8 +790,10 @@ def dfcsv_update(config, df_csv, df):
     # 一致する行があれば、dfの値でdf_csvの値を上書き
     for col in df.columns:
         if col not in grouping_keys:
-            merged[col] = merged[col + '_new'].combine_first(merged[col])
-            merged.drop(col + '_new', axis=1, inplace=True)
+            if col in merged.columns and (col + '_new') in merged.columns:
+                # 2回目以降の実行用: colとcol+'_new'がカラム名にある場合だけ処理する
+                merged[col] = merged[col + '_new'].combine_first(merged[col])
+                merged.drop(col + '_new', axis=1, inplace=True)
 
     # df_csv(merged)のカラムの順番を合わせる
     merged = merged[config.columns_list]

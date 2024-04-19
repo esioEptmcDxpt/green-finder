@@ -3,9 +3,12 @@ import shelve
 import json
 import copy
 import numpy as np
+import time
+import logging
 from src.config import appProperties
 import src.helpers as helpers
 from src.kalman import kalman
+import src.logger as my_logger
 
 
 def track_kalman(rail_fpath, camera_num, base_images, df_csv, idx, test_num, trolley_id, x_init, y_init_u, y_init_l, status_view, progress_bar):
@@ -26,6 +29,10 @@ def track_kalman(rail_fpath, camera_num, base_images, df_csv, idx, test_num, tro
     config = appProperties('config.yml')
     y_l = y_init_l
     y_u = y_init_u
+    my_logger.setup_logging()    # logging設定を実行
+    # logger = logging.getLogger()    # ロガーを作成
+    method = "kalman"    # 分析法を記録
+    start = time.time()    # 処理の開始時刻を記録
 
     window = 100    # 標準偏差計算におけるウィンドウサイズ、いずれユーザ入力にする
     min_periods = helpers.window2min_periods(window)    # 標準偏差計算における最小計算範囲
@@ -40,7 +47,7 @@ def track_kalman(rail_fpath, camera_num, base_images, df_csv, idx, test_num, tro
     # 画像ファイル名がkiro_dictに含まれる範囲をリストで取得 [idx_head, idx_tail]
     kiro_init_dict = helpers.experimental_get_image_match(base_images, kiro_dict, camera_num)
     # for debug
-    st.write(kiro_init_dict)
+    # st.write(kiro_init_dict)
 
     count = 0
     for image_path in base_images[idx:(idx + test_num)]:
@@ -75,7 +82,16 @@ def track_kalman(rail_fpath, camera_num, base_images, df_csv, idx, test_num, tro
                 kalman_instance.infer_trolley_edge(image_path)
             except Exception as e:
                 st.error(e)
-                st.error("予期せぬ理由で処理が途中終了しました。管理者に問い合わせてください")
+                error_message = "予期せぬ理由で処理が途中終了しました。管理者に問い合わせてください"
+                st.error(error_message)
+                my_logger.put_log(
+                    "warning",
+                    "Analysis Complete with Error",
+                    start,
+                    method,
+                    image_path, trolley_id, idx, count,
+                    error_message
+                )
                 break
             finally:
                 if x_init > 0:
@@ -120,7 +136,7 @@ def track_kalman(rail_fpath, camera_num, base_images, df_csv, idx, test_num, tro
                 # CSVの場合
                 # インスタンスをデータフレームとして読み込む
                 # CSVと同じ列になるように画像/カメラの条件なども追記する
-                
+
                 # -----------------------------------------------
                 # 高崎検証のためコメントアウト
                 # 車モニ マスターデータが必須
@@ -152,7 +168,16 @@ def track_kalman(rail_fpath, camera_num, base_images, df_csv, idx, test_num, tro
                 kalman_instance.infer_trolley_edge(image_path)
             except Exception as e:
                 st.error(e)
-                st.error("予期せぬ理由で処理が途中終了しました。管理者に問い合わせてください")
+                error_message = "予期せぬ理由で処理が途中終了しました。管理者に問い合わせてください"
+                st.error(error_message)
+                my_logger.put_log(
+                    "warning",
+                    "Analysis Complete with Error",
+                    start,
+                    method,
+                    image_path, trolley_id, idx, count,
+                    error_message
+                )
                 break
             finally:
                 kalman_dict = {trolley_id: 
@@ -204,23 +229,61 @@ def track_kalman(rail_fpath, camera_num, base_images, df_csv, idx, test_num, tro
         if len(kalman_instance.trolley_end_reason) > 0:
             if kalman_instance.error_flg == 1:
                 st.error(kalman_instance.trolley_end_reason[0])
-                st.markdown(f"{trolley_id}にて再試行の閾値を超えました。\n \
+                error_message = f"{trolley_id}にて再試行の閾値を超えました。\n \
                             最後に推定した際のx座標は {kalman_instance.ix} , \n \
                             y座標上部は {int(kalman_instance.last_state[0])} , \n \
                             y座標下部は {int(kalman_instance.last_state[1])} \n \
-                            画像がピンボケしているなど、推定しにくい条件である可能性があります。再実行しても修正されない場合、他のカメラ番号で実行してください。") 
+                            画像がピンボケしているなど、推定しにくい条件である可能性があります。再実行しても修正されない場合、他のカメラ番号で実行してください。"
+                st.markdown(error_message)
+                my_logger.put_log(
+                    "warning",
+                    "Analysis Complete with Error",
+                    start,
+                    method,
+                    image_path, trolley_id, idx, count,
+                    kalman_instance.trolley_end_reason[0] + "_" + error_message
+                )
+
             elif kalman_instance.error_flg == 2:
                 st.error(kalman_instance.trolley_end_reason[0])
-                st.markdown(f"{trolley_id}にて計算中に推定線幅が閾値を超えました。\n \
+                error_message = f"{trolley_id}にて計算中に推定線幅が閾値を超えました。\n \
                             最後に推定した際のx座標は {kalman_instance.ix} , \n \
                             y座標上部は {int(kalman_instance.last_state[0])} , \n \
                             y座標下部は {int(kalman_instance.last_state[1])} \n \
-                            入力幅が大きすぎないか、確認して再実行、もしくは異常が疑われますのでご確認下さい。")
+                            入力幅が大きすぎないか、確認して再実行、もしくは異常が疑われますのでご確認下さい。"
+                st.markdown(error_message)
+                my_logger.put_log(
+                    "warning",
+                    "Analysis Complete with Error",
+                    start,
+                    method,
+                    image_path, trolley_id, idx, count,
+                    kalman_instance.trolley_end_reason[0] + "_"  + error_message
+                )
+
             elif kalman_instance.error_flg == 3:
                 st.error(kalman_instance.trolley_end_reason[0])
-                st.markdown(f"{trolley_id}にて計算中に画面の上端、もしくは下端に到達しました。\n \
+                error_message = f"{trolley_id}にて計算中に画面の上端、もしくは下端に到達しました。\n \
                             最後に推定した際のx座標は {kalman_instance.ix} , \n \
                             y座標上部は {int(kalman_instance.last_state[0])} , \n \
                             y座標下部は {int(kalman_instance.last_state[1])} \n \
-                            入力した初期値が上端・下端になっていないか、確認してください。")
+                            入力した初期値が上端・下端になっていないか、確認してください。"
+                st.markdown(error_message)
+                my_logger.put_log(
+                    "warning",
+                    "Analysis Complete with Error",
+                    start,
+                    method,
+                    image_path, trolley_id, idx, count,
+                    kalman_instance.trolley_end_reason[0] + "_"  + error_message
+                )
             break
+
+        # Logging
+        my_logger.put_log(
+            "info",
+            "Analysis Complete",
+            start,
+            method,
+            image_path, trolley_id, idx, count
+        )
