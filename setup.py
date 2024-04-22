@@ -9,7 +9,8 @@ required_packages = ["altair==4.2.2", "pandas==1.3.5", "numpy",
                      "opencv-python", "opencv-contrib-python",
                      "matplotlib==3.5.3", "streamlit==1.13.0",
                      "pykalman==0.9.5", "pillow==9.4.0",
-                     "scipy==1.7.3", "bokeh==2.4.3", "pykalman==0.9.5"]
+                     "scipy==1.7.3", "bokeh==2.4.3", "pykalman==0.9.5",
+                     "pygwalker==0.4.8"]
 
 extras = {
     "test": [
