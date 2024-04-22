@@ -1,4 +1,3 @@
-import streamlit as st
 import time
 import logging
 import sys
@@ -34,14 +33,21 @@ def setup_logging(log_level=logging.INFO):
     # sh.setLevel(log_level)
     # handlers.append(sh)
 
+    file_path = "tts.log"
+
+    # 既存のログファイルが無かったら作成する
+    if not os.path.exists(file_path):
+        with open(file_path, "w") as f:
+            pass  # 空のファイルを作成
+
     # JSONでのログ
-    h = logging.FileHandler("tts.log", mode="a")
+    h = logging.FileHandler(file_path, mode="a")
     h.setFormatter(jsonlogger.JsonFormatter())
     h.setLevel(log_level)
     handlers.append(h)
 
     logging.basicConfig(level=log_level, handlers=handlers, force=True)
-
+    
 
 def reset_logging():
     """ 既存のログファイルを初期化する
