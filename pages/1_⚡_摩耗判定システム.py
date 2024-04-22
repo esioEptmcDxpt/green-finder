@@ -195,21 +195,16 @@ def ohc_wear_analysis(config):
 
         trolley_id = form.selectbox("トロリ線のIDを入力してください", ("trolley1", "trolley2", "trolley3"))
         x_init = form.number_input("横方向の初期座標を入力してください", 0, 999)
-
-        # # 試作で追加（初期エッジ自動検出） # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
-        candidate_init = helpers.detect_init_edge(cam_img)
+        
+        candidate_init = helpers.detect_init_edge(cam_img, x_init)                                               # x_initに対応
         candidate_len = len(candidate_init)
-        num_init = form_support_line.number_input("初期値候補を選択してください", 1, candidate_len)
+        if x_init:
+            candidate_init = helpers.detect_init_edge(cam_img, x_init)                                               # x_initに対応
+            candidate_len = len(candidate_init)
+            
+        # num_init = form_support_line.number_input("初期値候補を選択してください", 1, candidate_len)
+        num_init = form.number_input("初期値候補を選択してください", 1, candidate_len)
         num_init = num_init - 1
-        init_edge_submit = form_support_line.form_submit_button("📈自動で初期値を入力する")
-        if init_edge_submit:
-            vis.draw_marker(candidate_init, num_init, cam_img, col1)
-            print(f'else num:{num_init}')
-        # init_chg_submit = form_support_line.form_submit_button("🔘初期値候補を変更する")
-        # if init_chg_submit:
-        #     num_init = (num_init + 1) if num_init < (candidate_len-1) else 0
-        #     vis.draw_marker(candidate_init, num_init, cam_img, col1)
-        # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
         
         if candidate_len == 0:
             y_init_l = form.number_input("上記X座標でのエッジ位置（上端）の座標を入力してください", 0, 1999)
@@ -217,6 +212,13 @@ def ohc_wear_analysis(config):
         else:
             y_init_l = form.number_input("上記X座標でのエッジ位置（上端）の座標を入力してください", min_value=0, max_value=1999, value=candidate_init[num_init][0])
             y_init_u = form.number_input("上記X座標でのエッジ位置（下端）の座標を入力してください", min_value=0, max_value=1999, value=candidate_init[num_init][1])
+        
+        # init_edge_submit = form_support_line.form_submit_button("📈自動で初期値を入力する")
+        init_edge_submit = form.form_submit_button("📈自動で初期値を入力する")
+        if init_edge_submit:
+            vis.draw_marker(candidate_init, num_init, cam_img, col1, x_init)                                     # x_initに対応
+            print(f'else num:{num_init}')
+            
         test_num = form.number_input(f"解析する画像枚数を入力してください(1～{len(base_images)-idx})", 1, len(base_images)-idx, len(base_images)-idx)
         submit = form.form_submit_button("カルマンフィルタ実行")
 

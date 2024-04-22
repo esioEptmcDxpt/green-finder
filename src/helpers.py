@@ -1015,7 +1015,7 @@ def default(o):
     raise TypeError(repr(o) + " is not JSON serializable")
 
     
-def detect_init_edge(img):
+def detect_init_edge(img, x_init):
     # 画像全体の平均輝度（背景輝度と同等とみなす）を算出
     img_array = np.array(img)
     img_flat = img_array[:, :, 0].flatten()
@@ -1034,7 +1034,8 @@ def detect_init_edge(img):
     # 標準偏差σ2をMaxに平均輝度を調整（そのままだと少し高めになってしまうため）
     avg_brightness2 = round(np.mean(img_random2))
     
-    img_slice = np.copy(img_array[:, 0, 0])
+    # img_slice = np.copy(img_array[:, 0, 0])
+    img_slice = np.copy(img_array[:, x_init, 0])       # x_initに対応
 
     # 基準値の設定
     base_max = max(img_slice).astype(int)              # 輝度Max値　＝　画像全体の輝度Max値

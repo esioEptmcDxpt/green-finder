@@ -655,7 +655,7 @@ def plot_fig_plt(config, rail_fpath, camera_num, graph_height, graph_width, grap
     return fig, (ax1, ax2, ax3, ax4)
 
 
-def draw_marker(candidate_init, num, img, col):
+def draw_marker(candidate_init, num, img, col, x_init):
     with col:
         img_array = np.array(img)
 
@@ -665,16 +665,23 @@ def draw_marker(candidate_init, num, img, col):
         for i in range(20):
             ixu = upper_edge - i
             ixl = lower_edge + i
-            iy = round(i / 1.5)
+            if x_init <= 500:                                       # x_initに対応
+                iy = round(i / 1.5)
+            elif x_init > 500:                                      # x_initに対応
+                iy = round(i / 1.5) * -1                            # x_initに対応
 
-            img_array[ixu, 0:3] = [255, 0, 0]
-            img_array[ixu, iy:iy+3] = [255, 0, 0]
+            # img_array[ixu, 0:3] = [255, 0, 0]
+            # img_array[ixu, iy:iy+3] = [255, 0, 0]
+            img_array[ixu, x_init:x_init+3] = [255, 0, 0]           # x_initに対応
+            img_array[ixu, x_init+iy:x_init+iy+3] = [255, 0, 0]     # x_initに対応
 
-            img_array[ixl, 0:3] = [255, 0, 0]
-            img_array[ixl, iy:iy+3] = [255, 0, 0]
+            # img_array[ixl, 0:3] = [255, 0, 0]
+            # img_array[ixl, iy:iy+3] = [255, 0, 0]
+            img_array[ixl, x_init:x_init+3] = [255, 0, 0]           # x_initに対応
+            img_array[ixl, x_init+iy:x_init+iy+3] = [255, 0, 0]     # x_initに対応
 
         cam_img_mk = Image.fromarray(img_array)
         st.write("📸カメラ画像（自動エッジ検出）")
-        st.write(f"{num + 1}番目の候補をマーカーで表示")
+        st.write(f"{num + 1}番目の候補をマーカーで表示（idx={x_init}）")
         st.image(cam_img_mk)
     return
