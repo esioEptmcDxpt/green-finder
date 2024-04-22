@@ -1,3 +1,4 @@
+import streamlit as st
 import time
 import logging
 import sys
@@ -94,7 +95,7 @@ def put_log(level, message, start, method, image_path, trolley_id, idx, count, e
 
     extra = {
         "log_level": level.upper(),
-        "start_time": time.strftime('%Y/%m/%d %H:%M:%S'),
+        "start_time": time.strftime('%Y/%m/%d %H:%M:%S', time.localtime(start)),
         "process_time": time.time() - start,
         "method": method,
         "measurement_area": dir_area,
