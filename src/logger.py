@@ -1,4 +1,5 @@
 import time
+import os
 import logging
 import sys
 from pythonjsonlogger import jsonlogger
@@ -78,6 +79,23 @@ def load_logs(fpath):
                 pass
     # DataFrameを出力
     return pd.DataFrame(logs)
+
+
+def preprocess_log_data(df):
+    df['start_time'] = pd.to_datetime(df['start_time'])
+    df = df.dropna(subset=["process_time"])
+
+    # 新しいカラム`analysis_time`を計算
+    # `start_time`が前の行と異なる場合は、その行の`process_time`をそのまま`analysis_time`とします。
+    # `start_time`が前の行と同じ場合は、その行の`process_time`から前の行の`process_time`を引いた差を`analysis_time`とします。
+    df['analysis_time'] = df['process_time'] - df['process_time'].shift(1)
+    df.loc[df['start_time'] != df['start_time'].shift(1), 'analysis_time'] = df['process_time']
+
+    # `analysis_time`カラムを`process_time`の右側に挿入
+    column_index = df.columns.get_loc('process_time') + 1
+    df = df.reindex(columns=list(df.columns[:column_index]) + ['analysis_time'] + list(df.columns[column_index:-1]))
+
+    return df.copy()
 
 
 def put_log(level, message, start, method, image_path, trolley_id, idx, count, error_message=None):
