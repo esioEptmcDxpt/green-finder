@@ -441,7 +441,7 @@ def experimental_plot_fig_bokeh(config, rail_fpath, graph_height, graph_width, g
     # df_csv = df_csv[::graph_thinout]    # 単純に間引くと最大値を取り逃す可能性があるため修正
     if graph_thinout != 1:
         labels = (df_csv.index // graph_thinout)
-        df_grp = df_csv.groupby(labels).max()    # 間引き間隔での最大値を求める
+        df_grp = df_csv.groupby(labels).max().copy()    # 間引き間隔での最大値を求める
         df_csv = df_grp.reset_index(drop=True).copy()
 
     # ユーザ用にimage_indexを調整する

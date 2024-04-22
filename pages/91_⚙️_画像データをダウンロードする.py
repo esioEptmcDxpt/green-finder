@@ -10,7 +10,7 @@ from src.config import appProperties
 
 def data_loader(config):
     # マルチページの設定
-    st.set_page_config(page_title="画像データダウンロード")
+    st.set_page_config(page_title="画像データダウンロード", layout="wide")
     st.sidebar.header("画像データダウンロード")
 
     col1, col2 = st.columns(2)

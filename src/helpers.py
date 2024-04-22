@@ -148,8 +148,8 @@ def rail_camera_initialize(rail, camera_num, base_images, trolley_ids):
         # rail_check = any(len(rail[camera_num][image_path]) > 0 for image_path in base_images)
         rail_check = any(key in image_path for key in rail[camera_num].keys() for image_path in base_images)
     if not rail_check:
-        print('rail initilize')
-        print(f'dir_area: {rail["name"]}')
+        # print('rail initilize')
+        # print(f'dir_area: {rail["name"]}')
         # railを初期化
         # base_imagesと同じ長さの空のdictionaryを作成してrailを初期化
         blankdict_size = [{}] * len(base_images)
@@ -608,6 +608,29 @@ def result_csv_crop(df_csv, dir_area, camera_num, image_name, trolley_id):
     return df_csv.loc[condition, :].copy()
 
 
+def result_csv_drop(rail_fpath, dir_area, camera_num, image_name, trolley_id, config):
+    """ 画像1枚・カメラ番号・TrolleyID単位で結果を削除する
+    Args:
+        rail_fpath(str)  : 結果CSVのファイルパス
+        dir_area(str)    : 線区名
+        camera_num(str)  : カメラ番号
+        image_name(str)  : 画像ファイル名（拡張子付き）
+        trolley_id(str)  : トロリーID
+        config(instance) : 設定ファイル
+    Return:
+        None
+    """
+    df_csv = result_csv_load(config, rail_fpath)
+    condition = (
+        (df_csv['measurement_area'] == dir_area) &
+        (df_csv['camera_num'] == camera_num) &
+        (df_csv['image_name'] == image_name) &
+        (df_csv['trolley_id'] == trolley_id)
+    )
+    df_csv.drop(df_csv[condition].index).to_csv(rail_fpath, index = False)
+    return None
+
+
 # @my_logger
 def result_dict_to_csv(config, result_dict, idx, count, dir_area, camera_num, image_name, trolley_id, ix_list):
     """ 解析後のインスタンスから作成した辞書ファイルを結果CSVファイルに保存する
@@ -910,7 +933,7 @@ def trolley_dict_to_csv(config, rail_fpath, camera_num, base_images, window, log
 
     # print(df_concat.shape)
     df_concat.to_csv(csv_fpath, encoding='cp932')
-    print(f'csv file convert -> {csv_fpath}')
+    # print(f'csv file convert -> {csv_fpath}')
 
     # 👇以前のコード
 #     # 読み込んだ辞書からデータフレームを作成

@@ -8,7 +8,7 @@ import src.logger as my_logger
 
 def log_management(config):
     # マルチページの設定
-    st.set_page_config(page_title="解析ログ操作")
+    st.set_page_config(page_title="解析ログ操作", layout="wide")
     st.sidebar.header("トロリ線摩耗検出システム")
 
     # メインページのコンテナを配置する

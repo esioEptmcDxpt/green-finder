@@ -7,7 +7,7 @@ from src.config import appProperties
 
 def eda_tool(config):
     # マルチページの設定
-    st.set_page_config(page_title="異常値箇所チェック")
+    st.set_page_config(page_title="異常値箇所チェック", layout="centered")
     st.sidebar.header("異常箇所チェックツール")
     
     # メインページのコンテナを配置する

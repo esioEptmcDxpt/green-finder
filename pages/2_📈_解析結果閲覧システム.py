@@ -10,7 +10,7 @@ def result_image_view(config):
         config: ymlファイルを読み込んだ設定値
     """
     # マルチページの設定
-    st.set_page_config(page_title="解析結果ビューワー")
+    st.set_page_config(page_title="解析結果ビューワー", layout="centered")
     st.sidebar.header("解析結果閲覧システム")
 
     # メインページのコンテナを配置する

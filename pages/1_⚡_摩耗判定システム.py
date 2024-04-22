@@ -11,7 +11,7 @@ from src.config import appProperties
 
 def ohc_wear_analysis(config):
     # マルチページの設定
-    st.set_page_config(page_title="トロリ線摩耗検出システム")
+    st.set_page_config(page_title="トロリ線摩耗検出システム", layout="centered")
     st.sidebar.header("トロリ線摩耗検出システム")
 
     # メインページのコンテナを配置する
@@ -40,7 +40,7 @@ def ohc_wear_analysis(config):
             images_path_filtered = images_path
     else:
         images_path_filtered = images_path
-    
+
     # 対象フォルダの選択
     dir_area = st.sidebar.selectbox("線区のフォルダ名を選択してください", images_path_filtered)
     if dir_area is None:
@@ -87,6 +87,17 @@ def ohc_wear_analysis(config):
         st.sidebar.write(f"ファイルパス:{base_images[idx]}")
         # 画像ファイル名を取得
         image_name = base_images[idx].split('/')[-1]
+
+    # 表示中の画像、カメラ番号を対象に、トロリーIDを指定して結果を削除する
+    result_del = st.sidebar.checkbox("表示中の結果を削除", value=False, key='result_del')
+    if result_del:
+        result_del_form = st.sidebar.form("(💣注意 結果削除)")
+        del_trolley_id = result_del_form.selectbox("トロリ線のIDを入力してください", ("trolley1", "trolley2", "trolley3"))
+        result_del_form.warning("元に戻せません 本当に削除しますか？")
+        result_del_submit = result_del_form.form_submit_button("💣 削除 💣")
+        if result_del_submit:
+            helpers.result_csv_drop(rail_fpath, dir_area, camera_num, image_name, del_trolley_id, config)
+            main_view.error(f"💥 {idx+1}枚目 {del_trolley_id} の結果を削除しました 💥")
 
     # メインページにカメラ画像を表示する
     col1, col2 = camera_view.columns(2)
@@ -195,31 +206,37 @@ def ohc_wear_analysis(config):
 
         trolley_id = form.selectbox("トロリ線のIDを入力してください", ("trolley1", "trolley2", "trolley3"))
         x_init = form.number_input("横方向の初期座標を入力してください", 0, 999)
-        
-        candidate_init = helpers.detect_init_edge(cam_img, x_init)                                               # x_initに対応
+
+        candidate_init = helpers.detect_init_edge(cam_img, x_init)    # x_initに対応
         candidate_len = len(candidate_init)
         if x_init:
-            candidate_init = helpers.detect_init_edge(cam_img, x_init)                                               # x_initに対応
+            candidate_init = helpers.detect_init_edge(cam_img, x_init)    # x_initに対応
             candidate_len = len(candidate_init)
-            
+
         # num_init = form_support_line.number_input("初期値候補を選択してください", 1, candidate_len)
         num_init = form.number_input("初期値候補を選択してください", 1, candidate_len)
         num_init = num_init - 1
-        
+
         if candidate_len == 0:
             y_init_l = form.number_input("上記X座標でのエッジ位置（上端）の座標を入力してください", 0, 1999)
             y_init_u = form.number_input("上記X座標でのエッジ位置（下端）の座標を入力してください", 0, 1999)
         else:
-            y_init_l = form.number_input("上記X座標でのエッジ位置（上端）の座標を入力してください", min_value=0, max_value=1999, value=candidate_init[num_init][0])
-            y_init_u = form.number_input("上記X座標でのエッジ位置（下端）の座標を入力してください", min_value=0, max_value=1999, value=candidate_init[num_init][1])
-        
+            y_init_l = form.number_input("上記X座標でのエッジ位置（上端）の座標を入力してください",
+                                         min_value=0, max_value=1999,
+                                         value=candidate_init[num_init][0])
+            y_init_u = form.number_input("上記X座標でのエッジ位置（下端）の座標を入力してください",
+                                         min_value=0, max_value=1999,
+                                         value=candidate_init[num_init][1])
+
         # init_edge_submit = form_support_line.form_submit_button("📈自動で初期値を入力する")
         init_edge_submit = form.form_submit_button("📈自動で初期値を入力する")
         if init_edge_submit:
-            vis.draw_marker(candidate_init, num_init, cam_img, col1, x_init)                                     # x_initに対応
+            vis.draw_marker(candidate_init, num_init, cam_img, col1, x_init)    # x_initに対応
             print(f'else num:{num_init}')
-            
-        test_num = form.number_input(f"解析する画像枚数を入力してください(1～{len(base_images)-idx})", 1, len(base_images)-idx, len(base_images)-idx)
+
+        test_num = form.number_input(f"解析する画像枚数を入力してください(1～{len(base_images)-idx})",
+                                     1, len(base_images)-idx,
+                                     len(base_images)-idx)
         submit = form.form_submit_button("カルマンフィルタ実行")
 
         if submit:
@@ -246,7 +263,7 @@ def ohc_wear_analysis(config):
             )
 
             status_view = st.empty()
-            status_view.write(f"解析の進捗：{idx+1}/{len(base_images)}")
+            status_view.write(f"{idx+1}/{len(base_images)}枚目の画像を解析します🔍")
             progress_bar = log_view.progress(0)
             # if trolley_id in trolley_dict.keys():
             if len(df_csv.loc[condition, :]) > 0:
@@ -271,6 +288,7 @@ def ohc_wear_analysis(config):
                             status_view,
                             progress_bar,
                         )
+                    camera_view.success("# 解析が終了しました")
             else:
                 if st.button(f'計算停止ボタン ＜現在の計算が終わったら停止します＞'):
                     st.stop()
@@ -291,6 +309,7 @@ def ohc_wear_analysis(config):
                         status_view,
                         progress_bar,
                     )
+                    camera_view.success("# 解析が終了しました")
 
     # 解析結果があるかをサイドバーに表示する
     st.sidebar.markdown("# 参考 結果有無👇")

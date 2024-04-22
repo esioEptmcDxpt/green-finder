@@ -73,8 +73,9 @@ def track_kalman(rail_fpath, camera_num, base_images, df_csv, idx, test_num, tro
         # ループの最初は入力した初期値を使い、それ以降は処理時の最後の値を使用するように変更
         count += 1
         # 進捗＆プログレスバーを更新
-        status_view.write(f"解析の進捗：{idx + count}/{len(base_images)}")
-        progress_bar.progress((idx + count -1) / len(base_images))
+        status_view.write(f"{idx + count}/{len(base_images)}枚目の画像を解析中🔍  >>>  解析の進捗：{count}/{test_num}枚目")
+        # progress_bar.progress((idx + count -1) / len(base_images))    # 全体の中での進捗を表示する場合
+        progress_bar.progress(count / test_num)
         if count == 1:
             st.text(f"{idx + count}枚目の画像を処理中です。画像名は{image_name}")
             try:
