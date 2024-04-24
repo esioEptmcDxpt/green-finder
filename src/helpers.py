@@ -706,16 +706,16 @@ def experimental_result_dict_to_csv(config, result_dict, kiro_dict, kiro_init_di
 
     # デバッグ用
     # ---------------------------------------
-    st.write(ix_list[x_init:(x_init+len(df))])
-    st.write(f"x_init = {x_init}")
-    st.write(f"len(df) = {len(df)}")
-    st.write(f"x_init+len(df) = {x_init+len(df)}")
-    st.write(f"len(ix_list[x_init:(x_init+len(df))]) = {len(ix_list[x_init:(x_init+len(df))])}")
+    # st.write(ix_list[x_init:(x_init+len(df))])
+    # st.write(f"x_init = {x_init}")
+    # st.write(f"len(df) = {len(df)}")
+    # st.write(f"x_init+len(df) = {x_init+len(df)}")
+    # st.write(f"len(ix_list[x_init:(x_init+len(df))]) = {len(ix_list[x_init:(x_init+len(df))])}")
     # ---------------------------------------
 
     # データフレームにインデックス・画像名等を挿入
     df.insert(0, 'image_idx', idx + count - 1)
-    st.write(df)    # デバッグ用
+    # st.write(df)    # デバッグ用
     if count == 1:
         df.insert(1, 'ix', ix_list[x_init:(x_init + len(df))])
     else:
