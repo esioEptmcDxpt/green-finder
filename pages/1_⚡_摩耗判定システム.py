@@ -217,7 +217,9 @@ def ohc_wear_analysis(config):
         #     candidate_len = len(candidate_init)
 
         # num_init = form_support_line.number_input("初期値候補を選択してください", 1, candidate_len)
-        num_init = form_detect.number_input("初期値候補を選択してください", 1, candidate_len) - 1
+        num_init = form.number_input("初期値候補を選択してください", 1, candidate_len) - 1
+        # num_init = num_init -1
+
         # init_edge_submit = form_support_line.form_submit_button("📈自動で初期値を入力する")
         init_edge_submit = form.form_submit_button("📈自動で初期値を入力する")
         if init_edge_submit:
@@ -240,6 +242,14 @@ def ohc_wear_analysis(config):
                                      1, len(base_images)-idx,
                                      len(base_images)-idx)
         submit = form.form_submit_button("カルマンフィルタ実行")
+
+        # デバッグ用
+        # ----------------------------------------------------
+        # st.sidebar.write(f"x_init  ={x_init}")
+        # st.sidebar.write(f"y_init_l={y_init_l}")
+        # st.sidebar.write(f"y_init_u={y_init_u}")
+        # st.sidebar.write(f"candidate_init={candidate_init}")
+        # ----------------------------------------------------
 
         if submit:
             # outputディレクトリの準備

@@ -385,7 +385,13 @@ def get_max_idx(file_path):
                     max_val = value
             except ValueError:
                 continue
-    return max_val
+
+    # 空のrail.csvの場合の対処
+    # max_valが有限の値であることを確認
+    if np.isfinite(max_val):
+        return int(max_val)
+    else:
+        return -1    # 後で +1 されるため -1にしておく
 
 def read_csv_idx(camera_name, camera_type, file_path):
     """ check_camera_dirs_addIdxLen用の関数
@@ -696,10 +702,21 @@ def experimental_result_dict_to_csv(config, result_dict, kiro_dict, kiro_init_di
 
     # インスタンスの内容をデータフレームとして読み込む
     df = pd.DataFrame.from_dict(result_dict[trolley_id], orient='index').T
+    # df.to_csv("temp.csv", index=False)    # デバッグ用
+
+    # デバッグ用
+    # ---------------------------------------
+    # st.write(ix_list[x_init:(x_init+len(df))])
+    # st.write(f"x_init = {x_init}")
+    # st.write(f"len(df) = {len(df)}")
+    # st.write(f"x_init+len(df) = {x_init+len(df)}")
+    # st.write(f"len(ix_list[x_init:(x_init+len(df))]) = {len(ix_list[x_init:(x_init+len(df))])}")
+    # ---------------------------------------
 
     # データフレームにインデックス・画像名等を挿入
     df.insert(0, 'image_idx', idx + count - 1)
-    df.insert(1, 'ix', ix_list[x_init:len(df)])
+    # st.write(df)    # デバッグ用
+    df.insert(1, 'ix', ix_list[x_init:(x_init + len(df))])
     df['ix'] = df['ix'] + (idx + count - 1) * 1000
     fname = image_name.split(".")[0]
 
@@ -723,7 +740,7 @@ def experimental_result_dict_to_csv(config, result_dict, kiro_dict, kiro_init_di
             kiro_tei = kiro_tei_init_tail + ((idx + count - 1) - kiro_init_dict['image_idx_init'][1]) * 2 / config.img_width
     kiro_tei_list = [kiro_tei + ix / config.img_width / 1000 * 2 for ix in config.ix_list]
     df.insert(2, 'pole_num', DenchuNo)
-    df.insert(3, 'kiro_tei', kiro_tei_list[x_init:len(df)])
+    df.insert(3, 'kiro_tei', kiro_tei_list[x_init:(x_init+len(df))])
     df.insert(4, 'measurement_area', dir_area)
     df.insert(5, 'camera_num', camera_num)
     df.insert(6, 'image_name', image_name)

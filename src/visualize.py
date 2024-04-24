@@ -52,7 +52,7 @@ def plot_fig(im_base, vert_pos, hori_pos):
     return fig
 
 
-@st.cache
+# @st.cache    # デバッグ用後でコメントアウトを元に戻す
 def ohc_image_load(image_path):
     """ 解析対象の画像を表示する
     Args:
@@ -104,7 +104,7 @@ def out_image_load(rail_fpath, dir_area, camera_num, image_name, img, config):
         return []
 
     # データを描画
-    x_values = list(range(config.max_len))
+    x_values = [int(str(num)[-3:]) for num in df_csv_filtered['ix']]
     for trolley_id in config.trolley_ids:
         # trolley_idの数だけ繰り返す
         if trolley_id in set(list(df_csv_filtered['trolley_id'])):

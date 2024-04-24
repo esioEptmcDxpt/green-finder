@@ -57,6 +57,7 @@ def track_kalman(rail_fpath, camera_num, base_images, df_csv, idx, test_num, tro
 
         # df_csvで、指定された条件に一致する行を特定する用の条件
         condition = (
+            (df_csv['ix'] >= idx * 1000 + x_init) &
             (df_csv['measurement_area'] == dir_area) &
             (df_csv['camera_num'] == camera_num) &
             (df_csv['image_name'] == image_name) &
@@ -95,39 +96,26 @@ def track_kalman(rail_fpath, camera_num, base_images, df_csv, idx, test_num, tro
                 )
                 break
             finally:
-                if x_init > 0:
-                    kalman_dict = {trolley_id: 
-                                    {key: value for key, value in vars(kalman_instance).items() if key in config.result_keys}
-                                   }
-                    # 途中開始する場合、値を埋めるために処理を追加
-                    # if len(trolley_dict[trolley_id]) == 0:
-                    df_csv_trimmed = df_csv.loc[condition, :].copy()
-                    # if len(df_csv_trimmed) == 0:
-                    #     for key in kalman_dict[trolley_id].keys():
-                    #         if key in ['estimated_upper_edge', 'estimated_lower_edge']:
-                    #             kalman_dict[trolley_id][key] = [np.int16(0) for i in range(x_init)] + kalman_dict[trolley_id][key]
-                    #         elif key in ['mask_edgelog_1', 'mask_edgelog_2']:
-                    #             kalman_dict[trolley_id][key] = [np.int8(0) for i in range(x_init)] + kalman_dict[trolley_id][key]
-                    #         elif key in ['trolley_end_reason']:
-                    #             continue
-                    #         else:
-                    #             kalman_dict[trolley_id][key] = [np.float16(0) for i in range(x_init)] + kalman_dict[trolley_id][key]
-                    # else:
-                    #     for key in kalman_dict[trolley_id].keys():
-                    #         if key in ['trolley_end_reason']:
-                    #             continue
-                    #         else:
-                    #             # kalman_dict[trolley_id][key] = trolley_dict[trolley_id][key][0:x_init] + kalman_dict[trolley_id][key]
-                    #             kalman_dict[trolley_id][key] = list(df_csv_trimmed[key][0:x_init]) + kalman_dict[trolley_id][key]
-                    for key in kalman_dict[trolley_id].keys():
-                        if key in ['trolley_end_reason']:
-                            continue
-                        else:
-                            kalman_dict[trolley_id][key] = list(df_csv_trimmed[key][0:x_init]) + kalman_dict[trolley_id][key]
-                else:
-                    kalman_dict = {trolley_id: 
-                                    {key: value for key, value in vars(kalman_instance).items() if key in config.result_keys}
-                                   }
+                kalman_dict = {trolley_id: 
+                                {key: value for key, value in vars(kalman_instance).items() if key in config.result_keys}
+                               }
+                # 途中開始する場合、値を埋めるために処理を追加したが 結果が空の画像で x_init > 0 で実行すると上手くいかなかったためコメントアウト 
+                #if x_init > 0:
+                #    kalman_dict = {trolley_id: 
+                #                    {key: value for key, value in vars(kalman_instance).items() if key in config.result_keys}
+                #                   }
+                #    
+                #    # df_csv_trimmed = df_csv.loc[condition, :].copy()
+                #    
+                #    for key in kalman_dict[trolley_id].keys():
+                #        if key in ['trolley_end_reason']:
+                #            continue
+                #        else:
+                #            kalman_dict[trolley_id][key] = list(df_csv_trimmed[key][0:x_init]) + kalman_dict[trolley_id][key]
+                #else:
+                #    kalman_dict = {trolley_id: 
+                #                    {key: value for key, value in vars(kalman_instance).items() if key in config.result_keys}
+                #                   }
 
                 # Shelveの場合
                 # with shelve.open(rail_fpath, writeback=True) as rail:
@@ -210,6 +198,7 @@ def track_kalman(rail_fpath, camera_num, base_images, df_csv, idx, test_num, tro
                     camera_num,
                     image_name,
                     trolley_id,
+                    x_init,
                     config.ix_list
                 ).copy()
                 # 一致する行の値を新しいデータフレームの値で更新する
