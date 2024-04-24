@@ -706,17 +706,20 @@ def experimental_result_dict_to_csv(config, result_dict, kiro_dict, kiro_init_di
 
     # デバッグ用
     # ---------------------------------------
-    # st.write(ix_list[x_init:(x_init+len(df))])
-    # st.write(f"x_init = {x_init}")
-    # st.write(f"len(df) = {len(df)}")
-    # st.write(f"x_init+len(df) = {x_init+len(df)}")
-    # st.write(f"len(ix_list[x_init:(x_init+len(df))]) = {len(ix_list[x_init:(x_init+len(df))])}")
+    st.write(ix_list[x_init:(x_init+len(df))])
+    st.write(f"x_init = {x_init}")
+    st.write(f"len(df) = {len(df)}")
+    st.write(f"x_init+len(df) = {x_init+len(df)}")
+    st.write(f"len(ix_list[x_init:(x_init+len(df))]) = {len(ix_list[x_init:(x_init+len(df))])}")
     # ---------------------------------------
 
     # データフレームにインデックス・画像名等を挿入
     df.insert(0, 'image_idx', idx + count - 1)
-    # st.write(df)    # デバッグ用
-    df.insert(1, 'ix', ix_list[x_init:(x_init + len(df))])
+    st.write(df)    # デバッグ用
+    if count == 1:
+        df.insert(1, 'ix', ix_list[x_init:(x_init + len(df))])
+    else:
+        df.insert(1, 'ix', ix_list[:len(df)])
     df['ix'] = df['ix'] + (idx + count - 1) * 1000
     fname = image_name.split(".")[0]
 
@@ -740,7 +743,10 @@ def experimental_result_dict_to_csv(config, result_dict, kiro_dict, kiro_init_di
             kiro_tei = kiro_tei_init_tail + ((idx + count - 1) - kiro_init_dict['image_idx_init'][1]) * 2 / config.img_width
     kiro_tei_list = [kiro_tei + ix / config.img_width / 1000 * 2 for ix in config.ix_list]
     df.insert(2, 'pole_num', DenchuNo)
-    df.insert(3, 'kiro_tei', kiro_tei_list[x_init:(x_init+len(df))])
+    if count == 1:
+        df.insert(3, 'kiro_tei', kiro_tei_list[x_init:(x_init+len(df))])
+    else:
+        df.insert(3, 'kiro_tei', kiro_tei_list[:len(df)])
     df.insert(4, 'measurement_area', dir_area)
     df.insert(5, 'camera_num', camera_num)
     df.insert(6, 'image_name', image_name)
