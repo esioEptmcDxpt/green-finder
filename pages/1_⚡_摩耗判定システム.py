@@ -245,10 +245,10 @@ def ohc_wear_analysis(config):
 
         # デバッグ用
         # ----------------------------------------------------
-        st.sidebar.write(f"x_init  ={x_init}")
-        st.sidebar.write(f"y_init_l={y_init_l}")
-        st.sidebar.write(f"y_init_u={y_init_u}")
-        st.sidebar.write(f"candidate_init={candidate_init}")
+        # st.sidebar.write(f"x_init  ={x_init}")
+        # st.sidebar.write(f"y_init_l={y_init_l}")
+        # st.sidebar.write(f"y_init_u={y_init_u}")
+        # st.sidebar.write(f"candidate_init={candidate_init}")
         # ----------------------------------------------------
 
         if submit:
