@@ -668,7 +668,7 @@ def result_dict_to_csv(config, result_dict, idx, count, dir_area, camera_num, im
 
     return df
 
-def experimental_result_dict_to_csv(config, result_dict, kiro_dict, kiro_init_dict, idx, count, dir_area, camera_num, image_name, trolley_id, ix_list):
+def experimental_result_dict_to_csv(config, result_dict, kiro_dict, kiro_init_dict, idx, count, dir_area, camera_num, image_name, trolley_id, x_init, ix_list):
     """ 解析後のインスタンスから作成した辞書ファイルを結果CSVファイルに保存する
         ※高崎検証用 一部線区でのみ使用可能
     Args:
@@ -681,6 +681,8 @@ def experimental_result_dict_to_csv(config, result_dict, kiro_dict, kiro_init_di
         image_name(str)  : 画像ファイル名
         trolley_id(str)  : トロリーID
         window(int)      : 標準偏差を計算するときのウィンドウサイズ
+        x_init(int)      : 分析を開始したx座標
+        ix_list(list)    : ix入力用のリスト
     Return:
         df_csv(DataFrame): 結果を更新後のデータフレーム
     """
@@ -697,7 +699,7 @@ def experimental_result_dict_to_csv(config, result_dict, kiro_dict, kiro_init_di
 
     # データフレームにインデックス・画像名等を挿入
     df.insert(0, 'image_idx', idx + count - 1)
-    df.insert(1, 'ix', ix_list[:len(df)])
+    df.insert(1, 'ix', ix_list[x_init:len(df)])
     df['ix'] = df['ix'] + (idx + count - 1) * 1000
     fname = image_name.split(".")[0]
 
@@ -721,7 +723,7 @@ def experimental_result_dict_to_csv(config, result_dict, kiro_dict, kiro_init_di
             kiro_tei = kiro_tei_init_tail + ((idx + count - 1) - kiro_init_dict['image_idx_init'][1]) * 2 / config.img_width
     kiro_tei_list = [kiro_tei + ix / config.img_width / 1000 * 2 for ix in config.ix_list]
     df.insert(2, 'pole_num', DenchuNo)
-    df.insert(3, 'kiro_tei', kiro_tei_list[:len(df)])
+    df.insert(3, 'kiro_tei', kiro_tei_list[x_init:len(df)])
     df.insert(4, 'measurement_area', dir_area)
     df.insert(5, 'camera_num', camera_num)
     df.insert(6, 'image_name', image_name)

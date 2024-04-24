@@ -154,6 +154,7 @@ def track_kalman(rail_fpath, camera_num, base_images, df_csv, idx, test_num, tro
                     camera_num,
                     image_name,
                     trolley_id,
+                    x_init,
                     config.ix_list
                 ).copy()
                 # 一致する行の値を新しいデータフレームの値で更新する
