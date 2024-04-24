@@ -104,11 +104,13 @@ def out_image_load(rail_fpath, dir_area, camera_num, image_name, img, config):
         return []
 
     # データを描画
-    x_values = [int(str(num)[-3:]) for num in df_csv_filtered['ix']]
+    # x_values = [int(str(num)[-3:]) for num in df_csv_filtered['ix']]
+    # st.write(x_values)
     for trolley_id in config.trolley_ids:
         # trolley_idの数だけ繰り返す
         if trolley_id in set(list(df_csv_filtered['trolley_id'])):
             # trolley_idが存在する場合だけ実行
+            x_values = [int(i) for i in df_csv_filtered[(df_csv_filtered['trolley_id'] == trolley_id)]['ix']]
             upper_edge = [int(i) for i in df_csv_filtered[(df_csv_filtered['trolley_id'] == trolley_id)]['estimated_upper_edge']]
             lower_edge = [int(i) for i in df_csv_filtered[(df_csv_filtered['trolley_id'] == trolley_id)]['estimated_lower_edge']]
             for x, y1, y2 in zip(x_values, upper_edge, lower_edge):
