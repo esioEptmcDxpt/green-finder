@@ -4,6 +4,7 @@ import logging
 import sys
 from pythonjsonlogger import jsonlogger
 import pandas as pd
+from dateutil import tz
 import src.helpers as helpers
 
 
@@ -83,6 +84,12 @@ def load_logs(fpath):
 
 def preprocess_log_data(df):
     df['start_time'] = pd.to_datetime(df['start_time'])
+    
+    # UTCタイムゾーンを設定
+    df['start_time'] = df['start_time'].dt.tz_localize('UTC')
+    jst = tz.gettz('Asia/Tokyo')
+    
+    df['start_time'] = df['start_time'].dt.tz_convert(jst)
     df = df.dropna(subset=["process_time"])
 
     # 新しいカラム`analysis_time`を計算

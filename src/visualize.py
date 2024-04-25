@@ -411,7 +411,7 @@ def plot_fig_bokeh(config, rail_fpath, graph_height, graph_width, graph_thinout,
     return grid
 
 
-def experimental_plot_fig_bokeh(config, rail_fpath, graph_height, graph_width, graph_thinout, ix_set_flag, ix_view_range, scatter_size):
+def experimental_plot_fig_bokeh(config, outpath, graph_height, graph_width, graph_thinout, ix_set_flag, ix_view_range, scatter_size):
     """ 高崎検証用 画像キロ程を利用するため、車モニ マスターデータが必須
     Args:
         config: 設定ファイル
@@ -430,7 +430,8 @@ def experimental_plot_fig_bokeh(config, rail_fpath, graph_height, graph_width, g
     # st.write(f"csv_fpath: {csv_fpath}")
 
     # CSVファイルからデータフレームを作成する
-    df_csv = pd.read_csv(rail_fpath, engine='c', dtype=config.csv_dtype)    # 列の型を指定
+    # df_csv = pd.read_csv(rail_fpath, engine='c', dtype=config.csv_dtype)    # 列の型を指定
+    df_csv = helpers.rail_csv_concat(outpath)
 
     # CSVファイルの読込でメモリが不足する場合は以下のコードを使用する
     # df_csv = pd.DataFrame(columns=config.columns_list)    # 空のデータフレームを作成

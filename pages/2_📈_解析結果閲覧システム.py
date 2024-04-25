@@ -70,7 +70,6 @@ def result_image_view(config):
     # 結果保存用のCSVファイル(rail)の保存パスを指定
     rail_fpath = outpath + "/rail.csv"
 
-
     # グラフ作成フォーム
     st.sidebar.markdown("# ___Step2___ グラフを表示する")
     ix_set_flag = st.sidebar.checkbox("横方向の表示範囲を指定", value=False)
@@ -180,7 +179,7 @@ def result_image_view(config):
             # -----------------------------------------------
             grid = vis.experimental_plot_fig_bokeh(
                 config,
-                rail_fpath,
+                outpath,
                 graph_height,
                 graph_width,
                 graph_thinout,

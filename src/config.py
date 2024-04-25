@@ -42,6 +42,10 @@ class appProperties:
         return self.config['default']['output_dir']
 
     @property
+    def csv_fname(self):
+        return self.config['default']['csv_fname']
+
+    @property
     def tdm_dir(self):
         return self.config['default']['tdm_dir']
 

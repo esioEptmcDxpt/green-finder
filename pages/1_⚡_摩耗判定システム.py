@@ -69,7 +69,7 @@ def ohc_wear_analysis(config):
 
     # 結果保存用のCSVファイル(rail)の保存パスを指定
     # rail_fpath = outpath + "/rail.shelve"
-    rail_fpath = outpath + "/rail.csv"
+    # rail_fpath = f"{outpath}/{config.csv_fname}.csv"
     # with shelve.open(rail_fpath) as rail:
     #     # 線区名を記録する
     #     rail["name"] = dir_area
@@ -87,6 +87,10 @@ def ohc_wear_analysis(config):
         st.sidebar.write(f"ファイルパス:{base_images[idx]}")
         # 画像ファイル名を取得
         image_name = base_images[idx].split('/')[-1]
+
+    # 結果保存用のCSVファイル(rail)の保存パスを指定
+    image_name_noExtension = os.path.splitext(os.path.basename(base_images[idx]))[0]
+    rail_fpath = f"{outpath}/{config.csv_fname}_{image_name_noExtension}.csv"
 
     # 表示中の画像、カメラ番号を対象に、トロリーIDを指定して結果を削除する
     result_del = st.sidebar.checkbox("表示中の結果を削除", value=False, key='result_del')
@@ -201,8 +205,9 @@ def ohc_wear_analysis(config):
     # カルマンフィルタを実行
     elif trace_method == "カルマンフィルタ":
         # カルマンフィルタの初期値設定
-        form_support_line = st.sidebar.form(key="detect_edge_form")    # 試作（初期エッジ自動検出）用フォーム
-        form_detect = st.sidebar.form(key="kalman_init_detect")
+        detect_edge = st.sidebar.checkbox("自動で初期値を入力しますか？", value=True)
+        # form_support_line = st.sidebar.form(key="detect_edge_form")    # 試作（初期エッジ自動検出）用フォーム
+        # form_detect = st.sidebar.form(key="kalman_init_detect")
         form = st.sidebar.form(key="kalman_init")
 
         trolley_id = form.selectbox("トロリ線のIDを入力してください", ("trolley1", "trolley2", "trolley3"))
@@ -210,22 +215,24 @@ def ohc_wear_analysis(config):
 
         # 初期値自動入力フォーム
         # -----------------------------------------------
-        candidate_init = helpers.detect_init_edge(cam_img, x_init)    # x_initに対応
-        candidate_len = len(candidate_init)
-        if x_init:
+        if detect_edge:
             candidate_init = helpers.detect_init_edge(cam_img, x_init)    # x_initに対応
             candidate_len = len(candidate_init)
+            if x_init:
+                candidate_init = helpers.detect_init_edge(cam_img, x_init)    # x_initに対応
+                candidate_len = len(candidate_init)
 
-        # num_init = form_support_line.number_input("初期値候補を選択してください", 1, candidate_len)
-        num_init = form.number_input("初期値候補を選択してください", 1, candidate_len) - 1
-        # num_init = num_init -1
-
-        # init_edge_submit = form_support_line.form_submit_button("📈自動で初期値を入力する")
-        init_edge_submit = form.form_submit_button("📈自動で初期値を入力する")
-        if init_edge_submit:
-            vis.draw_marker(candidate_init, num_init, cam_img, col1, x_init)    # x_initに対応
-            print(f'else num:{num_init}')
+            # num_init = form_support_line.number_input("初期値候補を選択してください", 1, candidate_len)
+            num_init = form.number_input("初期値候補を選択してください", 1, candidate_len) - 1
+            # num_init = num_init -1
+            # init_edge_submit = form_support_line.form_submit_button("📈自動で初期値を入力する")
+            init_edge_submit = form.form_submit_button("📈自動で初期値を入力する")
+            if init_edge_submit:
+                vis.draw_marker(candidate_init, num_init, cam_img, col1, x_init)    # x_initに対応
+                print(f'else num:{num_init}')
         # -----------------------------------------------
+        else:
+            candidate_len = 0
 
         if candidate_len == 0:
             y_init_l = form.number_input("上記X座標でのエッジ位置（上端）の座標を入力してください", 0, 1999)
@@ -287,7 +294,7 @@ def ohc_wear_analysis(config):
 
                 with st.spinner("カルマンフィルタ実行中"):
                     track_kalman(
-                            rail_fpath,
+                            outpath,
                             camera_num,
                             base_images,
                             df_csv,
@@ -308,7 +315,7 @@ def ohc_wear_analysis(config):
 
                 with st.spinner("カルマンフィルタ実行中"):
                     track_kalman(
-                        rail_fpath,
+                        outpath,
                         camera_num,
                         base_images,
                         df_csv,
@@ -325,21 +332,27 @@ def ohc_wear_analysis(config):
 
     # 解析結果があるかをサイドバーに表示する
     st.sidebar.markdown("# 参考 結果有無👇")
-    try:
-        with open(rail_fpath) as csv:
-            st.sidebar.download_button(
-                label="CSVファイルをダウンロード",
-                data=csv,
-                file_name=dir_area + "_" + camera_num + "_output.csv",
-                mime="text/csv"
-            )
-    except Exception as e:
-        st.sidebar.error("CSVファイルがありません")
-        st.sidebar.write(f"Error> {e}")
+    csv_downloader = st.sidebar.checkbox("CSVファイルをダウンロード")
+    if csv_downloader:
+        with st.spinner("一生懸命CSVを準備しています🐭"):
+            df_csv = helpers.rail_csv_concat(outpath)
+            csv_data = df_csv.to_csv(index=False).encode('utf-8-sig')
+        try:
+            with open(rail_fpath) as csv:
+                st.sidebar.download_button(
+                    label="CSVファイルをダウンロード",
+                    data=csv_data,
+                    file_name=dir_area + "_" + camera_num + "_output.csv",
+                    mime="text/csv"
+                )
+        except Exception as e:
+            st.sidebar.error("解析後にCSVをダウンロードできます")
+            # st.sidebar.write(f"Error> {e}")
     csv_delete_btn = st.sidebar.button("結果CSVデータを削除する")
     if csv_delete_btn:
-        if os.path.exists(rail_fpath):
-            helpers.file_remove(rail_fpath)
+        if os.path.exists(outpath):
+            # helpers.file_remove(rail_fpath)
+            helpers.imgs_dir_remove(outpath)
             log_view.error("CSVファイルを削除しました")
         else:
             log_view.error("削除するCSVファイルがありません")

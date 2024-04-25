@@ -322,6 +322,30 @@ def S3_EBS_imgs_dir_Compare(S3_dir_list, EBS_dir_list, df_key):
     return df_filtered
 
 
+def rail_csv_concat(outpath):
+    """ output/<camera_num>/内にある画像ごとのCSVファイルを結合してデータフレームとして返す
+    Args:
+        outpath(str): カメラ毎の出力先ディレクトリ
+    Return:
+        combined_df(DataFrame): 全てのCSVを結合したデータフレーム
+    """
+    csv_list = glob.glob(f"{outpath}/*.csv")
+    csv_list.sort()
+
+    if not csv_list:
+        st.sidebar.warning("CSVファイルがみつかりませんでした")
+        return pd.DataFrame()
+
+    dfs = []
+    for csv_path in csv_list:
+        df = pd.read_csv(csv_path)
+        dfs.append(df)
+    combined_df = pd.concat(dfs, ignore_index=True).sort_values(by=dfs[0].columns.tolist())
+
+    return combined_df.copy()
+
+
+
 def check_camera_dirs(dir_area, config):
     """ Outputディレクトリ内の結果ファイルの有無を確認する
     Args:
@@ -334,10 +358,12 @@ def check_camera_dirs(dir_area, config):
     result = []
     # 各カメラのディレクトリをチェック
     for camera_name, camera_type in config.camera_name_to_type.items():
-        # ディレクトリのパスを作成
-        file_path = os.path.join(config.output_dir, dir_area, camera_type, "rail.csv")
+        # ディレクトリ内のCSVファイルの数を取得
+        file_path = f"{config.output_dir}/{dir_area}/{camera_type}/*.csv"
+        # file_path = os.path.join(config.output_dir, dir_area, camera_type, "rail.csv")
         # ディレクトリ内のファイルをチェック
-        if os.path.exists(file_path):
+        if glob.glob(file_path):
+        # if os.path.exists(file_path):
             result.append([f"{camera_name}_{camera_type}", "○"])
         else:
             result.append([f"{camera_name}_{camera_type}", "×"])
@@ -358,7 +384,8 @@ def check_camera_dirs_addIdxLen(dir_area, config):
     with ThreadPoolExecutor(max_workers=6) as executor:
         for camera_name, camera_type in config.camera_name_to_type.items():
             # ディレクトリのパスを作成
-            file_path = os.path.join(config.output_dir, dir_area, camera_type, "rail.csv")
+            # file_path = os.path.join(config.output_dir, dir_area, camera_type, "rail.csv")
+            file_path = f"{config.output_dir}/{dir_area}/{camera_type}"
             res = executor.submit(read_csv_idx, camera_name, camera_type, file_path)
             result.append(res.result())
     # 結果をPandasデータフレームに変換
@@ -374,8 +401,13 @@ def get_max_idx(file_path):
         max_val(int): image_idxの最大値
     """
     # CSVファイルのimage_idxの最大値を取得する
+    flist = glob.glob(f"{file_path}/*.csv")
+    flist.sort()
+    if not flist:
+        return -1    # CSVファイルが無いときはreturn
     max_val = float('-inf')
-    with open(file_path, 'r', encoding="utf-8") as file:
+    # 一番末尾のファイルにおいて、最終のインデックスをチェック
+    with open(flist[-1], 'r', encoding="utf-8") as file:
         # Skip header
         file.readline()
         for line in file:
@@ -400,13 +432,13 @@ def read_csv_idx(camera_name, camera_type, file_path):
     Return:
         result_list(list): 結果データフレーム追記用のリスト
     """
-    if os.path.exists(file_path):
+    # if os.path.exists(file_path):
+    if glob.glob(file_path):
         max_idx = get_max_idx(file_path)
         result_list = [f"{camera_name}_{camera_type}", "○", int(max_idx) + 1]    # ユーザ向けに+1表示する
     else:
         result_list = [f"{camera_name}_{camera_type}", "×", 0]
     return result_list
-
 
 
 def check_camera_results(dir_area, config):

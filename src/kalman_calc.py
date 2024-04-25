@@ -1,5 +1,6 @@
 import streamlit as st
 import shelve
+import os
 import json
 import copy
 import numpy as np
@@ -11,7 +12,7 @@ from src.kalman import kalman
 import src.logger as my_logger
 
 
-def track_kalman(rail_fpath, camera_num, base_images, df_csv, idx, test_num, trolley_id, x_init, y_init_u, y_init_l, status_view, progress_bar):
+def track_kalman(outpath, camera_num, base_images, df_csv, idx, test_num, trolley_id, x_init, y_init_u, y_init_l, status_view, progress_bar):
     """カルマンフィルタ計算用のラッパー
     Args:
         rail (object): shelveファイル
@@ -38,7 +39,7 @@ def track_kalman(rail_fpath, camera_num, base_images, df_csv, idx, test_num, tro
     min_periods = helpers.window2min_periods(window)    # 標準偏差計算における最小計算範囲
 
     # 前回までの結果ファイルを読み込む
-    df_csv = helpers.result_csv_load(config, rail_fpath).copy()
+    # df_csv = helpers.result_csv_load(config, rail_fpath).copy()
 
     # 画像ファイルとキロ程を紐づけるためのJSONファイルを辞書として読み込む
     dir_area = base_images[idx].split("/")[1]    # image_pathから線区情報を読取る
@@ -54,6 +55,12 @@ def track_kalman(rail_fpath, camera_num, base_images, df_csv, idx, test_num, tro
         # 解析条件を記録
         image_name = image_path.split('/')[-1]
         dir_area, camera_num = image_path.split("/")[1:3]    # image_pathから線区情報を読取る
+        # 結果保存用のCSVファイル(rail)の保存パスを指定
+        image_name_noExtension = os.path.splitext(os.path.basename(image_name))[0]
+        rail_fpath = f"{outpath}/{config.csv_fname}_{image_name_noExtension}.csv"
+
+        # 前回までの結果ファイルを読み込む
+        df_csv = helpers.result_csv_load(config, rail_fpath).copy()
 
         # df_csvで、指定された条件に一致する行を特定する用の条件
         condition = (
@@ -78,7 +85,7 @@ def track_kalman(rail_fpath, camera_num, base_images, df_csv, idx, test_num, tro
         # progress_bar.progress((idx + count -1) / len(base_images))    # 全体の中での進捗を表示する場合
         progress_bar.progress(count / test_num)
         if count == 1:
-            st.text(f"{idx + count}枚目の画像を処理中です。画像名は{image_name}")
+            # st.text(f"{idx + count}枚目の画像を処理中です。画像名は{image_name}")
             try:
                 kalman_instance = kalman(trolley_id, y_l, y_u, x_init)
                 kalman_instance.infer_trolley_edge(image_path)
@@ -149,7 +156,7 @@ def track_kalman(rail_fpath, camera_num, base_images, df_csv, idx, test_num, tro
                 df_csv = helpers.dfcsv_update(config, df_csv, df).copy()
 
         else:
-            st.text(f"{idx + count}枚目の画像を処理中です。画像名は{image_name}")
+            # st.text(f"{idx + count}枚目の画像を処理中です。画像名は{image_name}")
             y_l = int(kalman_instance.last_state[0])
             y_u = int(kalman_instance.last_state[1])
 
