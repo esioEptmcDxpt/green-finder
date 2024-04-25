@@ -127,6 +127,7 @@ format_func:
     Kawagoe: 川越線
     Takasaki: 高崎線
     Tokaido: 東海道線
+    Ryomo: 両毛線
   station_names:
     st: 構内
     Omiya: 大宮
@@ -201,6 +202,8 @@ format_func:
     Hongoudai: 本郷台
     Oofuna: 大船
     Fujisawa: 藤沢
+    Kiryu: 桐生
+    Shimoshinden: 下新田
   rail_type_names:
     up: 上り
     down: 下り

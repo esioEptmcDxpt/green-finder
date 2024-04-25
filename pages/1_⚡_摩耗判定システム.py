@@ -132,6 +132,9 @@ def ohc_wear_analysis(config):
         ("カルマンフィルタ", "ピクセルトレース")
     )
     # trace_method = "カルマンフィルタ"
+    
+    # キロ程情報の使用有無
+    kiro_data = st.sidebar.checkbox("キロ程情報を使用", value=True)
 
     # メモリ付き画像を表示
     support_line = st.sidebar.checkbox("補助線を使用")
@@ -227,9 +230,11 @@ def ohc_wear_analysis(config):
             # num_init = num_init -1
             # init_edge_submit = form_support_line.form_submit_button("📈自動で初期値を入力する")
             init_edge_submit = form.form_submit_button("📈自動で初期値を入力する")
-            if init_edge_submit:
+            if init_edge_submit and candidate_len != 0:
                 vis.draw_marker(candidate_init, num_init, cam_img, col1, x_init)    # x_initに対応
                 print(f'else num:{num_init}')
+            elif init_edge_submit and candidate_len == 0:
+                st.write("初期値を検出できませんでした・・・")
         # -----------------------------------------------
         else:
             candidate_len = 0
@@ -306,6 +311,7 @@ def ohc_wear_analysis(config):
                             y_init_l,
                             status_view,
                             progress_bar,
+                            kiro_data
                         )
                     camera_view.success("# 解析が終了しました")
             else:
@@ -327,6 +333,7 @@ def ohc_wear_analysis(config):
                         y_init_l,
                         status_view,
                         progress_bar,
+                        kiro_data
                     )
                     camera_view.success("# 解析が終了しました")
 

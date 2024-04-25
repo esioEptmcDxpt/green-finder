@@ -728,10 +728,6 @@ def experimental_result_dict_to_csv(config, result_dict, kiro_dict, kiro_init_di
     # with open(f"{config.tdm_dir}/{dir_area}.json", 'r') as file:
     #     kiro_dict = json.load(file)
 
-    # キロ程の境界条件を取得
-    kiro_tei_init_head = kiro_init_dict['KiroTei_init'][0]
-    kiro_tei_init_tail = kiro_init_dict['KiroTei_init'][1]
-
     # インスタンスの内容をデータフレームとして読み込む
     df = pd.DataFrame.from_dict(result_dict[trolley_id], orient='index').T
     # df.to_csv("temp.csv", index=False)    # デバッグ用
@@ -760,25 +756,32 @@ def experimental_result_dict_to_csv(config, result_dict, kiro_dict, kiro_init_di
     画像ファイル名がマッチしない範囲のキロ程を計算して記録するコードを修正中
     """
     # -----------------------------------
-
-    if fname in kiro_dict[camera_num].keys():
-        DenchuNo = kiro_dict[camera_num][fname]['DenchuNo']
-        kiro_tei = kiro_dict[camera_num][fname]['KiroTei']
-        # st.write(f"Match   > kiro_tei: {kiro_tei}")
-    else:
-        # 画像ファイル名がマッチしない場合のキロ程を指定
-        if idx + count - 1 <= kiro_init_dict['image_idx_init'][0]:
-            DenchuNo = 0
-            kiro_tei = kiro_tei_init_head - (kiro_init_dict['image_idx_init'][0] - (idx + count - 1)) * 2 / config.img_width
+    if kiro_dict:
+        # キロ程の境界条件を取得
+        kiro_tei_init_head = kiro_init_dict['KiroTei_init'][0]
+        kiro_tei_init_tail = kiro_init_dict['KiroTei_init'][1]
+        if fname in kiro_dict[camera_num].keys():
+            DenchuNo = kiro_dict[camera_num][fname]['DenchuNo']
+            kiro_tei = kiro_dict[camera_num][fname]['KiroTei']
+            # st.write(f"Match   > kiro_tei: {kiro_tei}")
         else:
-            DenchuNo = 1000
-            kiro_tei = kiro_tei_init_tail + ((idx + count - 1) - kiro_init_dict['image_idx_init'][1]) * 2 / config.img_width
-    kiro_tei_list = [kiro_tei + ix / config.img_width / 1000 * 2 for ix in config.ix_list]
-    df.insert(2, 'pole_num', DenchuNo)
-    if count == 1:
-        df.insert(3, 'kiro_tei', kiro_tei_list[x_init:(x_init+len(df))])
+            # 画像ファイル名がマッチしない場合のキロ程を指定
+            if idx + count - 1 <= kiro_init_dict['image_idx_init'][0]:
+                DenchuNo = 0
+                kiro_tei = kiro_tei_init_head - (kiro_init_dict['image_idx_init'][0] - (idx + count - 1)) * 2 / config.img_width
+            else:
+                DenchuNo = 1000
+                kiro_tei = kiro_tei_init_tail + ((idx + count - 1) - kiro_init_dict['image_idx_init'][1]) * 2 / config.img_width
+        kiro_tei_list = [kiro_tei + ix / config.img_width / 1000 * 2 for ix in config.ix_list]
+        df.insert(2, 'pole_num', DenchuNo)
+        if count == 1:
+            df.insert(3, 'kiro_tei', kiro_tei_list[x_init:(x_init+len(df))])
+        else:
+            df.insert(3, 'kiro_tei', kiro_tei_list[:len(df)])
     else:
-        df.insert(3, 'kiro_tei', kiro_tei_list[:len(df)])
+        df.insert(2, 'pole_num', "Empty")
+        df.insert(3, 'kiro_tei', ix_list[x_init:(x_init + len(df))])
+
     df.insert(4, 'measurement_area', dir_area)
     df.insert(5, 'camera_num', camera_num)
     df.insert(6, 'image_name', image_name)
@@ -1132,32 +1135,50 @@ def detect_init_edge(img, x_init):
 
     img_smooth2 = np.copy(img_smooth1)
 
-    # 一定以上の輝度変化は輝度Maxもしくは平均輝度に張り付ける
-    # 輝度変化の位置と幅を記録
-    candidate_init = []
-    high_point = [None, None, None, 1]
-    low_point = [None, None, None, -1]
-    for idx in range(len(img_smooth1)):
-        if ex_max > img_smooth1[idx] > ex_center:
-            img_smooth2[idx] = base_max
-        elif ex_min < img_smooth1[idx] <= ex_center:
-            img_smooth2[idx] = base_min
+#     # 一定以上の輝度変化は輝度Maxもしくは平均輝度に張り付ける
+#     # 輝度変化の位置と幅を記録
+#     candidate_init = []
+#     high_point = [None, None, None, 1]    # トロリ線摺面を記録する箱（通常の摺面が周囲より明るい場合）
+#     low_point = [None, None, None, -1]    # トロリ線摺面を記録する箱（輝度反転で摺面が周囲より暗い場合）
+#     # for idx in range(len(img_smooth1)):
+#     for idx in range(1999):
+#         # 中途半端な輝度（ex_centerより高輝度）はbase_maxに変換
+#         if ex_max > img_smooth1[idx] > ex_center:
+#             img_smooth2[idx] = base_max
+#         # 中途半端な輝度（ex_centerより低輝度）はbase_minに変換
+#         elif ex_min < img_smooth1[idx] <= ex_center:
+#             img_smooth2[idx] = base_min
 
-        if idx >= 1 and img_smooth2[idx] >= ex_max and img_smooth2[idx-1] <= ex_min:
-            high_point[0] = idx
-            low_point[1] = idx
-            if low_point[0] != None and abs(low_point[0] - low_point[1]) < 20:                # 摺面幅として明らかにあり得ない場合は除く
+#         # 輝度立ち上がり箇所を検出
+#         if idx >= 1 and img_smooth2[idx] >= ex_max and img_smooth2[idx-1] <= ex_min:
+#             high_point[0] = idx
+#             low_point[1] = idx
+#             if low_point[0] != None and abs(low_point[0] - low_point[1]) < 20:                # 摺面幅として明らかにあり得ない場合は除く
+#                 low_point[2] = abs(low_point[0] - low_point[1])                               # 摺面幅
+#                 candidate_init.append(low_point)
+#             low_point = [None, None, None, -1]
+            
+#         # 輝度立ち下がり箇所を検出
+#         elif idx >= 1 and img_smooth2[idx] <= ex_min and img_smooth2[idx-1] >= ex_max:
+#             high_point[1] = idx
+#             low_point[0] = idx
+#             if high_point[0] != None and abs(high_point[0] - high_point[1]) < 20:              # 摺面幅として明らかにあり得ない場合は除く
+#                 high_point[2] = abs(high_point[0] - high_point[1])                             # 摺面幅
+#                 candidate_init.append(high_point)
+#             high_point = [None, None, None, 1]
 
-                low_point[2] = abs(low_point[0] - low_point[1])
-                candidate_init.append(low_point)
-            low_point = [None, None, None, -1]
-        elif idx >= 1 and img_smooth2[idx] <= ex_min and img_smooth2[idx-1] >= ex_max:
-            high_point[1] = idx
-            low_point[0] = idx
-            if high_point[0] != None and abs(high_point[0] - high_point[1]) < 20:              # 摺面幅として明らかにあり得ない場合は除く
-                high_point[2] = abs(high_point[0] - high_point[1])
-                candidate_init.append(high_point)
-            high_point = [None, None, None, 1]
+    candidate_init = search_candidate(img_smooth1, base_max, base_min, ex_max, ex_min, ex_center)
+    
+    # （検討中）初期値候補が見つからなかった場合の対処
+    #           ex_centerを変えることで対処可能？？
+    # search_state = False
+    # while not search_state:
+    #     candidate_init = search_candidate(img_smooth1, base_max, base_min, ex_max, ex_min, ex_center)
+    #     candidate_len = len(candidate_init)
+    #     if candidate_len != 0:
+    #         search_state = True
+    #     elif candidate_len == 0:
+            
             
     # （補正）検出した点を傾きの中心にする
     # for i, edge in enumerate(search_list):
@@ -1187,4 +1208,39 @@ def detect_init_edge(img, x_init):
         else:
             idx_l_new = edge[1]
         candidate_init[i][0:2] = [idx_u_new, idx_l_new]
+    return candidate_init
+
+
+def search_candidate(img_smooth2, base_max, base_min, ex_max, ex_min, ex_center):
+    # 一定以上の輝度変化は輝度Maxもしくは平均輝度に張り付ける
+    # 輝度変化の位置と幅を記録
+    candidate_init = []
+    high_point = [None, None, None, 1]    # 輝度変化の位置を記録する箱（周囲より明るい変化の場合）
+    low_point = [None, None, None, -1]    # 輝度変化の位置を記録する箱（周囲より暗い変化の場合） ※輝度反転
+    # for idx in range(len(img_smooth1)):
+    for idx in range(1999):
+        # 中途半端な輝度（ex_centerより高輝度）はbase_maxに変換
+        if ex_max > img_smooth2[idx] > ex_center:
+            img_smooth2[idx] = base_max
+        # 中途半端な輝度（ex_centerより低輝度）はbase_minに変換
+        elif ex_min < img_smooth2[idx] <= ex_center:
+            img_smooth2[idx] = base_min
+
+        # 輝度立ち上がり箇所を検出
+        if idx >= 1 and img_smooth2[idx] >= ex_max and img_smooth2[idx-1] <= ex_min:
+            high_point[0] = idx
+            low_point[1] = idx
+            if low_point[0] != None and abs(low_point[0] - low_point[1]) < 20:                # 摺面幅として明らかにあり得ない場合は除く
+                low_point[2] = abs(low_point[0] - low_point[1])                               # 摺面幅
+                candidate_init.append(low_point)
+            low_point = [None, None, None, -1]
+            
+        # 輝度立ち下がり箇所を検出
+        elif idx >= 1 and img_smooth2[idx] <= ex_min and img_smooth2[idx-1] >= ex_max:
+            high_point[1] = idx
+            low_point[0] = idx
+            if high_point[0] != None and abs(high_point[0] - high_point[1]) < 20:              # 摺面幅として明らかにあり得ない場合は除く
+                high_point[2] = abs(high_point[0] - high_point[1])                             # 摺面幅
+                candidate_init.append(high_point)
+            high_point = [None, None, None, 1]
     return candidate_init

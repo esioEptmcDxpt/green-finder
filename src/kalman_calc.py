@@ -12,7 +12,7 @@ from src.kalman import kalman
 import src.logger as my_logger
 
 
-def track_kalman(outpath, camera_num, base_images, df_csv, idx, test_num, trolley_id, x_init, y_init_u, y_init_l, status_view, progress_bar):
+def track_kalman(outpath, camera_num, base_images, df_csv, idx, test_num, trolley_id, x_init, y_init_u, y_init_l, status_view, progress_bar, kiro_data):
     """カルマンフィルタ計算用のラッパー
     Args:
         rail (object): shelveファイル
@@ -42,13 +42,17 @@ def track_kalman(outpath, camera_num, base_images, df_csv, idx, test_num, trolle
     # df_csv = helpers.result_csv_load(config, rail_fpath).copy()
 
     # 画像ファイルとキロ程を紐づけるためのJSONファイルを辞書として読み込む
-    dir_area = base_images[idx].split("/")[1]    # image_pathから線区情報を読取る
-    with open(f"{config.tdm_dir}/{dir_area}.json", 'r') as file:
-        kiro_dict = json.load(file)
-    # 画像ファイル名がkiro_dictに含まれる範囲をリストで取得 [idx_head, idx_tail]
-    kiro_init_dict = helpers.experimental_get_image_match(base_images, kiro_dict, camera_num)
-    # for debug
-    # st.write(kiro_init_dict)
+    if kiro_data:
+        dir_area = base_images[idx].split("/")[1]    # image_pathから線区情報を読取る
+        with open(f"{config.tdm_dir}/{dir_area}.json", 'r') as file:
+            kiro_dict = json.load(file)
+        # 画像ファイル名がkiro_dictに含まれる範囲をリストで取得 [idx_head, idx_tail]
+        kiro_init_dict = helpers.experimental_get_image_match(base_images, kiro_dict, camera_num)
+        # for debug
+        # st.write(kiro_init_dict)
+    else:
+        kiro_dict = {}
+        kiro_init_dict = {}
 
     count = 0
     for image_path in base_images[idx:(idx + test_num)]:

@@ -666,8 +666,8 @@ def draw_marker(candidate_init, num, img, col, x_init):
         upper_edge = candidate_init[num][0]
         lower_edge = candidate_init[num][1]
         for i in range(20):
-            ixu = upper_edge - i
-            ixl = lower_edge + i
+            ixu = upper_edge - i if (upper_edge - i) >= 0 else 0 
+            ixl = lower_edge + i if (upper_edge + i) <= 1999 else 1999 
             if x_init <= 500:                                       # x_initに対応
                 iy = round(i / 1.5)
             elif x_init > 500:                                      # x_initに対応
