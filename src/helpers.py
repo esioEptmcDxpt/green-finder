@@ -44,6 +44,12 @@ def list_images(target_dir):
     return base_images
 
 
+def list_csvs(target_dir):                                       # 2024.5.21 -->
+    base_csvs = glob.glob(target_dir + "/*.csv")
+    base_csvs.sort()
+    return base_csvs                                             # --> 2024.5.21
+
+
 @st.cache
 def get_dir_list(path):
     dir_path = Path(path)
@@ -343,7 +349,6 @@ def rail_csv_concat(outpath):
     combined_df = pd.concat(dfs, ignore_index=True).sort_values(by=dfs[0].columns.tolist())
 
     return combined_df.copy()
-
 
 
 def check_camera_dirs(dir_area, config):
@@ -780,7 +785,11 @@ def experimental_result_dict_to_csv(config, result_dict, kiro_dict, kiro_init_di
             df.insert(3, 'kiro_tei', kiro_tei_list[:len(df)])
     else:
         df.insert(2, 'pole_num', "Empty")
-        df.insert(3, 'kiro_tei', ix_list[x_init:(x_init + len(df))])
+        # if count == 1:
+        #     df.insert(3, 'kiro_tei', ix_list[x_init:(x_init + len(df))])
+        # else:
+        #     df.insert(3, 'kiro_tei', ix_list[:len(df)])
+        df.insert(3, 'kiro_tei', df['ix'] / 500000)
 
     df.insert(4, 'measurement_area', dir_area)
     df.insert(5, 'camera_num', camera_num)
@@ -1244,3 +1253,13 @@ def search_candidate(img_smooth2, base_max, base_min, ex_max, ex_min, ex_center)
                 candidate_init.append(high_point)
             high_point = [None, None, None, 1]
     return candidate_init
+
+
+def search_csv(outpath):                 # 2024.5.22 -->
+    exist_csv = False
+    list_csv = list_csvs(outpath)
+    for file in list_csv:
+        if 'rail_' and '.csv' in file:
+            exist_csv = True
+            break
+    return exist_csv                     # --> 2024.5.22

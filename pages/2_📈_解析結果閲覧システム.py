@@ -2,6 +2,7 @@ import streamlit as st
 import src.helpers as helpers
 import src.visualize as vis
 from src.config import appProperties
+import io
 
 
 def result_image_view(config):
@@ -160,6 +161,13 @@ def result_image_view(config):
         else:
             st.error("横方向の表示位置の入力が誤っています")
             st.stop()
+        
+        # outputに解析結果があるかどうか確認                        # 2024.5.22 -->
+        exist_csv = helpers.search_csv(outpath)
+        if not exist_csv:
+            st.error("解析結果がありません。")
+            st.stop()                                             # --> 2024.5.22
+            
         with st.spinner("グラフ作成中"):
             # グラフデータを作成する
             # for bokeh
@@ -209,6 +217,8 @@ def result_image_view(config):
             cam_img = vis.ohc_img_concat(base_images, idx, concat_nums, font_size)
             st.write(f"カメラ:{camera_name} {idx + 1}～{idx + concat_nums}までの画像")
             st.image(cam_img)
+            cam_img_name = f"downloaded_image_{idx}-{idx + concat_nums}.png"          # 2024.5.21
+            vis.download_image(cam_img, cam_img_name)                                 # 2024.5.21
         with row2:
             st.write("🖥️解析結果")
             status_view = st.empty()
@@ -227,6 +237,7 @@ def result_image_view(config):
                     config,
                     status_view,
                     progress_bar,
+                    outpath                                                            # 2024.5.21
                 )
             except Exception as e:
                 out_img = []
@@ -235,6 +246,8 @@ def result_image_view(config):
                 st.error("解析結果がありません")
             else:
                 st.image(out_img)
+                out_img_name = f"downloaded_image_{idx}-{idx + concat_nums}_analized.png"          # 2024.5.21
+                vis.download_image(out_img, out_img_name)                                          # 2024.5.21
         if graph_add_flag:
             with st.spinner("グラフ作成中"):
                 if ix_view_range_start <= ix_view_range_end:
@@ -272,17 +285,19 @@ def result_image_view(config):
 
     # 解析結果があるかをサイドバーに表示する
     st.sidebar.markdown("# 参考 結果有無👇")
-    try:
-        with open(rail_fpath) as csv:
-            st.sidebar.download_button(
-                label="CSVファイルをダウンロード",
-                data=csv,
-                file_name=dir_area + "_" + camera_num + "_output.csv",
-                mime="text/csv"
-            )
-    except Exception as e:
+    # try:                                                                     # 2024.5.22 -->
+    #     with open(rail_fpath) as csv:
+    #         st.sidebar.download_button(
+    #             label="CSVファイルをダウンロード",
+    #             data=csv,
+    #             file_name=dir_area + "_" + camera_num + "_output.csv",
+    #             mime="text/csv"
+    #         )
+    # except Exception as e:
+    exist_csv = helpers.search_csv(outpath)
+    if not exist_csv:
         st.sidebar.error("CSVファイルがありません")
-        st.sidebar.write(f"Error> {e}")
+        # st.sidebar.write(f"Error> {e}")                                       # --> 2024.5.22
     csv_delete_btn = st.sidebar.button("結果CSVデータを削除する")
     if csv_delete_btn:
         if os.path.exists(rail_fpath):

@@ -13,6 +13,7 @@ from bokeh.palettes import d3
 import streamlit as st
 from PIL import Image, ImageDraw, ImageFont
 import src.helpers as helpers
+import io                                                         # 2024.5.21
 
 
 # @st.cache(hash_funcs={matplotlib.figure.Figure: lambda _: None})
@@ -63,7 +64,7 @@ def ohc_image_load(image_path):
 
 
 # @st.cache
-def out_image_load(rail_fpath, dir_area, camera_num, image_name, img, config):
+def out_image_load(rail_fpath, dir_area, camera_num, image_name, img, config, outpath):          # 2024.5.21
     """
     Args:
         rail_fpath(str): shelveファイルのパス
@@ -88,39 +89,49 @@ def out_image_load(rail_fpath, dir_area, camera_num, image_name, img, config):
     background_brightness = random_pixels.mean()
 
     # csvファイルを開いてデータフレームにセットする
-    df_csv = helpers.result_csv_load(config, rail_fpath).copy()
+    # df_csv = helpers.result_csv_load(config, rail_fpath).copy()                                                                         # 2024.5.21 -->
+    # csvファイルのリストを作成
+    list_csv = helpers.list_csvs(outpath)
+    # 目的のcsvファイルが存在するか確認
+    csv_path = outpath + "/rail_" + image_name.split('.')[0] + ".csv"
+    if csv_path in list_csv:
+        # csvファイルをデータフレームにセット
+        df_csv = pd.read_csv(csv_path)
 
-    # 解析結果をチェックする
-    # フィルタリング用の画像名の検索条件を作成する
-    condition = (
-        (df_csv['measurement_area'] == dir_area) &
-        (df_csv['camera_num'] == camera_num) &
-        (df_csv['image_name'] == image_name)# &
-        # (df_csv['trolley_id'] == trolley_id)
-    )
-    df_csv_filtered = df_csv.loc[condition, :].copy()
-    if not len(df_csv_filtered):
-        # 解析結果が無ければ関数を抜ける
-        return []
+        # 解析結果をチェックする
+        # フィルタリング用の画像名の検索条件を作成する
+        condition = (
+            (df_csv['measurement_area'] == dir_area) &
+            (df_csv['camera_num'] == camera_num) &
+            (df_csv['image_name'] == image_name)# &
+            # (df_csv['trolley_id'] == trolley_id)
+        )
+        df_csv_filtered = df_csv.loc[condition, :].copy()
+        if not len(df_csv_filtered):
+            # 解析結果が無ければ関数を抜ける
+            return []
 
-    # データを描画
-    # x_values = [int(str(num)[-3:]) for num in df_csv_filtered['ix']]
-    # st.write(x_values)
-    for trolley_id in config.trolley_ids:
-        # trolley_idの数だけ繰り返す
-        if trolley_id in set(list(df_csv_filtered['trolley_id'])):
-            # trolley_idが存在する場合だけ実行
-            x_values = [int(str(i)[-3:]) for i in df_csv_filtered[(df_csv_filtered['trolley_id'] == trolley_id)]['ix']]
-            upper_edge = [int(i) for i in df_csv_filtered[(df_csv_filtered['trolley_id'] == trolley_id)]['estimated_upper_edge']]
-            lower_edge = [int(i) for i in df_csv_filtered[(df_csv_filtered['trolley_id'] == trolley_id)]['estimated_lower_edge']]
-            for x, y1, y2 in zip(x_values, upper_edge, lower_edge):
-                # estimated_upper_edgeとestimated_lower_edgeが0でない場合のみ色を変更
-                if y1 != 0:
-                    color_upper = [0, 255, 0] if background_brightness < 128 else [255, 0, 0]  # 緑または赤
-                    img_array[y1, x] = color_upper
-                if y2 != 0:
-                    color_lower = [0, 255, 0] if background_brightness < 128 else [255, 0, 0]  # 緑または赤
-                    img_array[y2, x] = color_lower
+        # データを描画
+        # x_values = [int(str(num)[-3:]) for num in df_csv_filtered['ix']]
+        # st.write(x_values)
+        for trolley_id in config.trolley_ids:
+            # trolley_idの数だけ繰り返す
+            if trolley_id in set(list(df_csv_filtered['trolley_id'])):
+                # trolley_idが存在する場合だけ実行
+                x_values = [int(str(i)[-3:]) for i in df_csv_filtered[(df_csv_filtered['trolley_id'] == trolley_id)]['ix']]
+                upper_edge = [int(i) for i in df_csv_filtered[(df_csv_filtered['trolley_id'] == trolley_id)]['estimated_upper_edge']]
+                lower_edge = [int(i) for i in df_csv_filtered[(df_csv_filtered['trolley_id'] == trolley_id)]['estimated_lower_edge']]
+                for x, y1, y2 in zip(x_values, upper_edge, lower_edge):
+                    # estimated_upper_edgeとestimated_lower_edgeが0でない場合のみ色を変更
+                    if y1 != 0:
+                        color_upper = [0, 255, 0] if background_brightness < 128 else [255, 0, 0]  # 緑または赤
+                        img_array[y1, x] = color_upper
+                    if y2 != 0:
+                        color_lower = [0, 255, 0] if background_brightness < 128 else [255, 0, 0]  # 緑または赤
+                        img_array[y2, x] = color_lower
+    else:
+        # 目的のcsvファイルが存在しなければ関数を抜ける
+        return []                                                                                                                         # --> 2024.5.21
 
     return Image.fromarray(img_array)
 
@@ -180,7 +191,7 @@ def ohc_img_concat(base_images, idx, concat_nums, font_size):
     return result_img
 
 
-def out_image_concat(rail_fpath, dir_area, camera_num, base_images, idx, concat_nums, font_size, config, status_view, progress_bar):
+def out_image_concat(rail_fpath, dir_area, camera_num, base_images, idx, concat_nums, font_size, config, status_view, progress_bar, outpath):          # 2024.5.21
     """
     """
     # 番号を追記
@@ -192,7 +203,7 @@ def out_image_concat(rail_fpath, dir_area, camera_num, base_images, idx, concat_
             # st.write(f"{count}> {image_name}")
             result_img = Image.open(image_path)
             # 結果を追記する
-            result_img = out_image_load(rail_fpath, dir_area, camera_num, image_name, result_img, config)
+            result_img = out_image_load(rail_fpath, dir_area, camera_num, image_name, result_img, config, outpath)                                     # 2024.5.21
             if not result_img:
                 # 結果画像が無い場合（[]の場合）は空の画像を作成する
                 result_img = Image.new('RGB', (config.img_width, config.img_height))
@@ -203,7 +214,7 @@ def out_image_concat(rail_fpath, dir_area, camera_num, base_images, idx, concat_
         else:
             next_img = Image.open(image_path)
             # 結果を追記する
-            next_img = out_image_load(rail_fpath, dir_area, camera_num, image_name, next_img, config)
+            next_img = out_image_load(rail_fpath, dir_area, camera_num, image_name, next_img, config, outpath)                                         # 2024.5.21
             if not next_img:
                 # 結果画像が無い場合（[]の場合）は空の画像を作成する
                 next_img = Image.new('RGB', (config.img_width, config.img_height))
@@ -688,3 +699,17 @@ def draw_marker(candidate_init, num, img, col, x_init):
         st.write(f"{num + 1}番目の候補をマーカーで表示（idx={x_init}）")
         st.image(cam_img_mk)
     return
+
+
+def download_image(img, image_name):                                                       # 2024.5.21 -->
+    buf = io.BytesIO()
+    img.save(buf, format='PNG')
+    byte_im = buf.getvalue()
+    # ダウンロードボタンを設置する
+    st.download_button(
+        label="画像をダウンロード",
+        data=byte_im,
+        file_name=image_name,
+        mime="image/png"
+    )                                                                                      # --> 2024.5.21
+    

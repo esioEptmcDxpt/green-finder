@@ -111,11 +111,13 @@ def ohc_wear_analysis(config):
         cam_img = vis.ohc_image_load(base_images[idx])
         st.write(f"カメラ:{camera_name} {idx + 1}番目の画像")
         st.image(cam_img)
+        cam_img_name = f"downloaded_image_{idx}.png"                              # 2024.5.22
+        vis.download_image(cam_img, cam_img_name)                                 # 2024.5.22
     with col2:
         st.write("🖥️解析結果")
         st.write("解析結果を表示中")
         try:
-            out_img = vis.out_image_load(rail_fpath, dir_area, camera_num, image_name, cam_img, config)
+            out_img = vis.out_image_load(rail_fpath, dir_area, camera_num, image_name, cam_img, config, outpath)
         except Exception as e:
             out_img = []
             st.write(e)
@@ -123,6 +125,8 @@ def ohc_wear_analysis(config):
             st.error("解析結果がありません")
         else:
             st.image(out_img)
+            out_img_name = f"downloaded_image_{idx}_analized.png"                     # 2024.5.22
+            vis.download_image(out_img, out_img_name)                                 # 2024.5.22
 
     st.sidebar.markdown("# ___Step3___ 解析を実行する")
     # 暫定的にカルマンフィルタに限定
