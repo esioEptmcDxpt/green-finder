@@ -282,7 +282,7 @@ def plot_fig_bokeh(config, rail_fpath, graph_height, graph_width, graph_thinout,
 
     # ユーザ入力に基づいて表示範囲を限定する
     if ix_set_flag:
-        df_csv = df_csv.query(f'{ix_view_range[0]} <= image_idx <= {ix_view_range[1]}').copy()
+        df_csv = df_csv.query(f'{ix_view_range[0]} <= image_idx <= {ix_view_range[1]}', engine='python').copy()
 
     # CSVから作成したデータフレームをbokeh形式で読み込む
     source = ColumnDataSource(data=df_csv)
@@ -463,7 +463,7 @@ def experimental_plot_fig_bokeh(config, outpath, graph_height, graph_width, grap
 
     # ユーザ入力に基づいて表示範囲を限定する
     if ix_set_flag:
-        df_csv = df_csv.query(f'{ix_view_range[0]} <= image_idx <= {ix_view_range[1]}').copy()
+        df_csv = df_csv.query(f'{ix_view_range[0]} <= image_idx <= {ix_view_range[1]}', engine='python').copy()
 
     # CSVから作成したデータフレームをbokeh形式で読み込む
     source = ColumnDataSource(data=df_csv)
@@ -640,24 +640,24 @@ def plot_fig_plt(config, rail_fpath, camera_num, graph_height, graph_width, grap
 
     # グラフの要素を追加, trolley_idごとに追加
     for trolleyid in df['trolley_id'].unique():
-        df_temp = df.query(f'trolley_id == "{trolleyid}"').copy()
+        df_temp = df.query(f'trolley_id == "{trolleyid}"', engine='python').copy()
         x = df_temp.query(
-            f'{ix_view_range[0]} <= ix <= {ix_view_range[1]}'
+            f'{ix_view_range[0]} <= ix <= {ix_view_range[1]}', engine='python'
         )['ix']
         ax1.plot(x, df_temp.query(
-            f'{ix_view_range[0]} <= ix <= {ix_view_range[1]}'
+            f'{ix_view_range[0]} <= ix <= {ix_view_range[1]}', engine='python'
         )['estimated_upper_edge'], label=trolleyid)
         ax1.plot(x, df_temp.query(
-            f'{ix_view_range[0]} <= ix <= {ix_view_range[1]}'
+            f'{ix_view_range[0]} <= ix <= {ix_view_range[1]}', engine='python'
         )['estimated_lower_edge'], label=trolleyid)
         ax2.plot(x, df_temp.query(
-            f'{ix_view_range[0]} <= ix <= {ix_view_range[1]}'
+            f'{ix_view_range[0]} <= ix <= {ix_view_range[1]}', engine='python'
         )['estimated_width'], label=trolleyid)
         ax3.plot(x, df_temp.query(
-            f'{ix_view_range[0]} <= ix <= {ix_view_range[1]}'
+            f'{ix_view_range[0]} <= ix <= {ix_view_range[1]}', engine='python'
         )['estimated_width_std'], label=trolleyid)
         ax4.plot(x, df_temp.query(
-            f'{ix_view_range[0]} <= ix <= {ix_view_range[1]}'
+            f'{ix_view_range[0]} <= ix <= {ix_view_range[1]}', engine='python'
         )['brightness_std'], label=trolleyid)
 
     # 凡例を有効化する
