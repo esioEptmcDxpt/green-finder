@@ -1362,8 +1362,8 @@ format_func:
     Gousawa: 郷沢
     Yomogita: 蓬田
   rail_type_names:
-    up: 上り
-    down: 下り
+    up: 上り線
+    down: 下り線
     soto: 外回り
     uchi: 内回り
     south: 南行
