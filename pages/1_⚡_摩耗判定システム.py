@@ -373,7 +373,13 @@ def ohc_wear_analysis(config):
     else:
         df = helpers.check_camera_dirs(dir_area, config)
     st.sidebar.dataframe(df)
-
+    
+    # st.write("画像ファイルリスト👇")
+    # # image_list_for_view = []
+    # for idx, image_path in enumerate(base_images):
+    #     image_name = image_path.split('/')[-1]
+    #     # image_list_for_view.append([idx + 1, image_name])
+    #     st.text(f"{idx + 1},{image_name}")
 
 if __name__ == "__main__":
     config = appProperties('config.yml')

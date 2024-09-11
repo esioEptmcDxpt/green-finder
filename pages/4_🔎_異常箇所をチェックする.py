@@ -134,6 +134,12 @@ def highlight_rows(s, highlight_string):
     return ['background-color: pink; color: black' if s['画像ファイル名'] == highlight_string else '' for _ in s]
 
 
+def find_indices(word_list, target_string):
+    """ リストの要素に一致するインデックスを返す
+    """
+    return [index for index, word in enumerate(word_list) if target_string in word]
+
+
 def eda_tool(config):
     # マルチページの設定
     st.set_page_config(page_title="異常値箇所チェック", layout="wide")
@@ -224,7 +230,13 @@ def eda_tool(config):
 
         st.write("## 異常値検出データ")
         st.selectbox("異常が検出された電柱番号　※重複なし チェック用", pole_nums)
-        image_path = st.selectbox("異常が検出された画像　選択した画像が表示されます👉", images)
+        
+        image_idx = st.number_input(f"異常が検出された画像を番号で選択({len(images)}枚)",
+                                   min_value=1,
+                                   max_value=len(images)) - 1
+        image_path = images[image_idx]
+        st.write(f"表示する画像: {find_indices(base_images, image_path)}> {image_path} 👉")
+        # image_path = st.selectbox(f"異常が検出された画像({len(images)}枚)　選択した画像が表示されます👉", images)
         styled_df = df.style.apply(highlight_rows, axis=1, highlight_string=image_path)
         st.dataframe(styled_df)
         # st.write(df)
@@ -232,8 +244,8 @@ def eda_tool(config):
     with col2_cont:
         st.write("# 🖥️カメラ画像")
         st.write("解析結果を表示中")
+        st.write(f"画像ファイル: {find_indices(base_images, image_path)}> {image_path}")
         try:
-            st.write(target_dir)
             csv_path = image_path.replace('.jpg', '.csv')
             image_name = image_path.split('.')[0]
             rail_fpath = f"{outpath}/{config.csv_fname}_{csv_path}"
@@ -248,6 +260,8 @@ def eda_tool(config):
             st.image(out_img)
             out_img_name = f"downloaded_image_{image_path}"
             vis.download_image(out_img, out_img_name)
+    
+    st.write("# 連結画像を出力する")
 
     return
 

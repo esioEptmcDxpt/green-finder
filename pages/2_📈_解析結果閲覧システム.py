@@ -11,7 +11,7 @@ def result_image_view(config):
         config: ymlファイルを読み込んだ設定値
     """
     # マルチページの設定
-    st.set_page_config(page_title="解析結果ビューワー", layout="centered")
+    st.set_page_config(page_title="解析結果ビューワー", layout="wide")
     st.sidebar.header("解析結果閲覧システム")
 
     # メインページのコンテナを配置する
@@ -217,8 +217,8 @@ def result_image_view(config):
             cam_img = vis.ohc_img_concat(base_images, idx, concat_nums, font_size)
             st.write(f"カメラ:{camera_name} {idx + 1}～{idx + concat_nums}までの画像")
             st.image(cam_img)
-            cam_img_name = f"downloaded_image_{idx}-{idx + concat_nums}.png"          # 2024.5.21
-            vis.download_image(cam_img, cam_img_name)                                 # 2024.5.21
+            cam_img_name = f"downloaded_image_{idx + 1}-{idx + concat_nums + 1}.png"
+            vis.download_image(cam_img, cam_img_name)
         with row2:
             st.write("🖥️解析結果")
             status_view = st.empty()
@@ -237,7 +237,7 @@ def result_image_view(config):
                     config,
                     status_view,
                     progress_bar,
-                    outpath                                                            # 2024.5.21
+                    outpath
                 )
             except Exception as e:
                 out_img = []
@@ -246,7 +246,7 @@ def result_image_view(config):
                 st.error("解析結果がありません")
             else:
                 st.image(out_img)
-                out_img_name = f"downloaded_image_{idx}-{idx + concat_nums}_analized.png"          # 2024.5.21
+                out_img_name = f"downloaded_image_{idx + 1}-{idx + concat_nums + 1}_analized.png"          # 2024.5.21
                 vis.download_image(out_img, out_img_name)                                          # 2024.5.21
         if graph_add_flag:
             with st.spinner("グラフ作成中"):
