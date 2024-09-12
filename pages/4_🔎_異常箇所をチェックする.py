@@ -213,7 +213,8 @@ def eda_tool(config):
     graph_path = [fpath for fpath in graph_list if f"{dir_area}_{camera_num}" in fpath]
 
     if not result_path:
-        main_view.write("異常値検出結果がありません。条件を変更してください。")
+        main_view.error("異常値検出結果がありません。線区 or カメラ番号を変更してください。")
+        st.stop()
     else:
         result_path = result_path[0]
         main_view.success(f"選択されたCSV: {result_path}")
