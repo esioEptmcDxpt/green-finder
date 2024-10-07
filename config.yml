@@ -1,10 +1,17 @@
 default:
   image_dir: imgs
   output_dir: output
+  kiro_dir: img2kiro
   csv_fname: rail
   tdm_dir: TDM
   bucket: trolley-monitor
+  kiro_prefix: img-location-table
+  kiro_columns_name: TDM_GazoFileIndex_ColumnsName.csv
   readme_md: instructions.md
+  quarter_measurements:
+    - 2024Q1
+    - 2025Q1
+    - 2026Q1
   camera_types: 
     - HD11
     - HD12

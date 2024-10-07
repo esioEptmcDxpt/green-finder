@@ -14,6 +14,9 @@ import streamlit as st
 from PIL import Image, ImageDraw, ImageFont
 import src.helpers as helpers
 import io                                                         # 2024.5.21
+import plotly
+import plotly.graph_objs as go
+from plotly.subplots import make_subplots
 
 
 # @st.cache(hash_funcs={matplotlib.figure.Figure: lambda _: None})
@@ -443,6 +446,7 @@ def experimental_plot_fig_bokeh(config, outpath, graph_height, graph_width, grap
     # CSVファイルからデータフレームを作成する
     # df_csv = pd.read_csv(rail_fpath, engine='c', dtype=config.csv_dtype)    # 列の型を指定
     df_csv = helpers.rail_csv_concat(outpath)
+    df_csv = df_csv.sort_values(by='kiro_tei')
 
     # CSVファイルの読込でメモリが不足する場合は以下のコードを使用する
     # df_csv = pd.DataFrame(columns=config.columns_list)    # 空のデータフレームを作成
@@ -604,6 +608,161 @@ def experimental_plot_fig_bokeh(config, outpath, graph_height, graph_width, grap
         p.yaxis.formatter = formatter_y
 
     return grid
+
+
+def experimental_plot_fig_plotly(config, outpath, graph_height, graph_width, graph_thinout, ix_set_flag, ix_view_range, scatter_size):
+    y_max = 2048
+
+    # CSVファイルからデータフレームを作成する
+    df_csv = helpers.rail_csv_concat(outpath)
+    df_csv = df_csv.sort_values(by='kiro_tei')
+
+    # データを間引く
+    if graph_thinout != 1:
+        labels = (df_csv.index // graph_thinout)
+        df_grp = df_csv.groupby(labels).max().copy()
+        df_csv = df_grp.reset_index(drop=True).copy()
+
+    # ユーザ用にimage_indexを調整する
+    df_csv['image_idx'] = df_csv['image_idx'] + 1
+
+    # ユーザ入力に基づいて表示範囲を限定する
+    if ix_set_flag:
+        df_csv = df_csv.query(f'{ix_view_range[0]} <= image_idx <= {ix_view_range[1]}', engine='python').copy()
+
+    # サブプロットを作成
+    fig = make_subplots(rows=4, cols=1, shared_xaxes=True, vertical_spacing=0.1,
+                        subplot_titles=("Upper and Lower Edge", "Width", "Width Standard Deviation", "Brightness Center"))
+
+    # trolley_idのユニークな値を取得
+    unique_trolleys = df_csv['trolley_id'].unique()
+
+    # カラーパレットを設定
+    colors = plotly.colors.qualitative.D3
+
+    # ホバーテンプレートを定義
+    hover_template_upper_edge = """
+    Image Index: %{customdata[0]}
+    Pole Num: %{customdata[1]}
+    Location: %{x:.2f} km
+    Upper Edge: %{y:.2f} px
+    Lower Edge: %{customdata[2]:.2f} px
+    <extra></extra>
+    """
+
+    hover_template_lower_edge = """
+    Image Index: %{customdata[0]}
+    Pole Num: %{customdata[1]}
+    Location: %{x:.2f} km
+    Upper Edge: %{customdata[2]:.2f} px
+    Lower Edge: %{y:.2f} px
+    <extra></extra>
+    """
+    
+    hover_template_width = """
+    Image Index: %{customdata[0]}
+    Pole Num: %{customdata[1]}
+    Location: %{x:.2f} km
+    Estimated Width: %{y:.2f} px
+    <extra></extra>
+    """
+
+    hover_template_width_std = """
+    Image Index: %{customdata[0]}
+    Pole Num: %{customdata[1]}
+    Location: %{x:.2f} km
+    Width Std Dev: %{y:.2f} px
+    <extra></extra>
+    """
+
+    hover_template_brightness = """
+    Image Index: %{customdata[0]}
+    Pole Num: %{customdata[1]}
+    Location: %{x:.2f} km
+    Brightness Center: %{y:.2f}
+    <extra></extra>
+    """
+
+    for count, trolley_id in enumerate(unique_trolleys):
+        trolley_df = df_csv[df_csv['trolley_id'] == trolley_id]
+        
+        color_step = len(unique_trolleys) * count
+
+        # Upper and Lower Edge
+        fig.add_trace(go.Scatter(
+            x=trolley_df['kiro_tei'], 
+            y=trolley_df['estimated_upper_edge'],
+            mode='lines', 
+            name=f'upper_edge_{trolley_id}',
+            line=dict(color=colors[0 + color_step]),
+            customdata=np.column_stack((trolley_df['image_idx'], trolley_df['pole_num'], trolley_df['estimated_lower_edge'])),
+            hovertemplate=hover_template_upper_edge
+        ), row=1, col=1)
+        
+        fig.add_trace(go.Scatter(
+            x=trolley_df['kiro_tei'], 
+            y=trolley_df['estimated_lower_edge'],
+            mode='lines', 
+            name=f'upper_edge_{trolley_id}',
+            line=dict(color=colors[1 + color_step]),
+            customdata=np.column_stack((trolley_df['image_idx'], trolley_df['pole_num'], trolley_df['estimated_upper_edge'])),
+            hovertemplate=hover_template_lower_edge
+        ), row=1, col=1)
+
+        # Width
+        fig.add_trace(go.Scatter(
+            x=trolley_df['kiro_tei'], 
+            y=trolley_df['estimated_width'],
+            mode='lines', 
+            name=f'estimated_width_{trolley_id}',
+            line=dict(color=colors[2 + color_step]),
+            customdata=np.column_stack((trolley_df['image_idx'], trolley_df['pole_num'])),
+            hovertemplate=hover_template_width
+        ), row=2, col=1)
+
+        # Width Standard Deviation
+        fig.add_trace(go.Scatter(
+            x=trolley_df['kiro_tei'], 
+            y=trolley_df['estimated_width_std'],
+            mode='lines', 
+            name=f'estimated_width_std_{trolley_id}',
+            line=dict(color=colors[3 + color_step]),
+            customdata=np.column_stack((trolley_df['image_idx'], trolley_df['pole_num'])),
+            hovertemplate=hover_template_width_std
+        ), row=3, col=1)
+
+        # Brightness Center
+        fig.add_trace(go.Scatter(
+            x=trolley_df['kiro_tei'], 
+            y=trolley_df['brightness_center'],
+            mode='lines', 
+            name=f'brightness_center_{trolley_id}',
+            line=dict(color=colors[4 + color_step]),
+            customdata=np.column_stack((trolley_df['image_idx'], trolley_df['pole_num'])),
+            hovertemplate=hover_template_brightness
+        ), row=4, col=1)
+
+    # レイアウトを更新
+    fig.update_layout(height=graph_height*4,
+                      width=graph_width,
+                      legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1),
+                      dragmode='zoom',
+                      xaxis=dict(rangeslider=dict(visible=False)),
+                     )
+
+    fig.update_xaxes(title_text="location (km)", tickformat=".0f")
+    fig.update_yaxes(title_text="px", tickformat=".0f")
+
+    # 最初のサブプロットのy軸を反転
+    fig.update_yaxes(range=[y_max, 0], row=1, col=1)
+
+    config = {
+        'scrollZoom': True,
+        'displayModeBar': True,
+        'modeBarButtonsToAdd': ['drawline', 'drawopenpath', 'drawclosedpath', 'drawcircle', 'drawrect', 'eraseshape']
+    }
+
+    return fig, config
 
 
 def plot_fig_plt(config, rail_fpath, camera_num, graph_height, graph_width, graph_thinout, ix_set_flag, ix_view_range):

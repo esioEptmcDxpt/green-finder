@@ -220,6 +220,22 @@ def get_s3_image_list(path):
     return image_list
 
 
+def list_csv_files(bucket_name, prefix):
+    """ S3にあるCSVの一覧をゲット
+    """
+    s3 = boto3.client('s3')
+    paginator = s3.get_paginator('list_objects_v2')
+
+    csv_files = []
+    for page in paginator.paginate(Bucket=bucket_name, Prefix=prefix):
+        if 'Contents' in page:
+            for obj in page['Contents']:
+                if obj['Key'].endswith('.csv'):
+                    csv_files.append(obj['Key'])
+
+    return csv_files
+
+
 # @st.experimental_singleton(show_spinner=True)
 def get_S3_file_content_as_string(img_dir_name, path):
     """ S3バケットからファイルを取得してくる
@@ -233,6 +249,195 @@ def get_S3_file_content_as_string(img_dir_name, path):
     s3 = boto3.resource('s3')
     response = s3.Object(backet_name, dir_path).get()['Body']
     return response.read().decode("utf-8")
+
+
+def get_columns_from_csv(bucket_name, columns_csv_key):
+    """ S3からカラム名リストをゲット
+    """
+    s3 = boto3.client('s3')
+    obj = s3.get_object(Bucket=bucket_name, Key=columns_csv_key)
+    columns_df = pd.read_csv(obj['Body'])
+    return columns_df.columns.tolist()
+
+
+def get_KiroTei_dict(config, df):
+    """ 走行日・線区ごとのキロ程補正情報を辞書に記録する
+    """
+    # カメラ番号ごとに、EkiCdのはじめの行をTrueとして記録する
+    for camera_num in config.camera_types:
+        df[f"EkiCdDiff{camera_num}"] = df.query(f"GazoFileName{camera_num}.notnull()", engine='python')['EkiCd'].diff().map(lambda x: x != 0)
+    # 走行日・線区ごとに、画像1枚あたりの幅(m)を算出して辞書に記録する
+    result_dict = {}
+    for camera_num in config.camera_types:
+        grouped_df = df.query(f"GazoFileName{camera_num}.notnull()", engine='python').groupby(['SokuteiDate', 'EkiCd'])['KiroTei'].count()
+        for (date, ekicd), count in grouped_df.items():
+            if date not in result_dict:
+                result_dict[date] = {}
+            if ekicd not in result_dict[date]:
+                result_dict[date][ekicd] = {}
+            # print(f"camera_num: {camera_num}, date: {date}, ekicd: {ekicd}")
+            KiroTei_head = df.query(f"EkiCdDiff{camera_num}.notnull() & SokuteiDate == {date} & EkiCd == {ekicd}", engine='python')['KiroTei'].iloc[0]
+            KiroTei_tail = df.query(f"EkiCdDiff{camera_num}.notnull() & SokuteiDate == {date} & EkiCd == {ekicd}", engine='python')['KiroTei'].iloc[-1]
+            result_dict[date][ekicd][camera_num] = {
+                'KiroTei_head': KiroTei_head,
+                'KiroTei_tail': KiroTei_tail,
+                'KiroTei_dist': round(KiroTei_tail - KiroTei_head, 4),
+                'KiroTei_delta': round((KiroTei_tail - KiroTei_head) / (count - 1), 6),
+                'count': count
+            }
+    return df.copy(), result_dict
+
+
+def set_imgKiro(config, dir_area, df_tdm):
+    imgKilo = {}
+    for camera_num in config.camera_types:
+        # カメラフォルダ内の画像ファイルを取得
+        image_dir = f"{config.image_dir}/{dir_area}/{camera_num}/"
+        # print(image_dir)
+        base_images = list_images(image_dir)
+        # print(f"Image counts:{len(list_images)}")
+        # 画像ファイル名に対応するキロ程を抽出して辞書型で記録する
+        imgKilo_temp = {}
+        # imgKilo_temp_values = {}
+        # for fname in list_images:
+        for fname in base_images:
+        # for fname in list_images:
+            image_name = re.split('[./]', fname)[-2]
+            df_tdm_Series = df_tdm[df_tdm[f"GazoFileName{camera_num}"] == image_name].copy()
+            if df_tdm_Series.empty:
+                continue
+            else:
+                DenchuNo = df_tdm_Series['DenchuNo'].item()
+                # KiroTei = df_tdm_Series['KiroTei_NEWSS'].round(4).item()                            # 2024.10.4 キロ程オフセット未使用化のためコメントアウト
+                KiroTei = df_tdm_Series['KiroTei'].round(4).item()                                    # 2024.10.4 キロ程オフセット未使用化のため追加
+
+            # imgKilo_temp_values["DenchuNo"] = DenchuNo
+            # imgKilo_temp_values["KiroTei"] = KiroTei
+            # imgKilo_temp[image_name] = imgKilo_temp_values.copy()
+            imgKilo_temp[image_name] = {
+                "DenchuNo": DenchuNo,
+                "KiroTei": KiroTei
+            }
+
+        if imgKilo_temp != {}:
+            imgKilo[camera_num] = imgKilo_temp.copy()
+
+    return imgKilo
+
+
+def get_df_tdm(config, csv_file, columns):
+    """ 車モニのマスタデータを読み込む
+    Args:
+        config: 設定データ
+        csv_file(str): S3に保存した画像キロ程情報を記録したCSVのprefix
+        columns(list): 画像キロ程情報のカラム名
+    Return:
+        df_tdm(DataFrame): 読み込まれたデータフレーム
+    """
+
+    # TDM(車モニCSV)をS3からダウンロードする
+    download_path = f"{config.tdm_dir}/temp/{csv_file.split('/')[-1]}"
+    # print("車モニのマスターデータを読み込みます ※少し時間がかかります")
+    download_file_from_s3(config.bucket, csv_file, download_path)
+    # print(f'complete: {download_path=}')
+
+    # CSVからデータフレームを読み込む
+    df_tdm = pd.read_csv(download_path, names=columns, delimiter='|')
+
+    # データフレームを整形する
+    df_tdm['TimeCode'] = pd.to_datetime(df_tdm['TimeCode'])
+    df_tdm = df_tdm.sort_values(by=['SokuteiDate', 'KiroTei'], ignore_index=True)
+    # print("車モニのマスターデータを読み込みました")
+    # print(f"データフレームのサイズ:{df_tdm.shape}")
+
+    # 欲しい列だけ抽出する
+    df_tdm = df_tdm.filter([
+        'EkiCd', 'SenbetsuCd', 'SokuteiDate', 'DenchuNo', 'KiroTei',               # Comment Out    'SokuteiYear' 'NennaiSeqNo'は追加されている
+        'GazoFileNameHD11', 'GazoFileNameHD12',
+        'GazoFileNameHD21', 'GazoFileNameHD22',
+        'GazoFileNameHD31', 'GazoFileNameHD32'
+    ]).copy()
+
+    # print("必要な情報だけフィルタリングしました")
+    # print(f"データフレームのサイズ:{df_tdm.shape}")
+    return df_tdm
+
+
+def get_img2kiro(config, dir_area, images_path, target_dir, base_images, csv_files):
+    """ 線区ごとの画像→キロ程変換データを取得・作成する
+    """
+    # カラム名をS3から読み込む
+    columns_csv_key = f"{config.kiro_prefix}/{config.kiro_columns_name}"
+    columns = get_columns_from_csv(config.bucket, columns_csv_key)
+
+    # 行路の条件をフォルダ名から指定する
+    image_name = base_images[0].split('/')[-1]
+    # st.write(f"{image_name=}")
+    meas_year = image_name.split("_")[0]              # 走行年度
+    meas_idx = image_name.split("_")[1]               # 年度通番
+    meas_senku = dir_area.split('_')[0]      # 線区
+    meas_kukan = dir_area.split('_')[2]      # 区間
+    # st.write(f"測定年度: {meas_year}  年度通番: {meas_idx}  線区: {meas_senku}  区間: {meas_kukan}")
+
+    # 手持ち線区フォルダと一致するCSVをS3から探す
+    for csv_file in csv_files:
+        if csv_file[-13:-4] == f"{meas_year}_{meas_idx}":
+            # データフレームを読み込む
+            df_tdm = get_df_tdm(config, csv_file, columns)
+
+            # 走行日・線区ごとのキロ程補正情報の辞書を作成する
+            df_tdm, KiroTei_dict = get_KiroTei_dict(config, df_tdm)
+
+            # 測定日を取得　※１つしかないはず・・・
+            date = df_tdm['SokuteiDate'].unique().item()
+
+            # 線別コードを取得
+            if dir_area.split('_')[3] == "down":
+                SenbetsuCd = 21
+            elif dir_area.split('_')[3] == "up":
+                SenbetsuCd = 22
+            else:
+                SenbetsuCd = None                              # 他は？？
+
+            # 基準となる電柱の情報                                                                                               # キロ程オフセット未使用化のため追加
+            # ref_point = {
+            #     "EkiCd_NEWSS": eki_code[meas_senku][meas_kukan]["EkiCd_NEWSS"],
+            #     "pole_num_NEWSS": eki_code[meas_senku][meas_kukan]["pole_num_NEWSS"],
+            #     "pole_kilo_NEWSS": eki_code[meas_senku][meas_kukan]["pole_kilo_NEWSS"]
+            # }
+            
+            # print('df_tdm <head>')
+            # print(df_tdm.head())
+
+            # pole_kiro_offset = get_Kiro_offset(df_tdm, ref_point, date)                                                        # キロ程オフセット未使用化のため追加
+
+            # kiro_offset_dict = {}                                                                                              # キロ程オフセット未使用化のため追加
+            # kiro_offset_dict[date] = pole_kiro_offset                                                                          # キロ程オフセット未使用化のため追加
+
+            # # NEWSSキロ程を計算して 列`KiroTei_NEWSS`に記録する                                                                  # キロ程オフセット未使用化のため追加
+            # df_tdm = get_Kiro_NEWSS(df_tdm, kiro_offset_dict)                                                                  # キロ程オフセット未使用化のため追加
+
+            # 確認用にエクセルに出力する
+            # df_tdm.to_excel(f"./{config.tdm_dir}/temp/df_tdm_{dir_area}.xlsx")
+
+            # 初期設定の情報を出力
+            # print(f"画像フォルダ名：{dir_area}")
+            # print(f"基準にする電柱：{ref_point['pole_num_NEWSS']}")                                                             # キロ程オフセット未使用化のため追加
+            # print(f"　　　　キロ程：{ref_point['pole_kilo_NEWSS']}")                                                            # キロ程オフセット未使用化のため追加
+            # print(f"検測キロ程ズレ：{round(kiro_offset_dict[date], 3)}")                                                        # キロ程オフセット未使用化のため追加
+
+            imgKilo = set_imgKiro(config, dir_area, df_tdm)
+
+            if imgKilo != {}:
+                # 結果をJSONファイルに記録する
+                dir = f"{config.tdm_dir}/{dir_area}.json"
+                with open(dir, mode="wt", encoding="utf-8") as f:
+                    json.dump(imgKilo, f, ensure_ascii=False, indent=2, default=default)
+
+            # st.write(f"画像ファイルごとのキロ程情報を{dir}に記録しました")
+            break
+
+    return
 
 
 def download_dir(prefix, local):
@@ -257,6 +462,17 @@ def download_dir(prefix, local):
                 client.download_file(bucket, file.get('Key'), local + file.get('Key'))
 
     return
+
+
+def download_file_from_s3(bucket_name, key, download_path):
+    """ S3からダウンロードする
+    """
+    download_dir = os.path.dirname(download_path)
+    if not os.path.exists(download_dir):
+        os.makedirs(download_dir)
+
+    s3 = boto3.client('s3')
+    s3.download_file(bucket_name, key, download_path)
 
 
 # S3バケットに画像ファイルを保存する

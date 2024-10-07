@@ -208,6 +208,17 @@ def result_image_view(config):
             #     ix_view_range
             # )
             # graph_view.pyplot(fig)
+            # fig, fig_config = vis.experimental_plot_fig_plotly(
+            #     config,
+            #     outpath,
+            #     graph_height,
+            #     graph_width,
+            #     graph_thinout,
+            #     ix_set_flag,
+            #     ix_view_range,
+            #     scatter_size
+            # )
+            # graph_view.plotly_chart(fig, use_container_width=True, config=fig_config)
 
     # 画像を出力する
     if submit_concat:

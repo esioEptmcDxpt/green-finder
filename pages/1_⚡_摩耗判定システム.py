@@ -41,6 +41,8 @@ def ohc_wear_analysis(config):
     else:
         images_path_filtered = images_path
 
+    meas_quater = st.sidebar.selectbox("走行タイミング", config.quarter_measurements)
+
     # 対象フォルダの選択
     dir_area = st.sidebar.selectbox("線区のフォルダ名を選択してください", images_path_filtered)
     if dir_area is None:
@@ -67,15 +69,6 @@ def ohc_wear_analysis(config):
     # imagesフォルダ内の画像一覧取得
     base_images = helpers.list_images(target_dir)
 
-    # 結果保存用のCSVファイル(rail)の保存パスを指定
-    # rail_fpath = outpath + "/rail.shelve"
-    # rail_fpath = f"{outpath}/{config.csv_fname}.csv"
-    # with shelve.open(rail_fpath) as rail:
-    #     # 線区名を記録する
-    #     rail["name"] = dir_area
-    #     # 解析結果が既にある場合は初期化しない
-    #     helpers.rail_camera_initialize(rail, camera_num, base_images, config.trolley_ids)
-
     # ファイルインデックスを指定する
     if not base_images:
         st.sidebar.error("画像がありません")
@@ -87,6 +80,12 @@ def ohc_wear_analysis(config):
         st.sidebar.write(f"ファイルパス:{base_images[idx]}")
         # 画像ファイル名を取得
         image_name = base_images[idx].split('/')[-1]
+    
+    # キロ程情報チェック
+    img2kiro_tdm_prefix = f"{config.kiro_prefix}/{meas_quater}/csv/"
+    csv_files = helpers.list_csv_files(config.bucket, img2kiro_tdm_prefix)
+    if not csv_files:
+        main_view.error("##### ⚠️ 選択された走行タイミングの画像->キロ程情報がデータベースにありません。管理者に問い合わせてください。")
 
     # 結果保存用のCSVファイル(rail)の保存パスを指定
     image_name_noExtension = os.path.splitext(os.path.basename(base_images[idx]))[0]
@@ -111,8 +110,8 @@ def ohc_wear_analysis(config):
         cam_img = vis.ohc_image_load(base_images[idx])
         st.write(f"カメラ:{camera_name} {idx + 1}番目の画像")
         st.image(cam_img)
-        cam_img_name = f"downloaded_image_{idx}.png"                              # 2024.5.22
-        vis.download_image(cam_img, cam_img_name)                                 # 2024.5.22
+        cam_img_name = f"downloaded_image_{idx}.png"
+        vis.download_image(cam_img, cam_img_name)
     with col2:
         st.write("🖥️解析結果")
         st.write("解析結果を表示中")
@@ -125,8 +124,8 @@ def ohc_wear_analysis(config):
             st.error("解析結果がありません")
         else:
             st.image(out_img)
-            out_img_name = f"downloaded_image_{idx}_analized.png"                     # 2024.5.22
-            vis.download_image(out_img, out_img_name)                                 # 2024.5.22
+            out_img_name = f"downloaded_image_{idx}_analized.png"
+            vis.download_image(out_img, out_img_name)
 
     st.sidebar.markdown("# ___Step3___ 解析を実行する")
     # 暫定的にカルマンフィルタに限定
@@ -183,7 +182,11 @@ def ohc_wear_analysis(config):
     if trace_method == "ピクセルトレース":
         form_px = st.sidebar.form(key="similar_pixel_init")
         xin = form_px.number_input("トロリ線の中心位置を入力(0～2048)", 0, 2048, 1024)
-        test_num = form_px.number_input(f"解析する画像枚数を入力(1～{len(base_images)-idx})", 1, len(base_images)-idx, len(base_images)-idx)
+        test_num = form_px.number_input(f"解析する画像枚数を入力(1～{len(base_images)-idx})",
+                                        1,
+                                        len(base_images)-idx,
+                                        len(base_images)-idx
+                                       )
         submit = form_px.form_submit_button("ピクセルトレース実行")
         if submit:
             # outputディレクトリの準備
@@ -209,6 +212,7 @@ def ohc_wear_analysis(config):
                     test_num,
                     log_view,
                 )
+
     # カルマンフィルタを実行
     elif trace_method == "カルマンフィルタ":
         # カルマンフィルタの初期値設定
@@ -271,12 +275,12 @@ def ohc_wear_analysis(config):
             # outputディレクトリの準備
             os.makedirs(outpath, exist_ok=True)
 
-            # shelveファイルの初期化
-            # with shelve.open(rail_fpath) as rail:
-            #     # 線区名を記録する
-            #     rail["name"] = dir_area
-            #     # 解析結果が既にある場合は初期化しない
-            #     helpers.rail_camera_initialize(rail, camera_num, base_images, config.trolley_ids)
+            # 画像キロ程情報の処理
+            # とりあえず、一度でも画像キロ程jsonを作成していればスキップする
+            # 画像キロ程jsonの削除は手動対応…
+            if not os.path.exists(f"{config.tdm_dir}/{dir_area}.json"):
+                with st.spinner("検測車マスタデータからキロ程情報をリンクしています（お待ちください）"):
+                    helpers.get_img2kiro(config, dir_area, images_path, target_dir, base_images, csv_files)
 
             # 選択画像における処理結果が既に存在しているかチェック
             # trolley_dict = helpers.load_shelves(rail_fpath, camera_num, base_images, idx)

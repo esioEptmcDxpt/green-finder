@@ -42,6 +42,10 @@ class appProperties:
         return self.config['default']['output_dir']
 
     @property
+    def img2kiro(self):
+        return self.config['default']['img2kiro']
+    
+    @property
     def csv_fname(self):
         return self.config['default']['csv_fname']
 
@@ -52,11 +56,23 @@ class appProperties:
     @property
     def bucket(self):
         return self.config['default']['bucket']
+    
+    @property
+    def kiro_prefix(self):
+        return self.config['default']['kiro_prefix']
+    
+    @property
+    def kiro_columns_name(self):
+        return self.config['default']['kiro_columns_name']
 
     @property
     def readme_md(self):
         return self.config['default']['readme_md']
 
+    @property
+    def quarter_measurements(self):
+        return self.config['default']['quarter_measurements']
+    
     @property
     def camera_types(self):
         return self.config['default']['camera_types']
