@@ -30,6 +30,7 @@ default:
     - trolley1
     - trolley2
     - trolley3
+    - trolley4
   result_keys:
     # - ix
     - measured_upper_edge

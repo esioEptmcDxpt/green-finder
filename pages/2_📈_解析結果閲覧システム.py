@@ -266,9 +266,19 @@ def result_image_view(config):
                 else:
                     st.error("横方向の表示位置の入力が誤っています")
                     st.stop()
-                grid = vis.plot_fig_bokeh(
+                # grid = vis.plot_fig_bokeh(
+                #     config,
+                #     rail_fpath,
+                #     graph_height,
+                #     graph_width,
+                #     graph_thinout,
+                #     ix_set_flag,
+                #     ix_view_range,
+                #     scatter_size
+                # )
+                grid = vis.experimental_plot_fig_bokeh(
                     config,
-                    rail_fpath,
+                    outpath,
                     graph_height,
                     graph_width,
                     graph_thinout,

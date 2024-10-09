@@ -34,9 +34,17 @@ def get_st_running_url():
     ST_RUNNING_URL = f'https://{current_url}/proxy/8501/'
     
     print(f'アプリが起動するURLです👇')
-    print('次のセルを実行したら、アクセスしてください。')
+    print('次のセルを実行して、アプリが起動したら、アクセスしてください。')
     print(f'{ST_RUNNING_URL}')
     print(' ')
+    print('以下のような出力が出たらアプリの起動が完了しています')
+    print('''
+  ----------------------------------------------------
+  You can now view your Streamlit app in your browser.
+  Network URL: http://172.16.86.70:8501
+  External URL: http://54.250.87.247:8501
+  ----------------------------------------------------
+  ''')
     print('※標準ではURLの末尾が`8501`でアプリが起動しますが、')
     print('  複数回起動するとURL末尾が`8502`等で起動する場合があります。')
     print('  その場合は、👆にアクセスした後、`8501` を `8502` に修正してください。')
