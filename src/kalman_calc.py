@@ -289,3 +289,6 @@ def track_kalman(outpath, camera_num, base_images, df_csv, idx, test_num, trolle
             method,
             image_path, trolley_id, idx, count
         )
+    
+    # エラー無く完了したらバルーン
+    st.balloons()

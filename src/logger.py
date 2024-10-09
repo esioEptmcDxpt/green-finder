@@ -83,12 +83,15 @@ def load_logs(fpath):
 
 
 def preprocess_log_data(df):
+    # 最初にデータフレームのコピーを作成
+    df = df.copy()
+
     df['start_time'] = pd.to_datetime(df['start_time'])
-    
+
     # UTCタイムゾーンを設定
     df['start_time'] = df['start_time'].dt.tz_localize('UTC')
     jst = tz.gettz('Asia/Tokyo')
-    
+
     df['start_time'] = df['start_time'].dt.tz_convert(jst)
     df = df.dropna(subset=["process_time"])
 
