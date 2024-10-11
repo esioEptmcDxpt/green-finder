@@ -95,7 +95,7 @@ def ohc_wear_analysis(config):
     result_del = st.sidebar.checkbox("表示中の結果を削除", value=False, key='result_del')
     if result_del:
         result_del_form = st.sidebar.form("(💣注意 結果削除)")
-        del_trolley_id = result_del_form.selectbox("トロリ線のIDを入力してください", ("trolley1", "trolley2", "trolley3"))
+        del_trolley_id = result_del_form.selectbox("トロリ線のIDを入力してください", config.trolley_ids)
         result_del_form.warning("元に戻せません 本当に削除しますか？")
         result_del_submit = result_del_form.form_submit_button("💣 削除 💣")
         if result_del_submit:
@@ -116,9 +116,10 @@ def ohc_wear_analysis(config):
         st.write("🖥️解析結果")
         st.write("解析結果を表示中")
         try:
-            out_img = vis.out_image_load(rail_fpath, dir_area, camera_num, image_name, cam_img, config, outpath)
+            out_img, colors = vis.out_image_load(rail_fpath, dir_area, camera_num, image_name, cam_img, config, outpath)
         except Exception as e:
             out_img = []
+            colors = []
             st.write(e)
         if not out_img:
             st.error("解析結果がありません")
@@ -126,6 +127,12 @@ def ohc_wear_analysis(config):
             st.image(out_img)
             out_img_name = f"downloaded_image_{idx}_analized.png"
             vis.download_image(out_img, out_img_name)
+    if out_img:
+        with st.sidebar.expander("解析結果の凡例", expanded=True):
+            trolley_ids_legend = "<span>トロリ線の描画色</span>"
+            for trolley_id, color in zip(config.trolley_ids, colors):
+                trolley_ids_legend += f'<br><span style="color:rgb{color};">{trolley_id}</span>'
+            st.markdown(trolley_ids_legend, unsafe_allow_html=True)
 
     st.sidebar.markdown("# ___Step3___ 解析を実行する")
     # 暫定的にカルマンフィルタに限定
@@ -221,7 +228,7 @@ def ohc_wear_analysis(config):
         # form_detect = st.sidebar.form(key="kalman_init_detect")
         form = st.sidebar.form(key="kalman_init")
 
-        trolley_id = form.selectbox("トロリ線のIDを入力してください", ("trolley1", "trolley2", "trolley3"))
+        trolley_id = form.selectbox("トロリ線のIDを入力してください", config.trolley_ids)
         x_init = form.number_input("横方向の初期座標を入力してください", 0, 999)
 
         # 初期値自動入力フォーム
@@ -363,6 +370,12 @@ def ohc_wear_analysis(config):
         except Exception as e:
             st.sidebar.error("解析後にCSVをダウンロードできます")
             # st.sidebar.write(f"Error> {e}")
+    idx_result_check = st.sidebar.checkbox("解析済みインデックスを表示する", value=True)
+    if idx_result_check:
+        df = helpers.check_camera_dirs_addIdxLen(dir_area, config)
+    else:
+        df = helpers.check_camera_dirs(dir_area, config)
+    st.sidebar.dataframe(df)
     csv_delete_btn = st.sidebar.button("結果CSVデータを削除する")
     if csv_delete_btn:
         if os.path.exists(outpath):
@@ -371,19 +384,14 @@ def ohc_wear_analysis(config):
             log_view.error("CSVファイルを削除しました")
         else:
             log_view.error("削除するCSVファイルがありません")
-    idx_result_check = st.sidebar.checkbox("解析済みインデックスを表示する", value=True)
-    if idx_result_check:
-        df = helpers.check_camera_dirs_addIdxLen(dir_area, config)
-    else:
-        df = helpers.check_camera_dirs(dir_area, config)
-    st.sidebar.dataframe(df)
-    
+
     # st.write("画像ファイルリスト👇")
     # # image_list_for_view = []
     # for idx, image_path in enumerate(base_images):
     #     image_name = image_path.split('/')[-1]
     #     # image_list_for_view.append([idx + 1, image_name])
     #     st.text(f"{idx + 1},{image_name}")
+
 
 if __name__ == "__main__":
     config = appProperties('config.yml')

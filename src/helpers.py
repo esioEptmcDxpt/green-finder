@@ -288,7 +288,7 @@ def get_KiroTei_dict(config, df):
     return df.copy(), result_dict
 
 
-def set_imgKiro(config, dir_area, df_tdm):
+def set_imgKiro(config, dir_area, df_tdm, KiroTei_dict):
     imgKilo = {}
     for camera_num in config.camera_types:
         # カメラフォルダ内の画像ファイルを取得
@@ -296,11 +296,18 @@ def set_imgKiro(config, dir_area, df_tdm):
         # print(image_dir)
         base_images = list_images(image_dir)
         # print(f"Image counts:{len(list_images)}")
+
+        # 補正後の KiroTei_delta を呼び出すためのキーを取得
+        image_name = base_images[0].split('/')[-1]
+        date = df_tdm[df_tdm[f'GazoFileName{camera_num}'] == image_name.split(".")[0]].iloc[0]['SokuteiDate']
+        ekicd = df_tdm[df_tdm[f'GazoFileName{camera_num}'] == image_name.split(".")[0]].iloc[0]['EkiCd']
+        # print(f"debug>>> {dir_area} {camera_num} >>> {date=}, {ekicd=}")
+
         # 画像ファイル名に対応するキロ程を抽出して辞書型で記録する
         imgKilo_temp = {}
         # imgKilo_temp_values = {}
         # for fname in list_images:
-        for fname in base_images:
+        for idx, fname in enumerate(base_images):
         # for fname in list_images:
             image_name = re.split('[./]', fname)[-2]
             df_tdm_Series = df_tdm[df_tdm[f"GazoFileName{camera_num}"] == image_name].copy()
@@ -308,8 +315,8 @@ def set_imgKiro(config, dir_area, df_tdm):
                 continue
             else:
                 DenchuNo = df_tdm_Series['DenchuNo'].item()
-                # KiroTei = df_tdm_Series['KiroTei_NEWSS'].round(4).item()                            # 2024.10.4 キロ程オフセット未使用化のためコメントアウト
-                KiroTei = df_tdm_Series['KiroTei'].round(4).item()                                    # 2024.10.4 キロ程オフセット未使用化のため追加
+                # KiroTei = df_tdm_Series['KiroTei'].round(4).item()
+                KiroTei = KiroTei_dict[date][ekicd][camera_num]['KiroTei_head'] + KiroTei_dict[date][ekicd][camera_num]['KiroTei_delta'] * idx
 
             # imgKilo_temp_values["DenchuNo"] = DenchuNo
             # imgKilo_temp_values["KiroTei"] = KiroTei
@@ -426,7 +433,7 @@ def get_img2kiro(config, dir_area, images_path, target_dir, base_images, csv_fil
             # print(f"　　　　キロ程：{ref_point['pole_kilo_NEWSS']}")                                                            # キロ程オフセット未使用化のため追加
             # print(f"検測キロ程ズレ：{round(kiro_offset_dict[date], 3)}")                                                        # キロ程オフセット未使用化のため追加
 
-            imgKilo = set_imgKiro(config, dir_area, df_tdm)
+            imgKilo = set_imgKiro(config, dir_area, df_tdm, KiroTei_dict)
 
             if imgKilo != {}:
                 # 結果をJSONファイルに記録する

@@ -67,7 +67,7 @@ def ohc_image_load(image_path):
 
 
 # @st.cache
-def out_image_load(rail_fpath, dir_area, camera_num, image_name, img, config, outpath):          # 2024.5.21
+def out_image_load(rail_fpath, dir_area, camera_num, image_name, img, config, outpath):
     """
     Args:
         rail_fpath(str): shelveファイルのパス
@@ -91,8 +91,34 @@ def out_image_load(rail_fpath, dir_area, camera_num, image_name, img, config, ou
     ]
     background_brightness = random_pixels.mean()
 
+    # カラーパレットを定義
+    if background_brightness >= 128:
+        # 明るい画像用の8色
+        colors = [
+            (0, 0, 255),        # 赤
+            (0, 255, 0),        # 緑
+            (255, 0, 0),        # 青
+            (0, 255, 255),      # 黄
+            (255, 0, 255),      # マゼンタ
+            (255, 255, 0),      # シアン
+            (128, 0, 128),      # 紫
+            (0, 128, 128)       # ティール
+        ]
+    else:
+        # 暗い画像用の8色
+        colors = [
+            (0, 255, 255),      # シアン
+            (255, 0, 255),      # マゼンタ
+            (255, 255, 0),      # 黄
+            (255, 165, 0),      # オレンジ
+            (0, 255, 0),        # ライムグリーン
+            (255, 192, 203),    # ピンク
+            (255, 255, 255),    # 白
+            (173, 216, 230)     # ライトブルー
+        ]
+
     # csvファイルを開いてデータフレームにセットする
-    # df_csv = helpers.result_csv_load(config, rail_fpath).copy()                                                                         # 2024.5.21 -->
+    # df_csv = helpers.result_csv_load(config, rail_fpath).copy()
     # csvファイルのリストを作成
     list_csv = helpers.list_csvs(outpath)
     # 目的のcsvファイルが存在するか確認
@@ -112,12 +138,12 @@ def out_image_load(rail_fpath, dir_area, camera_num, image_name, img, config, ou
         df_csv_filtered = df_csv.loc[condition, :].copy()
         if not len(df_csv_filtered):
             # 解析結果が無ければ関数を抜ける
-            return []
+            return [], colors
 
         # データを描画
         # x_values = [int(str(num)[-3:]) for num in df_csv_filtered['ix']]
         # st.write(x_values)
-        for trolley_id in config.trolley_ids:
+        for idx, trolley_id in enumerate(config.trolley_ids):
             # trolley_idの数だけ繰り返す
             if trolley_id in set(list(df_csv_filtered['trolley_id'])):
                 # trolley_idが存在する場合だけ実行
@@ -127,16 +153,18 @@ def out_image_load(rail_fpath, dir_area, camera_num, image_name, img, config, ou
                 for x, y1, y2 in zip(x_values, upper_edge, lower_edge):
                     # estimated_upper_edgeとestimated_lower_edgeが0でない場合のみ色を変更
                     if y1 != 0:
-                        color_upper = [0, 255, 0] if background_brightness < 128 else [255, 0, 0]  # 緑または赤
-                        img_array[y1, x] = color_upper
+                        # color_upper = [0, 255, 0] if background_brightness < 128 else [255, 0, 0]  # 緑または赤
+                        # img_array[y1, x] = color_upper
+                        img_array[y1, x] = colors[idx]
                     if y2 != 0:
-                        color_lower = [0, 255, 0] if background_brightness < 128 else [255, 0, 0]  # 緑または赤
-                        img_array[y2, x] = color_lower
+                        # color_lower = [0, 255, 0] if background_brightness < 128 else [255, 0, 0]  # 緑または赤
+                        # img_array[y2, x] = color_lower
+                        img_array[y2, x] = colors[idx]
     else:
         # 目的のcsvファイルが存在しなければ関数を抜ける
-        return []                                                                                                                         # --> 2024.5.21
+        return [], colors
 
-    return Image.fromarray(img_array)
+    return Image.fromarray(img_array), colors
 
 
 def rail_info_view(dir_area, config, main_view):
@@ -194,7 +222,7 @@ def ohc_img_concat(base_images, idx, concat_nums, font_size):
     return result_img
 
 
-def out_image_concat(rail_fpath, dir_area, camera_num, base_images, idx, concat_nums, font_size, config, status_view, progress_bar, outpath):          # 2024.5.21
+def out_image_concat(rail_fpath, dir_area, camera_num, base_images, idx, concat_nums, font_size, config, status_view, progress_bar, outpath):
     """
     """
     # 番号を追記
@@ -206,10 +234,12 @@ def out_image_concat(rail_fpath, dir_area, camera_num, base_images, idx, concat_
             # st.write(f"{count}> {image_name}")
             result_img = Image.open(image_path)
             # 結果を追記する
-            result_img = out_image_load(rail_fpath, dir_area, camera_num, image_name, result_img, config, outpath)                                     # 2024.5.21
+            result_img, colors = out_image_load(rail_fpath, dir_area, camera_num, image_name, result_img, config, outpath)
             if not result_img:
                 # 結果画像が無い場合（[]の場合）は空の画像を作成する
-                result_img = Image.new('RGB', (config.img_width, config.img_height))
+                # 結果が無い場合は、素の画像を読み込みなおす
+                # result_img = Image.new('RGB', (config.img_width, config.img_height))
+                result_img = Image.open(image_path)
             # 画像インデックスを追記する
             draw = ImageDraw.Draw(result_img)
             draw.text((10, 10), str(idx + count + 1), fill='red', font=font)
@@ -217,10 +247,12 @@ def out_image_concat(rail_fpath, dir_area, camera_num, base_images, idx, concat_
         else:
             next_img = Image.open(image_path)
             # 結果を追記する
-            next_img = out_image_load(rail_fpath, dir_area, camera_num, image_name, next_img, config, outpath)                                         # 2024.5.21
+            next_img, colors = out_image_load(rail_fpath, dir_area, camera_num, image_name, next_img, config, outpath)
             if not next_img:
                 # 結果画像が無い場合（[]の場合）は空の画像を作成する
-                next_img = Image.new('RGB', (config.img_width, config.img_height))
+                # 結果が無い場合は、素の画像を読み込みなおす
+                # next_img = Image.new('RGB', (config.img_width, config.img_height))
+                next_img = Image.open(image_path)
             # 画像インデックスを追記する
             draw = ImageDraw.Draw(next_img)
             draw.text((10, 10), str(idx + count + 1), fill='red', font=font)
