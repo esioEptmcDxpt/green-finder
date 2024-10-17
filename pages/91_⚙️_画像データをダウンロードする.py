@@ -21,7 +21,7 @@ def data_loader(config):
 
     with col1_cont:
         # S3の情報を表示する
-        st.header("S3アップ済ファイル")
+        st.header("サーバにあるファイル")
         s3_search = st.checkbox("検索ボックスを表示する", key="S3_search_check")
 
         if s3_search:
@@ -33,17 +33,17 @@ def data_loader(config):
             # 線別
             rail_type_jpn = st.selectbox("線別", list(config.rail_type_names.values()), key="S3_type_key")
             rail_type = [key for key, value in config.rail_type_names.items() if value == rail_type_jpn][0]
-            
+
             # 線区
             rail_list_s3 = helpers.get_s3_dir_list(config.image_dir)
             target_rail_list_s3 = [item for item in rail_list_s3 if item.split('_')[0] == rail_key and rail_type in item]
-            
+
         else:
             # 線区
             rail_list_s3 = helpers.get_s3_dir_list(config.image_dir)
             target_rail_list_s3 = helpers.get_s3_dir_list(config.image_dir)
 
-        st.success("ダウンロード先を指定👇")
+        st.success("ダウンロードする線区を指定👇")
         s3_rail_path = st.selectbox("<対象>線区フォルダ", target_rail_list_s3, key="S3_rail_path")
 
         if target_rail_list_s3:
@@ -61,11 +61,12 @@ def data_loader(config):
                             ebs_dir = "./"
                             executor.submit(helpers.download_dir, s3_dir, ebs_dir)
 
-                st.success("TTSにダウンロードしました")
+                st.success("TISにダウンロードしました")
                 dt02 = datetime.datetime.now()
                 prc_time = dt02 - dt01
                 st.write(f"(参考)処理時間> {prc_time}")
 
+            st.write('---')
             st.warning("<参考用>線区フォルダの情報👇")
             # カメラ
             s3_camera_list = helpers.get_s3_dir_list(config.image_dir + "/" + s3_rail_path)
@@ -83,7 +84,7 @@ def data_loader(config):
 
     with col2_cont:
         # EBSの情報を表示する
-        st.header("TTSダウンロード済")
+        st.header("TISから削除する")
         ebs_search = st.checkbox("検索ボックスを表示する", key="EBS_search_check")
 
         if ebs_search:
@@ -106,8 +107,8 @@ def data_loader(config):
             # フォルダ直下の画像保管用ディレクトリのリスト
             images_path = helpers.list_imagespath_nonCache(config.image_dir)
             target_images_path = helpers.list_imagespath_nonCache(config.image_dir)
-        
-        st.error("削除する対象を指定👇")
+
+        st.error("削除する線区を指定👇")
         ebs_rail_path = st.selectbox("<対象>線区フォルダ", target_images_path, key="EBS_rail_path")
 
         if target_images_path:
@@ -116,7 +117,8 @@ def data_loader(config):
                 with st.spinner("TTSの画像を削除中"):
                     helpers.imgs_dir_remove(config.image_dir + "/" + ebs_rail_path + "/")
                 st.warning("TTSの画像データを削除しました")
-            
+
+            st.write('---')
             st.warning("<参考用>線区フォルダの情報👇")
             # カメラ
             ebs_camera_list = helpers.list_imagespath(config.image_dir + "/" + ebs_rail_path)
@@ -127,14 +129,13 @@ def data_loader(config):
             image_list = [os.path.basename(path) for path in base_images]
             st.selectbox("画像リスト", image_list, key="EBS_image_path")
 
-            
         else:
             st.error("TTSに線区データがありません")
             st.warning("S3からダウンロードしてください")
 
     # S3とEBSのimgsディレクトリ内の線区リストを表示する
     st.header("ダウンロードされたデータのチェック")
-    
+
     df_key = st.text_input("検索キーワード(線区名を英語で入力してください)")
     try:
         df = helpers.S3_EBS_imgs_dir_Compare(rail_list_s3, images_path, df_key)

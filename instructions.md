@@ -1,7 +1,7 @@
-# _Trolley Tracing System_
+# _Trolley Inspection System_
 ## ___トロリ線摩耗判定支援システム___
 
-電車線金具モニタリングシステムからダウンロードしたパン周り画像を使用して、異常摩耗を探し出します
+電車線金具モニタリングシステムからダウンロードしたパン周り画像を使用して、異常摩耗を探索します
 
 #### 👈 **サイドバーの _摩耗判定プログラム_ を選択して解析をスタートしてください**
 
@@ -9,12 +9,12 @@
 
 #### ◆疑問？ コメント？
 
-疑問・コメントがありましたら、[Yammerコミュニティ](https://web.yammer.com/main/groups/eyJfdHlwZSI6Ikdyb3VwIiwiaWQiOiIxMjM0NzEzNjQwOTYifQ)へお願いします。
+疑問・コメントがありましたら、[Viva Engage コミュニティ](https://web.yammer.com/main/groups/eyJfdHlwZSI6Ikdyb3VwIiwiaWQiOiIxMjM0NzEzNjQwOTYifQ)へお願いします。
 
 または、下記連絡先に問い合わせてください。
 
 #### ◆問合わせ 連絡先
-研究開発センター 電力技術メンテナンスユニット(電力設備)
+電気SIO 電力技術管理センター 企画国際(DXPT)
 
 長山健太郎、山澤玄胤 [📫Mail][maillink]  [📢Teamsチャット][teamslink]
 
