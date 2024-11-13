@@ -5,7 +5,7 @@ import matplotlib
 import numpy as np
 import pandas as pd
 import gc
-from bokeh.plotting import figure, gridplot, show
+from bokeh.plotting import figure, gridplot, show, save
 from bokeh.layouts import column
 from bokeh.models import ColumnDataSource, FuncTickFormatter
 from bokeh.models import NumeralTickFormatter
@@ -13,7 +13,7 @@ from bokeh.palettes import d3
 import streamlit as st
 from PIL import Image, ImageDraw, ImageFont
 import src.helpers as helpers
-import io                                                         # 2024.5.21
+import io
 import plotly
 import plotly.graph_objs as go
 from plotly.subplots import make_subplots
@@ -457,6 +457,35 @@ def plot_fig_bokeh(config, rail_fpath, graph_height, graph_width, graph_thinout,
     return grid
 
 
+def split_data(x, y, max_gap):
+    split_x, split_y = [], []
+    current_x, current_y = [], []
+    
+    x_values = x.values if hasattr(x, 'values') else np.array(x)
+    y_values = y.values if hasattr(y, 'values') else np.array(y)
+    
+    for i in range(len(x_values)):
+        if i > 0 and abs(x_values[i] - x_values[i-1]) > max_gap:
+            split_x.append(current_x)
+            split_y.append(current_y)
+            current_x, current_y = [], []
+        
+        current_x.append(x_values[i])
+        current_y.append(y_values[i])
+    
+    split_x.append(current_x)
+    split_y.append(current_y)
+    
+    return split_x, split_y
+
+
+def filter_invalid_floats(value):
+    if isinstance(value, (float, np.float64)):
+        if np.isnan(value) or np.isinf(value):
+            return None
+    return value
+
+
 def experimental_plot_fig_bokeh(config, outpath, graph_height, graph_width, graph_thinout, ix_set_flag, ix_view_range, scatter_size):
     """ 高崎検証用 画像キロ程を利用するため、車モニ マスターデータが必須
     Args:
@@ -606,20 +635,36 @@ def experimental_plot_fig_bokeh(config, outpath, graph_height, graph_width, grap
 
     for trolley_id in unique_trolleys:
         trolley_df = df_csv[df_csv['trolley_id'] == trolley_id]
-        source = ColumnDataSource(data=trolley_df)
 
         for i, (p, line_data, label_name) in enumerate(edges + widths + width_stds + centers):
-            p.line(
-            # p.scatter(
-                x_values,
-                line_data,
-                legend_label=f"{label_name}_{trolley_id}",
-                line_color=colors[i % len(colors)],  # もし色の数が足りない場合は循環するように
-                # fill_color=colors[i % len(colors)],  # もし色の数が足りない場合は循環するように
-                # marker="dot",
-                # size=scatter_size,
-                source=source
-            )
+            x = trolley_df[x_values]
+            y = trolley_df[line_data]
+            
+            split_x, split_y = split_data(x, y, max_gap=0.1)  # max_gap: 連続データの閾値
+            
+            for j in range(len(split_x)):
+                indices = x.index[x.isin(split_x[j])]
+                source_data = {
+                    'x': [filter_invalid_floats(val) for val in split_x[j]],
+                    'y': [filter_invalid_floats(val) for val in split_y[j]],
+                    'image_idx': trolley_df.loc[indices, 'image_idx'].tolist(),
+                    'image_name': trolley_df.loc[indices, 'image_name'].tolist(),
+                    'kiro_tei': [filter_invalid_floats(val) for val in trolley_df.loc[indices, 'kiro_tei'].tolist()],
+                    'estimated_upper_edge': [filter_invalid_floats(val) for val in trolley_df.loc[indices, 'estimated_upper_edge'].tolist()],
+                    'estimated_lower_edge': [filter_invalid_floats(val) for val in trolley_df.loc[indices, 'estimated_lower_edge'].tolist()],
+                    'estimated_width': [filter_invalid_floats(val) for val in trolley_df.loc[indices, 'estimated_width'].tolist()],
+                    'estimated_width_std': [filter_invalid_floats(val) for val in trolley_df.loc[indices, 'estimated_width_std'].tolist()],
+                    'brightness_center': [filter_invalid_floats(val) for val in trolley_df.loc[indices, 'brightness_center'].tolist()],
+                }
+                source_data = {k: [v for v in vs if v is not None] for k, vs in source_data.items()}
+                source = ColumnDataSource(data=source_data)
+                p.line(
+                    'x', 'y',
+                    legend_label=f"{label_name}_{trolley_id}",
+                    line_color=colors[i % len(colors)],
+                    line_width=scatter_size/10,
+                    source=source
+                )
 
     # 軸・凡例の条件を指定する
     # 軸表示用のフォーマット関数
@@ -638,6 +683,8 @@ def experimental_plot_fig_bokeh(config, outpath, graph_height, graph_width, grap
         # p.xaxis.formatter = NumeralTickFormatter(format="0,0")
         p.xaxis.formatter = formatter_x
         p.yaxis.formatter = formatter_y
+    
+    save(grid, filename='graph_recent.html')
 
     return grid
 

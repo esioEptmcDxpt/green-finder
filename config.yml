@@ -31,6 +31,10 @@ default:
     - trolley2
     - trolley3
     - trolley4
+    - trolley5
+    - trolley6
+    - trolley7
+    - trolley8
   result_keys:
     # - ix
     - measured_upper_edge
@@ -151,6 +155,8 @@ format_func:
     TohokuHon: 東北本線
     Yamate: 山手線
     SobuHon: 総武本線
+    SobuKanko: 総武緩行
+    SobuKaisoku: 総武快速
     Joban: 常磐線
     Akabane: 赤羽線
     Keiyo: 京葉線
@@ -493,6 +499,8 @@ format_func:
     Yurakucho: 有楽町
     Tokyo: 東京
     Shinagawa: 品川
+    Shinagawa1: 品川1
+    Shinagawa2: 品川2
     Tamachi: 田町
     Hamamatsucho: 浜松町
     Oji: 王子

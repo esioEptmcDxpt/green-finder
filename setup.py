@@ -5,7 +5,7 @@ from pathlib import Path
 this_directory = Path(__file__).parent
 long_description = (this_directory / "README.md").read_text()
 
-required_packages = ["altair==4.2.2", "pandas==1.3.5", "numpy",
+required_packages = ["altair==4.2.2", "pandas==1.3.5", "numpy==1.21.5",
                      "opencv-python", "opencv-contrib-python",
                      "matplotlib==3.5.3", "streamlit==1.13.0",
                      "pykalman==0.9.5", "pillow==9.4.0",
