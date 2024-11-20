@@ -9,7 +9,7 @@
 
 #### ◆疑問？ コメント？
 
-疑問・コメントがありましたら、[Viva Engage コミュニティ](https://web.yammer.com/main/groups/eyJfdHlwZSI6Ikdyb3VwIiwiaWQiOiIxMjM0NzEzNjQwOTYifQ)へお願いします。
+疑問・コメントがありましたら、[電力AI活用チーム → 摩耗判定システム検証チャネル](https://teams.microsoft.com/l/channel/19%3Aa8696815770e4ac08594f12058c819ea%40thread.tacv2/%E8%A9%A6%E8%A1%8C_%E3%83%88%E3%83%AD%E3%83%AA%E7%B7%9A%E6%91%A9%E8%80%97%E5%88%A4%E5%AE%9A%E3%83%84%E3%83%BC%E3%83%AB%E6%A4%9C%E8%A8%BC?groupId=fb44e7c6-465d-4bed-a9b2-e4cfbb09b53f&tenantId=b2306992-1718-4f1c-8d81-e650c06ad00c)へお願いします。
 
 または、下記連絡先に問い合わせてください。
 
