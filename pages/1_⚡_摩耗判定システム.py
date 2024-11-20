@@ -80,7 +80,7 @@ def ohc_wear_analysis(config):
         st.sidebar.write(f"ファイルパス:{base_images[idx]}")
         # 画像ファイル名を取得
         image_name = base_images[idx].split('/')[-1]
-    
+
     # キロ程情報チェック
     img2kiro_tdm_prefix = f"{config.kiro_prefix}/{meas_quater}/csv/"
     csv_files = helpers.list_csv_files(config.bucket, img2kiro_tdm_prefix)
@@ -142,7 +142,7 @@ def ohc_wear_analysis(config):
         ("カルマンフィルタ", "ピクセルトレース")
     )
     # trace_method = "カルマンフィルタ"
-    
+
     # キロ程情報の使用有無
     kiro_data = st.sidebar.checkbox("キロ程情報を使用", value=True)
 

@@ -373,22 +373,26 @@ def get_df_tdm(config, csv_file, columns):
 def get_img2kiro(config, dir_area, images_path, target_dir, base_images, csv_files):
     """ 線区ごとの画像→キロ程変換データを取得・作成する
     """
+    # print("get_img2kiro を実行")
     # カラム名をS3から読み込む
     columns_csv_key = f"{config.kiro_prefix}/{config.kiro_columns_name}"
     columns = get_columns_from_csv(config.bucket, columns_csv_key)
 
     # 行路の条件をフォルダ名から指定する
     image_name = base_images[0].split('/')[-1]
-    # st.write(f"{image_name=}")
+    # print(f"{image_name=}")
     meas_year = image_name.split("_")[0]              # 走行年度
     meas_idx = image_name.split("_")[1]               # 年度通番
-    meas_senku = dir_area.split('_')[0]      # 線区
-    meas_kukan = dir_area.split('_')[2]      # 区間
-    # st.write(f"測定年度: {meas_year}  年度通番: {meas_idx}  線区: {meas_senku}  区間: {meas_kukan}")
+    meas_senku = dir_area.split('_')[0]               # 線区
+    meas_kukan = dir_area.split('_')[2]               # 区間
+    # print(f"測定年度: {meas_year}  年度通番: {meas_idx}  線区: {meas_senku}  区間: {meas_kukan}")
 
     # 手持ち線区フォルダと一致するCSVをS3から探す
+    if_get_csv_file = False
     for csv_file in csv_files:
+        # print(f"{csv_file=}")
         if csv_file[-13:-4] == f"{meas_year}_{meas_idx}":
+            print(f"CSV match: {meas_year}_{meas_idx}")
             # データフレームを読み込む
             df_tdm = get_df_tdm(config, csv_file, columns)
 
@@ -442,7 +446,12 @@ def get_img2kiro(config, dir_area, images_path, target_dir, base_images, csv_fil
                     json.dump(imgKilo, f, ensure_ascii=False, indent=2, default=default)
 
             # st.write(f"画像ファイルごとのキロ程情報を{dir}に記録しました")
+            if_get_csv_file = True
             break
+
+    if not if_get_csv_file:
+        st.error("画像キロ程データがサーバにありません。\n\n別のデータを選択するか、システム管理者に問い合わせてください。")
+        st.stop()
 
     return
 
@@ -524,11 +533,14 @@ def file_remove(path):
 
 
 # @st.cache
-def S3_EBS_imgs_dir_Compare(S3_dir_list, EBS_dir_list, df_key):
+def S3_EBS_imgs_dir_Compare(S3_dir_list, EBS_dir_list, df_key=None, start_date=None, end_date=None):
     """ 2つのリストからデータの有無をまとめたデータフレームを作成
     Args:
         S3_dir_list (list): 1つ目のリスト（例）S3内のディレクトリ名のリスト
         EBS_dir_list (list): 2つ目のリスト（例）EBS内のディレクトリ名のリスト
+        df_key(str, optional): フィルタリングに使用するキーワード
+        start_date (datetime.date, optional): フィルタリングの開始日
+        end_date (datetime.date, optional): フィルタリングの終了日
     Return:
         df (DataFrame): 結果をまとめたデータフレーム
     """
@@ -540,13 +552,28 @@ def S3_EBS_imgs_dir_Compare(S3_dir_list, EBS_dir_list, df_key):
     df = pd.DataFrame(line_names, columns=['線区名'])
 
     # S3列とTTS列の作成
-    df['S3'] = df['線区名'].apply(lambda x: '○' if x in S3_dir_list else '×')
-    df['TTSシステム'] = df['線区名'].apply(lambda x: '○' if x in EBS_dir_list else '×')
+    df['サーバ(S3)'] = df['線区名'].apply(lambda x: '○' if x in S3_dir_list else '×')
+    df['アプリ(TIS)'] = df['線区名'].apply(lambda x: '○' if x in EBS_dir_list else '×')
+
+    # 日付列の作成
+    df['日付'] = pd.to_datetime(df['線区名'].str.extract(r'(\d{8})')[0], format='%Y%m%d').dt.date
+
+    # フィルタリング
+    mask = pd.Series(True, index=df.index)
 
     if df_key:
-        df_filtered = df[df['線区名'].str.contains(df_key)].copy()
-    else:
-        df_filtered = df.copy()
+        mask &= df['線区名'].str.contains(df_key, case=False)
+
+    if start_date:
+        mask &= df['日付'] >= start_date
+
+    if end_date:
+        mask &= df['日付'] <= end_date
+
+    df_filtered = df[mask].copy()
+
+    # 日付列を削除（表示用）
+    df_filtered = df_filtered.drop('日付', axis=1)
 
     return df_filtered
 
