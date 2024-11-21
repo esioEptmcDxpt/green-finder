@@ -129,7 +129,7 @@ def data_loader(config):
     df_key = st.text_input("検索キーワード(線区名を英語で入力してください)")
     col1, col2 = st.columns(2)
     start_date = col1.date_input("期間を指定(始)", datetime.date(2024,4,1))
-    end_date = col2.date_input("期間を指定(終)", datetime.date(2025,3,31))
+    end_date = col2.date_input("期間を指定(終)", datetime.date(2024,6,30))
     try:
         if modes.index(mode) == 0:
             EBS_rail_list = helpers.list_imagespath_nonCache(config.image_dir)
