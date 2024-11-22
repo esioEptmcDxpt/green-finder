@@ -87,10 +87,10 @@ def data_loader(config):
     st.sidebar.write(f"## ___Step1___ {mode_type}する線区を選択する")
     rail_path = st.sidebar.selectbox("線区フォルダ", target_rail_list, key="rail_path")
     info_view = st.container()
+    info_view.write(f"# 画像を{mode_type}する線区は合っていますか？")
     if target_rail_list:
         st.sidebar.write("## ___Step2___ 選んだ線区をチェック")
         st.sidebar.write("___メイン画面の線区表示をチェック↗___")
-        st.warning("<参考用>線区フォルダの情報👇")
         # 解析対象のカメラ番号を選択する
         camera_name = st.sidebar.selectbox(
                         "確認したいカメラを選択",
