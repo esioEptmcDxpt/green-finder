@@ -26,6 +26,8 @@ def track_kalman(outpath, camera_num, base_images, df_csv, idx, test_num, trolle
         y_init_l (int): 下部Y座標の初期指定値（最初期画像における手動入力）
         y_l (int): 後続画像用の上部Y座標の初期指定値（前画像の最終推定値流用）
         y_u (int): 後続画像用の下部Y座標の初期指定値（前画像の最終推定値流用）
+    Returns:
+        count (int): 処理した画像の枚数
     """
     config = appProperties('config.yml')
     y_l = y_init_l
@@ -293,3 +295,5 @@ def track_kalman(outpath, camera_num, base_images, df_csv, idx, test_num, trolle
     # エラー無く完了したらバルーン
     # if not len(kalman_instance.trolley_end_reason) > 0:
     #     st.balloons()
+
+    return count

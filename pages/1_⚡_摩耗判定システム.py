@@ -43,8 +43,20 @@ def ohc_wear_analysis(config):
 
     meas_quater = st.sidebar.selectbox("走行タイミング", config.quarter_measurements)
 
+    # セッションステートの初期化
+    if 'previous_dir_area' not in st.session_state:
+        st.session_state.previous_dir_area = None
+    if 'current_idx' not in st.session_state:
+        st.session_state.current_idx = 1
+
     # 対象フォルダの選択
     dir_area = st.sidebar.selectbox("線区のフォルダ名を選択してください", images_path_filtered)
+
+    # dir_areaが変更されたらcurrent_idxをリセット
+    if st.session_state.previous_dir_area != dir_area:
+        st.session_state.current_idx = 1
+        st.session_state.previous_dir_area = dir_area
+
     if dir_area is None:
         st.error("No frames fit the criteria. Please select different label or number.")
         st.stop()
@@ -76,7 +88,8 @@ def ohc_wear_analysis(config):
     else:
         idx = st.sidebar.number_input(f"インデックス(1～{len(base_images)}で指定)",
                                       min_value=1,
-                                      max_value=len(base_images)) - 1
+                                      max_value=len(base_images),
+                                      value=st.session_state.current_idx) - 1
         st.sidebar.write(f"ファイルパス:{base_images[idx]}")
         # 画像ファイル名を取得
         image_name = base_images[idx].split('/')[-1]
@@ -313,7 +326,7 @@ def ohc_wear_analysis(config):
                     st.error('計算停止ボタンが押されたため、計算を停止しました。再開する際には左下の計算ボタンを再度押してください。')
 
                 with st.spinner("カルマンフィルタ実行中"):
-                    track_kalman(
+                    count = track_kalman(
                             outpath,
                             camera_num,
                             base_images,
@@ -328,14 +341,18 @@ def ohc_wear_analysis(config):
                             progress_bar,
                             kiro_data
                         )
+                    # 処理終了後にセッションステートを更新
+                    st.session_state.current_idx = idx + count
                     camera_view.success("# 解析が終了しました")
+                    log_view.button(f"🔎 {idx+count}番目の画像から再開する")
+                    log_view.write("  👆️ ボタンを押して停止した位置から再開する")
             else:
                 if st.button(f'計算停止ボタン ＜現在の計算が終わったら停止します＞'):
                     st.stop()
                     st.error('計算停止ボタンが押されたため、計算を停止しました。再開する際には左下の計算ボタンを再度押してください。')
 
                 with st.spinner("カルマンフィルタ実行中"):
-                    track_kalman(
+                    count = track_kalman(
                         outpath,
                         camera_num,
                         base_images,
@@ -350,7 +367,11 @@ def ohc_wear_analysis(config):
                         progress_bar,
                         kiro_data
                     )
+                    # 処理終了後にセッションステートを更新
+                    st.session_state.current_idx = idx + count
                     camera_view.success("# 解析が終了しました")
+                    log_view.button(f"🔎 {idx+count}番目の画像から再開する")
+                    log_view.write("  👆️ ボタンを押して停止した位置から再開する")
 
     # 解析結果があるかをサイドバーに表示する
     st.sidebar.markdown("# 参考 結果有無👇")
@@ -381,7 +402,9 @@ def ohc_wear_analysis(config):
         if os.path.exists(outpath):
             # helpers.file_remove(rail_fpath)
             helpers.imgs_dir_remove(outpath)
+            st.session_state.current_idx = 1
             log_view.error("CSVファイルを削除しました")
+            log_view.button("はじめから解析する")
         else:
             log_view.error("削除するCSVファイルがありません")
 
