@@ -1,2 +1,10 @@
 # 環境変数ファイル
 .env
+
+# ログファイル
+tts.log
+
+# 作業用フォルダ
+imgs/
+output/
+TDM/
