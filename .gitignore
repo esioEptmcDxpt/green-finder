@@ -5,10 +5,10 @@
 tts.log
 
 # 作業用フォルダ
-imgs/
-output/
-TDM/
-trolley_line_analysis.egg-info/
+app/imgs/
+app/output/
+app/TDM/
+app/trolley_line_analysis.egg-info/
 
 # Python
 __pycache__/
@@ -21,7 +21,6 @@ dist/
 downloads/
 eggs/
 .eggs/
-lib/
 lib64/
 parts/
 sdist/
@@ -30,3 +29,11 @@ wheels/
 *.egg-info/
 .installed.cfg
 *.egg
+
+# TypeScript / CDK
+*.js
+!jest.config.js
+*.d.ts
+node_modules
+.cdk.staging
+cdk.out
