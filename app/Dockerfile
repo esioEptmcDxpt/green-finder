@@ -39,4 +39,4 @@ COPY . .
 EXPOSE 8501
 
 # Streamlitを起動
-CMD ["streamlit", "run", "Hello_OHC_System.py", "--server.address=0.0.0.0", "--server.port=8501"]
+CMD ["streamlit", "run", "Hello_CIS.py", "--server.address=0.0.0.0", "--server.port=8501"]

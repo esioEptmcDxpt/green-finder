@@ -9,6 +9,7 @@ app/imgs/
 app/output/
 app/TDM/
 app/trolley_line_analysis.egg-info/
+.dev/
 
 # Python
 __pycache__/
