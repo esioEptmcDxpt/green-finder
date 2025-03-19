@@ -18,7 +18,7 @@ from PIL import Image
 import random
 
 
-@st.cache
+# @st.cache_data
 def list_imagespath(image_dir):
     images_fullpath = glob.glob(os.path.join(image_dir, "*"))
     images_fullpath = [folder for folder in images_fullpath if os.path.isdir(folder)]
@@ -50,7 +50,7 @@ def list_csvs(target_dir):                                       # 2024.5.21 -->
     return base_csvs                                             # --> 2024.5.21
 
 
-@st.cache
+# @st.cache_data
 def get_dir_list(path):
     dir_path = Path(path)
     dir_obj_list = [path for path in dir_path.glob("*") if path.is_dir() and not path.name.startswith(".")]
@@ -59,7 +59,7 @@ def get_dir_list(path):
     return dir_list
 
 
-@st.cache
+# @st.cache_data
 def get_file_list(path):
     dir_path = Path(path)
     image_obj_list = [path for path in dir_path.glob("*") if path.is_file()]
@@ -68,22 +68,22 @@ def get_file_list(path):
     return image_list
 
 
-@st.cache
+@st.cache_data
 def read_markdown_file(markdown_file):
     return Path(markdown_file).read_text()
 
 
-@st.cache
+@st.cache_data
 def read_python_file(python_file):
     return Path(python_file).read_text()
 
 
-@st.cache
+@st.cache_data
 def get_file_content_as_string(filename):
     st.code(filename)
 
 
-@st.cache
+@st.cache_data
 def ohc_image_load(base_images, idx, caption):
     st.text(f'{idx}番目の画像を表示します')
     im_base = Image.open(base_images[idx])
@@ -91,30 +91,70 @@ def ohc_image_load(base_images, idx, caption):
     return im_base
 
 
-@st.cache
-def rail_name_to_jp(rail_name, config):
-    return config.rail_names[rail_name]
+@st.cache_data
+def rail_name_to_jp(rail_name, _config):
+    return _config.rail_names[rail_name]
 
 
-@st.cache
-def station_name_to_jp(st_name, config):
-    return config.station_names[st_name]
+@st.cache_data
+def station_name_to_jp(st_name, _config):
+    return _config.station_names[st_name]
 
 
-@st.cache
-def rail_type_to_jp(rail_type, config):
-    return config.rail_type_names[rail_type]
+@st.cache_data
+def rail_type_to_jp(rail_type, _config):
+    return _config.rail_type_names[rail_type]
 
 
-@st.cache
-def rail_type_name_to_jp(time_band_names, config):
-    return config.time_band_names[time_band_names]
+@st.cache_data
+def rail_type_name_to_jp(time_band_names, _config):
+    return _config.time_band_names[time_band_names]
 
 
-@st.cache
-def camera_num_to_name(camera_num, config):
-    return config.camera_names[camera_num]
+@st.cache_data
+def camera_num_to_name(camera_num, _config):
+    return _config.camera_names[camera_num]
 
+@st.cache_data
+def get_camera_list(_config):
+    camera_list = []
+    for camera_name, camera_type in zip(_config.camera_names, _config.camera_types):
+        camera_list.append(f"{camera_name}:{camera_type}")
+    return camera_list
+
+@st.cache_data
+def get_office_names_jp(_config):
+    return [v["name"] for k, v in _config.office_names.items()]
+
+@st.cache_data
+def get_office_name(_config, office_name_jp):
+    return [k for k, v in _config.office_names.items() if v["name"] == office_name_jp][0]
+
+@st.cache_data
+def get_mc_names_jp(_config, office_name_jp):
+    mc_name_mapping = [v["mc"] for k, v in _config.office_names.items() if v["name"] == office_name_jp]
+    mc_names = []
+    for mc_dict in mc_name_mapping:
+        mc_names.extend(list(mc_dict.values()))
+    return list(set(mc_names))
+
+@st.cache_data
+def get_mc_name(_config, office_name_jp, mc_name_jp):
+    mc_name_mapping_dict = [v["mc"] for k, v in _config.office_names.items() if v["name"] == office_name_jp][0]
+    return [k for k, v in mc_name_mapping_dict.items() if v == mc_name_jp][0]
+
+
+@st.cache_data
+def get_office_message(_config, office):
+    office_name = office.split('/')[0]
+    mc_name = office.split('/')[1]
+    office_name_jp = _config.office_names[office_name]["name"]
+    mc_name_jp = _config.office_names[office_name]["mc"][mc_name]
+    if office_name_jp == mc_name_jp:
+        message = f"{office_name_jp}"
+    else:
+        message = f"{office_name_jp}\n\n{mc_name_jp}"
+    return message
 
 # @st.cache
 def rail_message(dir_area, config):
@@ -131,7 +171,7 @@ def rail_message(dir_area, config):
     return rail_name, st_name, updown_name, measurement_date, measurement_time
 
 
-@st.cache
+@st.cache_data
 def rail_camera_initialize(rail, camera_num, base_images, trolley_ids):
     """ railに書き込めるように初期化する
         解析結果が既にある場合は初期化しない
@@ -168,24 +208,23 @@ def rail_camera_initialize(rail, camera_num, base_images, trolley_ids):
 
 
 # @st.experimental_singleton(show_spinner=True)
-def get_s3_dir_list(path):
+def get_s3_dir_list(path, bucket):
     """ S3バケットのディレクトリ一覧を取得する
     Args:
         path (str): backet内の画像ディレクトリ名(例)imgs
     """
-    backet_name = "trolley-monitor"
 
     s3 = boto3.client('s3')
     rail_list = []
     # S3バケット内のディレクトリ一覧を取得
-    response = s3.list_objects_v2(Bucket=backet_name, Prefix=path + "/" , Delimiter='/')
+    response = s3.list_objects_v2(Bucket=bucket, Prefix=path + "/" , Delimiter='/')
     for content in response.get('CommonPrefixes', []):
         full_path = content.get('Prefix')
         normalized_path = os.path.normpath(full_path)
         rail_list.append(os.path.basename(normalized_path))
     # レスポンスが1000件未満になるまでリクエストを続ける
     while response['IsTruncated']:
-        response = s3.list_objects_v2(Bucket=backet_name, Prefix=path + "/" , Delimiter='/', ContinuationToken=response['NextContinuationToken'])
+        response = s3.list_objects_v2(Bucket=bucket, Prefix=path + "/" , Delimiter='/', ContinuationToken=response['NextContinuationToken'])
         for content in response.get('CommonPrefixes', []):
             full_path = content.get('Prefix')
             normalized_path = os.path.normpath(full_path)
@@ -288,11 +327,11 @@ def get_KiroTei_dict(config, df):
     return df.copy(), result_dict
 
 
-def set_imgKiro(config, dir_area, df_tdm, KiroTei_dict):
+def set_imgKiro(config, dir_area, office, df_tdm, KiroTei_dict):
     imgKilo = {}
     for camera_num in config.camera_types:
         # カメラフォルダ内の画像ファイルを取得
-        image_dir = f"{config.image_dir}/{dir_area}/{camera_num}/"
+        image_dir = f"{config.image_dir}/{office}/{dir_area}/{camera_num}/"
         # print(image_dir)
         base_images = list_images(image_dir)
         # print(f"Image counts:{len(list_images)}")
@@ -349,7 +388,9 @@ def get_df_tdm(config, csv_file, columns):
     # print(f'complete: {download_path=}')
 
     # CSVからデータフレームを読み込む
-    df_tdm = pd.read_csv(download_path, names=columns, delimiter='|')
+    df_tdm = pd.read_csv(download_path, names=columns, delimiter='|', dtype={'ShishaCd': str})
+    # st.write(f"データフレームのサイズ:{df_tdm.shape}")
+    # st.dataframe(df_tdm.head())
 
     # データフレームを整形する
     df_tdm['TimeCode'] = pd.to_datetime(df_tdm['TimeCode'])
@@ -370,7 +411,7 @@ def get_df_tdm(config, csv_file, columns):
     return df_tdm
 
 
-def get_img2kiro(config, dir_area, images_path, target_dir, base_images, csv_files):
+def get_img2kiro(config, dir_area, office, base_images, csv_files):
     """ 線区ごとの画像→キロ程変換データを取得・作成する
     """
     # print("get_img2kiro を実行")
@@ -392,7 +433,7 @@ def get_img2kiro(config, dir_area, images_path, target_dir, base_images, csv_fil
     for csv_file in csv_files:
         # print(f"{csv_file=}")
         if csv_file[-13:-4] == f"{meas_year}_{meas_idx}":
-            print(f"CSV match: {meas_year}_{meas_idx}")
+            # print(f"CSV match: {meas_year}_{meas_idx}")
             # データフレームを読み込む
             df_tdm = get_df_tdm(config, csv_file, columns)
 
@@ -401,6 +442,7 @@ def get_img2kiro(config, dir_area, images_path, target_dir, base_images, csv_fil
 
             # 測定日を取得　※１つしかないはず・・・
             date = df_tdm['SokuteiDate'].unique().item()
+            # st.write(f"測定日: {date}")
 
             # 線別コードを取得
             if dir_area.split('_')[3] == "down":
@@ -437,12 +479,13 @@ def get_img2kiro(config, dir_area, images_path, target_dir, base_images, csv_fil
             # print(f"　　　　キロ程：{ref_point['pole_kilo_NEWSS']}")                                                            # キロ程オフセット未使用化のため追加
             # print(f"検測キロ程ズレ：{round(kiro_offset_dict[date], 3)}")                                                        # キロ程オフセット未使用化のため追加
 
-            imgKilo = set_imgKiro(config, dir_area, df_tdm, KiroTei_dict)
+            imgKilo = set_imgKiro(config, dir_area, office, df_tdm, KiroTei_dict)
 
             if imgKilo != {}:
                 # 結果をJSONファイルに記録する
-                dir = f"{config.tdm_dir}/{dir_area}.json"
-                with open(dir, mode="wt", encoding="utf-8") as f:
+                json_path = f"{config.tdm_dir}/{office}/{dir_area}.json"
+                os.makedirs(os.path.dirname(json_path), exist_ok=True)
+                with open(json_path, mode="wt", encoding="utf-8") as f:
                     json.dump(imgKilo, f, ensure_ascii=False, indent=2, default=default)
 
             # st.write(f"画像ファイルごとのキロ程情報を{dir}に記録しました")
@@ -456,9 +499,10 @@ def get_img2kiro(config, dir_area, images_path, target_dir, base_images, csv_fil
     return
 
 
-def download_dir(prefix, local):
+def download_dir(bucket, prefix, local):
     """ バケット内の指定したプレフィックスを持つすべてのオブジェクトをダウンロードします。
     Args:
+        bucket (str): バケット名
         prefix (str): S3のフォルダパス
                       (例) imgs/Chuo_01_Tokyo-St_up_20230201_knight/
         local  (str): ローカルディレクトリへのパス
@@ -466,8 +510,6 @@ def download_dir(prefix, local):
     """
     # S3のクライアントを作成
     client = boto3.client('s3')
-    # バケット名
-    bucket = 'trolley-monitor'
 
     paginator = client.get_paginator('list_objects')
     for result in paginator.paginate(Bucket=bucket, Prefix=prefix):
@@ -477,7 +519,19 @@ def download_dir(prefix, local):
                     os.makedirs(os.path.dirname(local + file.get('Key')))
                 client.download_file(bucket, file.get('Key'), local + file.get('Key'))
 
-    return
+
+def upload_dir(bucket, prefix, local):
+    """ バケット内の指定したプレフィックスを持つすべてのオブジェクトをアップロードします。
+    Args:
+        bucket (str): バケット名
+        prefix (str): S3のフォルダパス
+                      (例) imgs/Chuo_01_Tokyo-St_up_20230201_knight/
+        local  (str): ローカルディレクトリへのパス
+                      (例) ./
+    """
+    client = boto3.client('s3')
+    csv_list = glob.glob(f"{local}/*.csv")
+    csv_list.sort()
 
 
 def download_file_from_s3(bucket_name, key, download_path):
@@ -551,9 +605,9 @@ def S3_EBS_imgs_dir_Compare(S3_dir_list, EBS_dir_list, df_key=None, start_date=N
     # データフレームの作成
     df = pd.DataFrame(line_names, columns=['線区名'])
 
-    # S3列とTTS列の作成
+    # S3列とCIS列の作成
     df['サーバ(S3)'] = df['線区名'].apply(lambda x: '○' if x in S3_dir_list else '×')
-    df['アプリ(TIS)'] = df['線区名'].apply(lambda x: '○' if x in EBS_dir_list else '×')
+    df['アプリ(CIS)'] = df['線区名'].apply(lambda x: '○' if x in EBS_dir_list else '×')
 
     # 日付列の作成
     df['日付'] = pd.to_datetime(df['線区名'].str.extract(r'(\d{8})')[0], format='%Y%m%d').dt.date
@@ -601,7 +655,7 @@ def rail_csv_concat(outpath):
     return combined_df.copy()
 
 
-def check_camera_dirs(dir_area, config):
+def check_camera_dirs(dir_area, office, config):
     """ Outputディレクトリ内の結果ファイルの有無を確認する
     Args:
         dir_area (str): output内のディレクトリ名
@@ -614,7 +668,7 @@ def check_camera_dirs(dir_area, config):
     # 各カメラのディレクトリをチェック
     for camera_name, camera_type in config.camera_name_to_type.items():
         # ディレクトリ内のCSVファイルの数を取得
-        file_path = f"{config.output_dir}/{dir_area}/{camera_type}/*.csv"
+        file_path = f"{config.output_dir}/{office}/{dir_area}/{camera_type}/*.csv"
         # file_path = os.path.join(config.output_dir, dir_area, camera_type, "rail.csv")
         # ディレクトリ内のファイルをチェック
         if glob.glob(file_path):
@@ -626,7 +680,8 @@ def check_camera_dirs(dir_area, config):
     df = pd.DataFrame(result, columns=["カメラ番号", "結果有無"])
     return df
 
-def check_camera_dirs_addIdxLen(dir_area, config):
+
+def check_camera_dirs_addIdxLen(dir_area, office, config):
     """ Outputディレクトリ内の結果ファイルの有無を確認する
     Args:
         dir_area (str): output内のディレクトリ名
@@ -640,7 +695,7 @@ def check_camera_dirs_addIdxLen(dir_area, config):
         for camera_name, camera_type in config.camera_name_to_type.items():
             # ディレクトリのパスを作成
             # file_path = os.path.join(config.output_dir, dir_area, camera_type, "rail.csv")
-            file_path = f"{config.output_dir}/{dir_area}/{camera_type}"
+            file_path = f"{config.output_dir}/{office}/{dir_area}/{camera_type}"
             res = executor.submit(read_csv_idx, camera_name, camera_type, file_path)
             result.append(res.result())
     # 結果をPandasデータフレームに変換
@@ -1505,11 +1560,11 @@ def search_candidate(img_smooth2, base_max, base_min, ex_max, ex_min, ex_center)
     return candidate_init
 
 
-def search_csv(outpath):                 # 2024.5.22 -->
+def search_csv(outpath):
     exist_csv = False
     list_csv = list_csvs(outpath)
     for file in list_csv:
         if 'rail_' and '.csv' in file:
             exist_csv = True
             break
-    return exist_csv                     # --> 2024.5.22
+    return exist_csv

@@ -2,7 +2,22 @@ import streamlit as st
 import src.helpers as helpers
 import src.visualize as vis
 from src.config import appProperties
+import os
 import io
+
+
+@st.dialog("技セ・MCを選択")
+def set_office(_config, office_default):
+    office_names = helpers.get_office_names_jp(_config)
+    office_default_jp = _config.office_names[office_default]["name"]
+    office_names_default_index = office_names.index(office_default_jp)
+    office_name_jp = st.selectbox("技セを選択", office_names, index=office_names_default_index)
+    office_name = helpers.get_office_name(_config, office_name_jp)
+    mc_name_jp = st.selectbox("MCを選択", helpers.get_mc_names_jp(_config, office_name_jp))
+    mc_name = helpers.get_mc_name(_config, office_name_jp, mc_name_jp)
+    if st.button("設定"):
+        st.session_state.office = f"{office_name}/{mc_name}"
+        st.rerun()
 
 
 def result_image_view(config):
@@ -21,18 +36,39 @@ def result_image_view(config):
     row2 = st.container()
     graph_view = st.empty()
 
-    # フォルダ直下の画像保管用ディレクトリのリスト
-    # images_path = helpers.list_imagespath(config.image_dir)
-    # 他ページでの結果を反映するためnonCacheを使用
-    images_path = helpers.list_imagespath_nonCache(config.image_dir)
+    # デフォルトの技セを設定
+    # 仮に設定： Cognito ユーザ名から取得する用に変更する
+    office_default = "takasaki"
 
-    # 画像保管線区の選択
+    # 箇所名を選択
+    if 'office' not in st.session_state:
+        st.session_state.office = None
+
+    # 技セ・MCを選択
+    if "office_dialog" not in st.session_state:
+        if st.sidebar.button("技セ・MCを選択"):
+            set_office(config, office_default)
+
+    # 選択された技セ・MCを表示
+    if not st.session_state.office:
+        st.sidebar.error("技セ・MCを選択してください")
+        st.stop()
+    else:
+        st.sidebar.write(f"選択箇所: {helpers.get_office_message(config, st.session_state.office)}")
+
+    # st.session_state.office = f"{office_name}/{mc_name}"
+    # st.session_state.office = helpers.set_office(config)
+
+    # 線区フォルダの選択
+    images_path = helpers.list_imagespath_nonCache(f"{config.image_dir}/{st.session_state.office}")
+    main_view.markdown("# ___Step1___ 線区を選択")
     st.sidebar.markdown("# ___Step1___ 線区を選択")
+    st.sidebar.write(f"解析対象の線区フォルダを指定👉️")
 
     # 検索ボックスによる対象フォルダの絞り込み
     dir_search = st.sidebar.checkbox("検索ボックス表示", value=False)
     if dir_search:
-        dir_area_key = st.sidebar.text_input("線区 検索キーワード").lower()
+        dir_area_key = main_view.text_input("線区 検索キーワード(英語で入力)").lower()
         images_path_filtered = [path for path in images_path if dir_area_key in path.lower()]
         if dir_area_key:
             if not images_path_filtered:
@@ -44,32 +80,34 @@ def result_image_view(config):
         images_path_filtered = images_path
 
     # 対象フォルダの選択
-    dir_area = st.sidebar.selectbox("線区のフォルダ名を選択してください", images_path_filtered)
+    dir_area = main_view.selectbox("線区のフォルダ名を選択してください", images_path_filtered)
     if dir_area is None:
-        st.error("No frames fit the criteria. Please select different label or number.")
+        st.error("CIS に画像データがダウンロードされていません。 __⚙️ データ管理__ を開いて、画像をダウンロードしてください。")
         st.stop()
 
     # 選択された線区情報を表示する
     vis.rail_info_view(dir_area, config, main_view)
 
     # 解析対象のカメラ番号を選択する
+    camera_name_list = helpers.get_camera_list(config)
     camera_name = st.sidebar.selectbox(
                     "解析対象のカメラを選択してください",
-                    zip(config.camera_names, config.camera_types)
-                    )[0]
+                    camera_name_list
+                    ).split(':')[0]
+    st.sidebar.write(f"カメラ番号: {camera_name}")
     camera_num = config.camera_name_to_type[camera_name]
 
     # 解析対象の画像フォルダを指定
-    target_dir = config.image_dir + "/" + dir_area + "/" + camera_num
+    target_dir = f"{config.image_dir}/{st.session_state.office}/{dir_area}/{camera_num}"
 
     # outputディレクトリを指定
-    outpath = config.output_dir + "/" + dir_area + "/" + camera_num
+    outpath = f"{config.output_dir}/{st.session_state.office}/{dir_area}/{camera_num}"
 
     # imagesフォルダ内の画像一覧取得
     base_images = helpers.list_images(target_dir)
 
     # 結果保存用のCSVファイル(rail)の保存パスを指定
-    rail_fpath = outpath + "/rail.csv"
+    rail_fpath = f"{outpath}/rail.csv"
 
     # グラフ作成フォーム
     st.sidebar.markdown("# ___Step2___ グラフを表示する")
@@ -89,11 +127,11 @@ def result_image_view(config):
         ix_view_range_start = form_graph.number_input("開始インデックス",
                                                      min_value=1,
                                                      max_value=len(base_images),
-                                                     value=1) - 1
+                                                     value=1)
         ix_view_range_end = form_graph.number_input("終了インデックス",
                                                      min_value=1,
                                                      max_value=len(base_images),
-                                                     value=len(base_images)) -1
+                                                     value=len(base_images))
     else:
         ix_view_range_start = 0
         ix_view_range_end = len(base_images)
@@ -121,8 +159,8 @@ def result_image_view(config):
     else:
         idx = form_concat.number_input(f"1枚目のインデックス(1～{len(base_images)})を指定",
                                       min_value=1,
-                                      max_value=len(base_images)) - 1
-        form_concat.write(f"(参考)ファイルパス:{base_images[idx]}")
+                                      max_value=len(base_images))
+        # form_concat.write(f"(参考)ファイルパス:{base_images[idx]}")
         # 画像ファイル名を取得
         image_name = base_images[idx].split('/')[-1]
     form_concat.markdown("⚠ 連結枚数が多いとエラーになります")
@@ -148,7 +186,7 @@ def result_image_view(config):
         ix_set_flag = True
         # 画像インデックスに合わせて表示範囲を指定
         ix_view_range_start = idx
-        ix_view_range_end = idx + concat_nums
+        ix_view_range_end = idx + concat_nums - 1
     # 実行ボタンを配置
     submit_concat = form_concat.form_submit_button("連結画像を作成する")
 
@@ -195,7 +233,10 @@ def result_image_view(config):
                 ix_view_range,
                 scatter_size
             )
-            graph_view.bokeh_chart(grid, use_container_width=True)
+            if grid is None:
+                st.error("# 🙇🏻‍♂️ グラフを作成できませんでした。")
+            else:
+                graph_view.bokeh_chart(grid, use_container_width=True)
             # for matplotlib
             # fig, (ax1, ax2, ax3, ax4) = vis.plot_fig_plt(
             #     config,
@@ -225,10 +266,10 @@ def result_image_view(config):
         with row1:
             st.write("📸カメラ画像")
             # cam_img = vis.ohc_image_load(base_images[idx])
-            cam_img = vis.ohc_img_concat(base_images, idx, concat_nums, font_size)
-            st.write(f"カメラ:{camera_name} {idx + 1}～{idx + concat_nums}までの画像")
+            cam_img = vis.ohc_img_concat(base_images, idx - 1, concat_nums, font_size)
+            st.write(f"カメラ:{camera_name} {idx}～{idx + concat_nums - 1}までの画像")
             st.image(cam_img)
-            cam_img_name = f"downloaded_image_{idx + 1}-{idx + concat_nums + 1}.png"
+            cam_img_name = f"downloaded_image_{idx}-{idx + concat_nums - 1}.png"
             vis.download_image(cam_img, cam_img_name)
         with row2:
             st.write("🖥️解析結果")
@@ -242,7 +283,7 @@ def result_image_view(config):
                     dir_area,
                     camera_num,
                     base_images,
-                    idx,
+                    idx - 1,
                     concat_nums,
                     font_size,
                     config,
@@ -257,7 +298,7 @@ def result_image_view(config):
                 st.error("解析結果がありません")
             else:
                 st.image(out_img)
-                out_img_name = f"downloaded_image_{idx + 1}-{idx + concat_nums + 1}_analized.png"          # 2024.5.21
+                out_img_name = f"downloaded_image_{idx}-{idx + concat_nums - 1}_analized.png"          # 2024.5.21
                 vis.download_image(out_img, out_img_name)                                          # 2024.5.21
         if graph_add_flag:
             with st.spinner("グラフ作成中"):
@@ -286,7 +327,10 @@ def result_image_view(config):
                     ix_view_range,
                     scatter_size
                 )
-                graph_view.bokeh_chart(grid, use_container_width=True)
+                if grid is None:
+                    st.error("# 🙇🏻‍♂️ グラフを作成できませんでした。")
+                else:
+                    graph_view.bokeh_chart(grid, use_container_width=True)
                 # for matplotlib
                 # fig, (ax1, ax2, ax3, ax4) = vis.plot_fig_plt(
                 #     config,
@@ -301,7 +345,7 @@ def result_image_view(config):
                 # graph_view.pyplot(fig)
     else:
         if not submit_graph:
-            row1.error("サイドバーで条件を指定して画像を作成してください")
+            row1.error("サイドバーで条件を指定してグラフや画像を作成してください")
 
 
     # 解析結果があるかをサイドバーに表示する
@@ -328,9 +372,9 @@ def result_image_view(config):
             st.error("削除するCSVファイルがありません")
     idx_result_check = st.sidebar.checkbox("解析済みインデックスを表示する", value=True)
     if idx_result_check:
-        df = helpers.check_camera_dirs_addIdxLen(dir_area, config)
+        df = helpers.check_camera_dirs_addIdxLen(dir_area, st.session_state.office, config)
     else:
-        df = helpers.check_camera_dirs(dir_area, config)
+        df = helpers.check_camera_dirs(dir_area, st.session_state.office, config)
     st.sidebar.dataframe(df)
 
 

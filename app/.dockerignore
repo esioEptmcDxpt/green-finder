@@ -21,7 +21,7 @@ coverage.xml
 *.ipynb
 **/.ipynb_checkpoints
 **/.ipynb_checkpoints/*
-imgs
+images
 output
 utils
 tests

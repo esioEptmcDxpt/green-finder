@@ -1,10 +1,10 @@
 default:
-  image_dir: imgs
+  image_dir: images
   output_dir: output
   kiro_dir: img2kiro
   csv_fname: rail
   tdm_dir: TDM
-  bucket: trolley-monitor
+  bucket: contact-wire-inspection-system
   kiro_prefix: img-location-table
   kiro_columns_name: TDM_GazoFileIndex_ColumnsName.csv
   readme_md: instructions.md
@@ -12,21 +12,21 @@ default:
     - 2024Q1
     - 2025Q1
     - 2026Q1
-  camera_types: 
+  camera_types:
     - HD11
     - HD12
     - HD21
     - HD22
     - HD31
     - HD32
-  camera_names: 
+  camera_names:
     - 高(左)
     - 高(右)
     - 中(左)
     - 中(右)
     - 低(左)
     - 低(右)
-  trolley_ids: 
+  trolley_ids:
     - trolley1
     - trolley2
     - trolley3
@@ -131,6 +131,112 @@ format_func:
     中(右): HD22
     低(左): HD31
     低(右): HD32
+  office_names:
+    shinagawa:
+      name: 品川電力設備技術センター
+      mc:
+        shinagawa: 品川電力設備技術センター
+    shinjuku:
+      name: 新宿電力設備技術センター
+      mc:
+        shinagawa: 品川電力設備技術センター
+    ueno:
+      name: 上野電力設備技術センター
+      mc:
+        ueno: 上野電力設備技術センター
+        abiko: 我孫子オフィス
+    yokohama:
+      name: 横浜電力設備技術センター
+      mc:
+        yokohama: 横浜電力MC
+        tsurumi: 鶴見電力MC
+        oofuna: 大船電力MC
+        odawara: 小田原電力MC
+        hashimoto: 橋本電力MC
+    hachioji:
+      name: 八王子電力設備技術センター
+      mc:
+        hachioji: 八王子電力MC
+        tachikawa: 立川電力MC
+        otsuki: 大月電力MC
+        kofu: 甲府電力MC
+    oomiya:
+      name: 大宮電力設備技術センター
+      mc:
+        oomiya: 大宮電力MC
+        urawa: 浦和電力MC
+        utsunomiya: 宇都宮電力MC
+        nasu: 那須電力MC
+    takasaki:
+      name: 高崎電力設備技術センター
+      mc:
+        takasaki: 高崎電力MC
+        okegawa: 桶川電力MC
+        kumagaya: 熊谷電力MC
+        shibukawa: 渋川電力MC
+        kiryu: 桐生電力MC
+    mito:
+      name: 水戸電力設備技術センター
+      mc:
+        mito: 水戸電力MC
+        tsuchiura: 土浦電力MC
+        iwaki: 岩瀬電力MC
+        haranouchi: 原ノ町電力MC
+        takahama: 高萩電力MC
+    chiba:
+      name: 千葉電力設備技術センター
+      mc:
+        chiba: 千葉電力MC
+        nishifunabashi: 西船橋電力MC
+        shinkoiwa: 新小岩電力MC
+        ichinomiya: 一ノ宮電力MC
+        kisarazu: 木更津電力MC
+        choshi: 銚子電力MC
+        tateyama: 館山電力MC
+    nagano:
+      name: 長野電力設備技術センター
+      mc:
+        nagano: 長野電力MC
+        ueda: 上田電力MC
+        matsumoto: 松本電力MC
+        kamisuwa: 上諏訪電力MC
+        shinanoomachi: 信濃大町電力MC
+        iiyama: 飯山電力MC
+    sendai:
+      name: 仙台電力設備技術センター
+      mc:
+        sendai: 仙台電力MC
+        shiroishi: 白石電力MC
+        fukushima: 福島電力MC
+        koriyama: 郡山電力MC
+        yamagata: 山形電力MC
+        yonezawa: 米沢電力MC
+        shinjo: 新庄電力MC
+        shinshirakawa: 新白河電力MC
+        aizuwakamatsu: 会津若松電力MC
+        furukawa: 古川電力MC
+    morioka:
+      name: 盛岡電力設備技術センター
+      mc:
+        morioka: 盛岡電力MC
+        ichinoseki: 一ノ関電力MC
+        kitaokami: 北上電力MC
+        hachinohe: 八戸電力MC
+        aomori: 青森電力MC
+    akita:
+      name: 秋田電力設備技術センター
+      mc:
+        akita: 秋田電力MC
+        omagari: 大曲電力MC
+        hirosaki: 弘前電力MC
+        odate: 大館電力MC
+        ugohonjo: 羽後本荘電力MC
+    niigata:
+      name: 新潟電力設備技術センター
+      mc:
+        niigata: 新潟電力MC
+        nagaoka: 長岡電力MC
+        sakata: 酒田電力MC
   rail_names:
     ShinetsuHon: 信越本線
     Chuo: 中央線
@@ -187,6 +293,8 @@ format_func:
     st: 構内
     NaganoGeneralRSC: 長野総合車両センター
     Nagano: 長野
+    Ueda: 上田
+    iiyama: 飯山
     Amori: 安茂里
     Kawanakajima: 川中島
     SuzurannoSato: すずらんの里
@@ -763,6 +871,7 @@ format_func:
     Kitayama: 北山
     KitaSendai: 北仙台
     Toshogu: 東照宮
+    Furukawa: 古川
     ShidonaiSC: 志度内〔信〕
     Tazawako: 田沢湖
     Sashimaki: 刺巻

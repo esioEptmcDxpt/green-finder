@@ -10,6 +10,8 @@ from bokeh.layouts import column
 from bokeh.models import ColumnDataSource, FuncTickFormatter
 from bokeh.models import NumeralTickFormatter
 from bokeh.palettes import d3
+from bokeh.resources import CDN
+from bokeh.io import output_file
 import streamlit as st
 from PIL import Image, ImageDraw, ImageFont
 import src.helpers as helpers
@@ -19,7 +21,7 @@ import plotly.graph_objs as go
 from plotly.subplots import make_subplots
 
 
-# @st.cache(hash_funcs={matplotlib.figure.Figure: lambda _: None})
+# @st.cache_data(hash_funcs={matplotlib.figure.Figure: lambda _: None})
 # def plot_fig(image_path, vert_pos, hori_pos):
 def plot_fig(im_base, vert_pos, hori_pos):
     """ メモリ付き画像を生成する
@@ -56,7 +58,7 @@ def plot_fig(im_base, vert_pos, hori_pos):
     return fig
 
 
-# @st.cache    # デバッグ用後でコメントアウトを元に戻す
+# @st.cache_data    # デバッグ用後でコメントアウトを元に戻す
 def ohc_image_load(image_path):
     """ 解析対象の画像を表示する
     Args:
@@ -66,7 +68,7 @@ def ohc_image_load(image_path):
     return Image.open(image_path) if os.path.isfile(image_path) else []
 
 
-# @st.cache
+# @st.cache_data
 def out_image_load(rail_fpath, dir_area, camera_num, image_name, img, config, outpath):
     """
     Args:
@@ -178,7 +180,21 @@ def rail_info_view(dir_area, config, main_view):
     with main_view.container():
         st.write(f"現在の線区：{rail_name} {st_name}({updown_name})")
         st.write(f"　　測定日：{measurement_date} ＜{measurement_time}＞")
-        st.success("##### 👈別の線区を表示する場合は、再度「線区フォルダを決定」してください")
+        st.success("##### 👆️別の線区を表示する場合は、再度「線区フォルダを選択」してください")
+    return
+
+
+def rail_info_view_fileio(dir_area, config, main_view):
+    """ 線区情報を日本語で表示する
+    Args:
+        dir_area(str): 線区フォルダのパス
+        config(dict): 設定ファイル
+        main_view: Streamlitのコンテナ
+    """
+    rail_name, st_name, updown_name, measurement_date, measurement_time = helpers.rail_message(dir_area, config)
+    with main_view.container():
+        st.write(f"選択中の線区：{rail_name} {st_name}({updown_name})")
+        st.write(f"測定日：{measurement_date} ＜{measurement_time}＞")
     return
 
 
@@ -487,7 +503,7 @@ def filter_invalid_floats(value):
 
 
 def experimental_plot_fig_bokeh(config, outpath, graph_height, graph_width, graph_thinout, ix_set_flag, ix_view_range, scatter_size):
-    """ 高崎検証用 画像キロ程を利用するため、車モニ マスターデータが必須
+    """ 画像キロ程を利用するため、車モニ マスターデータが必須
     Args:
         config: 設定ファイル
         rail_fpath(str): shelveファイルのパス
@@ -520,14 +536,31 @@ def experimental_plot_fig_bokeh(config, outpath, graph_height, graph_width, grap
     # df_csv = df_csv[::graph_thinout]    # 単純に間引くと最大値を取り逃す可能性があるため修正
     if graph_thinout != 1:
         labels = (df_csv.index // graph_thinout)
-        df_grp = df_csv.groupby(labels).max().copy()    # 間引き間隔での最大値を求める
+
+        # 数値列と非数値列を分類
+        numeric_cols = df_csv.select_dtypes(include=['number']).columns
+        non_numeric_cols = df_csv.select_dtypes(exclude=['number']).columns
+        
+        # 数値列には最大値、非数値列には最初の値を使用
+        df_numeric = df_csv[numeric_cols].groupby(labels).max()
+        df_non_numeric = df_csv[non_numeric_cols].groupby(labels).first()
+        
+        # 結果を結合
+        df_grp = pd.concat([df_numeric, df_non_numeric], axis=1)
         df_csv = df_grp.reset_index(drop=True).copy()
+
+        # df_grp = df_csv.groupby(labels).max().copy()    # 間引き間隔での最大値を求める
+        # df_csv = df_grp.reset_index(drop=True).copy()
 
     # ユーザ用にimage_indexを調整する
     df_csv['image_idx'] = df_csv['image_idx'] + 1
 
     # ユーザ入力に基づいて表示範囲を限定する
     if ix_set_flag:
+        # ix_view_range の範囲が df_csv の image_idx の範囲から外れて df_csv がからになる場合はエラーメッセージを表示する
+        if  ix_view_range[1] < df_csv['image_idx'].min() or df_csv['image_idx'].max() < ix_view_range[0]:
+            st.error(f"開始・終了インデックスが解析結果の範囲から外れていて、グラフを表示できません。※ {ix_view_range[0]} 〜 {ix_view_range[1]}枚目の画像を読み込もうとしました\n\n解析結果は {df_csv['image_idx'].min()} 〜 {df_csv['image_idx'].max()} 枚目まであります。")
+            return None
         df_csv = df_csv.query(f'{ix_view_range[0]} <= image_idx <= {ix_view_range[1]}', engine='python').copy()
 
     # CSVから作成したデータフレームをbokeh形式で読み込む
@@ -639,25 +672,51 @@ def experimental_plot_fig_bokeh(config, outpath, graph_height, graph_width, grap
         for i, (p, line_data, label_name) in enumerate(edges + widths + width_stds + centers):
             x = trolley_df[x_values]
             y = trolley_df[line_data]
-            
-            split_x, split_y = split_data(x, y, max_gap=0.1)  # max_gap: 連続データの閾値
-            
+
+            # NaNや無効な値を除外
+            valid_mask = ~np.isnan(x) & ~np.isnan(y) & ~np.isinf(x) & ~np.isinf(y)
+            x_valid = x[valid_mask].values
+            y_valid = y[valid_mask].values
+
+            if len(x_valid) == 0:
+                continue  # 有効なデータがない場合はスキップ
+
+            split_x, split_y = split_data(x_valid, y_valid, max_gap=0.1)  # max_gap: 連続データの閾値
+
             for j in range(len(split_x)):
-                indices = x.index[x.isin(split_x[j])]
-                source_data = {
-                    'x': [filter_invalid_floats(val) for val in split_x[j]],
-                    'y': [filter_invalid_floats(val) for val in split_y[j]],
-                    'image_idx': trolley_df.loc[indices, 'image_idx'].tolist(),
-                    'image_name': trolley_df.loc[indices, 'image_name'].tolist(),
-                    'kiro_tei': [filter_invalid_floats(val) for val in trolley_df.loc[indices, 'kiro_tei'].tolist()],
-                    'estimated_upper_edge': [filter_invalid_floats(val) for val in trolley_df.loc[indices, 'estimated_upper_edge'].tolist()],
-                    'estimated_lower_edge': [filter_invalid_floats(val) for val in trolley_df.loc[indices, 'estimated_lower_edge'].tolist()],
-                    'estimated_width': [filter_invalid_floats(val) for val in trolley_df.loc[indices, 'estimated_width'].tolist()],
-                    'estimated_width_std': [filter_invalid_floats(val) for val in trolley_df.loc[indices, 'estimated_width_std'].tolist()],
-                    'brightness_center': [filter_invalid_floats(val) for val in trolley_df.loc[indices, 'brightness_center'].tolist()],
+                if len(split_x[j]) == 0:
+                    continue  # 空のセグメントはスキップ
+                
+                # 各セグメントに対するインデックスを取得
+                idx_in_segment = np.where(np.isin(x_valid, split_x[j]))[0]
+                orig_indices = np.where(valid_mask)[0][idx_in_segment]
+                
+                # 必要なデータを収集
+                segment_data = {
+                    'x': split_x[j],
+                    'y': split_y[j],
+                    'image_idx': trolley_df.iloc[orig_indices]['image_idx'].tolist(),
+                    'image_name': trolley_df.iloc[orig_indices]['image_name'].tolist(),
+                    'kiro_tei': trolley_df.iloc[orig_indices]['kiro_tei'].tolist(),
                 }
-                source_data = {k: [v for v in vs if v is not None] for k, vs in source_data.items()}
-                source = ColumnDataSource(data=source_data)
+                
+                # 必要なフィールドを追加（グラフに応じて）
+                if 'upper_edge' in label_name or 'lower_edge' in label_name:
+                    segment_data['estimated_upper_edge'] = trolley_df.iloc[orig_indices]['estimated_upper_edge'].tolist()
+                    segment_data['estimated_lower_edge'] = trolley_df.iloc[orig_indices]['estimated_lower_edge'].tolist()
+                elif 'width' in label_name and 'std' not in label_name:
+                    segment_data['estimated_width'] = trolley_df.iloc[orig_indices]['estimated_width'].tolist()
+                elif 'width_std' in label_name:
+                    segment_data['estimated_width_std'] = trolley_df.iloc[orig_indices]['estimated_width_std'].tolist()
+                elif 'brightness' in label_name:
+                    segment_data['brightness_center'] = trolley_df.iloc[orig_indices]['brightness_center'].tolist()
+                
+                # データの長さを確認して揃える
+                length = min(len(d) for d in segment_data.values())
+                for key in segment_data:
+                    segment_data[key] = segment_data[key][:length]
+                
+                source = ColumnDataSource(data=segment_data)
                 p.line(
                     'x', 'y',
                     legend_label=f"{label_name}_{trolley_id}",
@@ -683,8 +742,22 @@ def experimental_plot_fig_bokeh(config, outpath, graph_height, graph_width, grap
         # p.xaxis.formatter = NumeralTickFormatter(format="0,0")
         p.xaxis.formatter = formatter_x
         p.yaxis.formatter = formatter_y
-    
-    save(grid, filename='graph_recent.html')
+
+    output_file(filename='graph_recent.html', 
+                title='Rail Analysis Graph', 
+                mode='cdn', 
+                root_dir=None)
+
+    # 保存
+    save(grid)
+
+    # HTML ファイルをダウンロードするボタンを追加
+    st.download_button(
+        label="グラフを HTML形式 でダウンロード",
+        data=open('graph_recent.html', 'rb').read(),
+        file_name='graph_recent.html',
+        mime='text/html'
+    )
 
     return grid
 

@@ -14,7 +14,7 @@ def log_management(config):
     st.sidebar.header("トロリ線摩耗検出システム")
 
     # メイン処理
-    fpath = st.sidebar.text_input("ログファイル名", value="tts.log")
+    fpath = st.sidebar.text_input("ログファイル名", value="cis.log")
     df = my_logger.load_logs(fpath)
     if len(df.columns) < 2:
         st.warning("ログがありません")
@@ -56,7 +56,7 @@ def log_management(config):
     st.sidebar.download_button(
         "ログをダウンロード(CSV形式)",
         csv,
-        f'tts_logs_{time.strftime("%Y%m%d_%H%M%S", time.localtime(time.time()))}.csv',
+        f'cis_logs_{time.strftime("%Y%m%d_%H%M%S", time.localtime(time.time()))}.csv',
         "text/csv",
         key='download-csv'
     )

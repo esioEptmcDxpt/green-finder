@@ -14,6 +14,20 @@ import matplotlib.pyplot as plt
 import japanize_matplotlib
 
 
+@st.dialog("技セ・MCを選択")
+def set_office(_config, office_default):
+    office_names = helpers.get_office_names_jp(_config)
+    office_default_jp = _config.office_names[office_default]["name"]
+    office_names_default_index = office_names.index(office_default_jp)
+    office_name_jp = st.selectbox("技セを選択", office_names, index=office_names_default_index)
+    office_name = helpers.get_office_name(_config, office_name_jp)
+    mc_name_jp = st.selectbox("MCを選択", helpers.get_mc_names_jp(_config, office_name_jp))
+    mc_name = helpers.get_mc_name(_config, office_name_jp, mc_name_jp)
+    if st.button("設定"):
+        st.session_state.office = f"{office_name}/{mc_name}"
+        st.rerun()
+
+
 def extract_filename_without_extension(filepath):
     # ファイルパスの最後の要素（ファイル名）を取得
     filename = os.path.basename(filepath)
@@ -154,10 +168,30 @@ def eda_tool(config):
         col2_cont = st.container()
     
     # 作成中メッセージ
-    # main_view.warning("# 一生懸命プログラムを作成中です")
-    # img_sorry = Image.open('icons/sorry_panda.jpg')
-    # main_view.image(img_sorry, caption='We are working very hard on the program!')
-    
+    main_view.warning("# 一生懸命プログラムを作成中です")
+    img_sorry = Image.open('icons/sorry_panda.jpg')
+    main_view.image(img_sorry, caption='We are working very hard on the program!')
+
+    # デフォルトの技セを設定
+    # 仮に設定： Cognito ユーザ名から取得する用に変更する
+    office_default = "takasaki"
+
+    # 箇所名を選択
+    if 'office' not in st.session_state:
+        st.session_state.office = None
+
+    # 技セ・MCを選択
+    if "office_dialog" not in st.session_state:
+        if st.sidebar.button("技セ・MCを選択"):
+            set_office(config, office_default)
+
+    # 選択された技セ・MCを表示
+    if not st.session_state.office:
+        st.sidebar.error("技セ・MCを選択してください")
+        st.stop()
+    else:
+        st.sidebar.write(f"選択箇所: {helpers.get_office_message(config, st.session_state.office)}")
+
     # フォルダ直下の画像保管用ディレクトリのリスト
     # images_path = helpers.list_imagespath(config.image_dir)
     # 他ページでの結果を反映するためnonCacheを使用
@@ -181,7 +215,7 @@ def eda_tool(config):
         images_path_filtered = images_path
 
     # 対象フォルダの選択
-    dir_area = st.sidebar.selectbox("線区のフォルダ名を選択してください", images_path_filtered)
+    dir_area = main_view.selectbox("線区のフォルダ名を選択してください", images_path_filtered)
     if dir_area is None:
         st.error("No frames fit the criteria. Please select different label or number.")
         st.stop()
@@ -191,10 +225,12 @@ def eda_tool(config):
 
     st.sidebar.markdown("# ___Step2___ 解析条件を設定")
     # 解析対象のカメラ番号を選択する
+    camera_name_list = helpers.get_camera_list(config)
     camera_name = st.sidebar.selectbox(
                     "解析対象のカメラを選択してください",
-                    zip(config.camera_names, config.camera_types)
-                    )[0]
+                    camera_name_list
+                    ).split(':')[0]
+    st.sidebar.write(f"カメラ番号: {camera_name}")
     camera_num = config.camera_name_to_type[camera_name]
 
     # 解析対象の画像フォルダを指定

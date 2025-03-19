@@ -12,7 +12,7 @@ from src.kalman import kalman
 import src.logger as my_logger
 
 
-def track_kalman(outpath, camera_num, base_images, df_csv, idx, test_num, trolley_id, x_init, y_init_u, y_init_l, status_view, progress_bar, kiro_data):
+def track_kalman(outpath, camera_num, office, base_images, df_csv, idx, test_num, trolley_id, x_init, y_init_u, y_init_l, status_view, progress_bar, kiro_data):
     """カルマンフィルタ計算用のラッパー
     Args:
         rail (object): shelveファイル
@@ -45,8 +45,8 @@ def track_kalman(outpath, camera_num, base_images, df_csv, idx, test_num, trolle
 
     # 画像ファイルとキロ程を紐づけるためのJSONファイルを辞書として読み込む
     if kiro_data:
-        dir_area = base_images[idx].split("/")[1]    # image_pathから線区情報を読取る
-        with open(f"{config.tdm_dir}/{dir_area}.json", 'r') as file:
+        dir_area = base_images[idx].split("/")[3]    # image_pathから線区情報を読取る
+        with open(f"{config.tdm_dir}/{office}/{dir_area}.json", 'r') as file:
             kiro_dict = json.load(file)
         # 画像ファイル名がkiro_dictに含まれる範囲をリストで取得 [idx_head, idx_tail]
         kiro_init_dict = helpers.experimental_get_image_match(base_images, kiro_dict, camera_num)
@@ -60,7 +60,7 @@ def track_kalman(outpath, camera_num, base_images, df_csv, idx, test_num, trolle
     for image_path in base_images[idx:(idx + test_num)]:
         # 解析条件を記録
         image_name = image_path.split('/')[-1]
-        dir_area, camera_num = image_path.split("/")[1:3]    # image_pathから線区情報を読取る
+        dir_area, camera_num = image_path.split("/")[3:5]    # image_pathから線区情報を読取る
         # 結果保存用のCSVファイル(rail)の保存パスを指定
         image_name_noExtension = os.path.splitext(os.path.basename(image_name))[0]
         rail_fpath = f"{outpath}/{config.csv_fname}_{image_name_noExtension}.csv"
@@ -228,7 +228,7 @@ def track_kalman(outpath, camera_num, base_images, df_csv, idx, test_num, trolle
         ).copy()
 
         # CSVファイルを保存する
-        df_csv.to_csv(rail_fpath, index = False)
+        df_csv.to_csv(rail_fpath, index = False, float_format='%.8f')
 
         if len(kalman_instance.trolley_end_reason) > 0:
             if kalman_instance.error_flg == 1:

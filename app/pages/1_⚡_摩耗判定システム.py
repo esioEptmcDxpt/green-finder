@@ -9,6 +9,20 @@ from src.similar_pixel_calc import track_pixel
 from src.config import appProperties
 
 
+@st.dialog("技セ・MCを選択")
+def set_office(_config, office_default):
+    office_names = helpers.get_office_names_jp(_config)
+    office_default_jp = _config.office_names[office_default]["name"]
+    office_names_default_index = office_names.index(office_default_jp)
+    office_name_jp = st.selectbox("技セを選択", office_names, index=office_names_default_index)
+    office_name = helpers.get_office_name(_config, office_name_jp)
+    mc_name_jp = st.selectbox("MCを選択", helpers.get_mc_names_jp(_config, office_name_jp))
+    mc_name = helpers.get_mc_name(_config, office_name_jp, mc_name_jp)
+    if st.button("設定"):
+        st.session_state.office = f"{office_name}/{mc_name}"
+        st.rerun()
+
+
 def ohc_wear_analysis(config):
     # マルチページの設定
     st.set_page_config(page_title="トロリ線摩耗検出システム", layout="centered")
@@ -19,29 +33,47 @@ def ohc_wear_analysis(config):
     camera_view = st.empty()
     log_view = st.container()
 
-    # フォルダ直下の画像保管用ディレクトリのリスト
-    # images_path = helpers.list_imagespath(config.image_dir)
-    # 他ページでの結果を反映するためnonCacheを使用
-    images_path = helpers.list_imagespath_nonCache(config.image_dir)
+    # デフォルトの技セを設定
+    # 仮に設定： Cognito ユーザ名から取得する用に変更する
+    office_default = "takasaki"
+
+    # 箇所名を選択
+    if 'office' not in st.session_state:
+        st.session_state.office = None
+
+    # 技セ・MCを選択
+    if "office_dialog" not in st.session_state:
+        if st.sidebar.button("技セ・MCを選択"):
+            set_office(config, office_default)
+
+    # 選択された技セ・MCを表示
+    if not st.session_state.office:
+        st.sidebar.error("技セ・MCを選択してください")
+        st.stop()
+    else:
+        st.sidebar.write(f"選択箇所: {helpers.get_office_message(config, st.session_state.office)}")
+
+    # 線区フォルダの選択
+    images_path = helpers.list_imagespath_nonCache(f"{config.image_dir}/{st.session_state.office}")
 
     # 画像保管線区の選択
+    main_view.markdown("# ___Step1___ 線区を選択")
     st.sidebar.markdown("# ___Step1___ 線区を選択")
+    st.sidebar.write(f"解析対象の線区フォルダを指定👉️")
 
     # 検索ボックスによる対象フォルダの絞り込み
     dir_search = st.sidebar.checkbox("検索ボックス表示", value=False)
     if dir_search:
-        dir_area_key = st.sidebar.text_input("線区 検索キーワード").lower()
+        dir_area_key = main_view.text_input("線区 検索キーワード(英語で入力)").lower()
         images_path_filtered = [path for path in images_path if dir_area_key in path.lower()]
         if dir_area_key:
             if not images_path_filtered:
-                st.sidebar.error("対象データがありません。検索キーワードを変更してください。")
+                main_view.error("対象データがありません。検索キーワードを変更してください。")
                 st.stop()
         else:
             images_path_filtered = images_path
     else:
         images_path_filtered = images_path
-
-    meas_quater = st.sidebar.selectbox("走行タイミング", config.quarter_measurements)
 
     # セッションステートの初期化
     if 'previous_dir_area' not in st.session_state:
@@ -50,7 +82,11 @@ def ohc_wear_analysis(config):
         st.session_state.current_idx = 1
 
     # 対象フォルダの選択
-    dir_area = st.sidebar.selectbox("線区のフォルダ名を選択してください", images_path_filtered)
+    dir_area = main_view.selectbox("線区のフォルダ名を選択してください", images_path_filtered)
+
+    # 検測車の走行タイミングの選択
+    # 画像ファイル名とキロ程をリンクするために 車モニ の GazoFileIndex を使用
+    meas_quater = main_view.selectbox("走行タイミングを選択", config.quarter_measurements)
 
     # dir_areaが変更されたらcurrent_idxをリセット
     if st.session_state.previous_dir_area != dir_area:
@@ -66,17 +102,19 @@ def ohc_wear_analysis(config):
 
     st.sidebar.markdown("# ___Step2___ 解析条件を設定")
     # 解析対象のカメラ番号を選択する
+    camera_name_list = helpers.get_camera_list(config)
     camera_name = st.sidebar.selectbox(
                     "解析対象のカメラを選択してください",
-                    zip(config.camera_names, config.camera_types)
-                    )[0]
+                    camera_name_list
+                    ).split(':')[0]
+    st.sidebar.write(f"カメラ番号: {camera_name}")
     camera_num = config.camera_name_to_type[camera_name]
 
     # 解析対象の画像フォルダを指定
-    target_dir = config.image_dir + "/" + dir_area + "/" + camera_num
+    target_dir = f"{config.image_dir}/{st.session_state.office}/{dir_area}/{camera_num}"
 
     # outputディレクトリを指定
-    outpath = config.output_dir + "/" + dir_area + "/" + camera_num
+    outpath = f"{config.output_dir}/{st.session_state.office}/{dir_area}/{camera_num}"
 
     # imagesフォルダ内の画像一覧取得
     base_images = helpers.list_images(target_dir)
@@ -90,7 +128,7 @@ def ohc_wear_analysis(config):
                                       min_value=1,
                                       max_value=len(base_images),
                                       value=st.session_state.current_idx) - 1
-        st.sidebar.write(f"ファイルパス:{base_images[idx]}")
+        # st.sidebar.write(f"ファイルパス:{base_images[idx]}")
         # 画像ファイル名を取得
         image_name = base_images[idx].split('/')[-1]
 
@@ -147,6 +185,7 @@ def ohc_wear_analysis(config):
                 trolley_ids_legend += f'<br><span style="color:rgb{color};">{trolley_id}</span>'
             st.markdown(trolley_ids_legend, unsafe_allow_html=True)
 
+    main_view.markdown("# ___Step3___ 解析を実行する")
     st.sidebar.markdown("# ___Step3___ 解析を実行する")
     # 暫定的にカルマンフィルタに限定
 
@@ -298,9 +337,9 @@ def ohc_wear_analysis(config):
             # 画像キロ程情報の処理
             # とりあえず、一度でも画像キロ程jsonを作成していればスキップする
             # 画像キロ程jsonの削除は手動対応…
-            if not os.path.exists(f"{config.tdm_dir}/{dir_area}.json"):
+            if not os.path.exists(f"{config.tdm_dir}/{st.session_state.office}/{dir_area}.json"):
                 with st.spinner("検測車マスタデータからキロ程情報をリンクしています（お待ちください）"):
-                    helpers.get_img2kiro(config, dir_area, images_path, target_dir, base_images, csv_files)
+                    helpers.get_img2kiro(config, dir_area, st.session_state.office, base_images, csv_files)
 
             # 選択画像における処理結果が既に存在しているかチェック
             # trolley_dict = helpers.load_shelves(rail_fpath, camera_num, base_images, idx)
@@ -329,6 +368,7 @@ def ohc_wear_analysis(config):
                     count = track_kalman(
                             outpath,
                             camera_num,
+                            st.session_state.office,
                             base_images,
                             df_csv,
                             idx,
@@ -355,6 +395,7 @@ def ohc_wear_analysis(config):
                     count = track_kalman(
                         outpath,
                         camera_num,
+                        st.session_state.office,
                         base_images,
                         df_csv,
                         idx,
@@ -393,9 +434,9 @@ def ohc_wear_analysis(config):
             # st.sidebar.write(f"Error> {e}")
     idx_result_check = st.sidebar.checkbox("解析済みインデックスを表示する", value=True)
     if idx_result_check:
-        df = helpers.check_camera_dirs_addIdxLen(dir_area, config)
+        df = helpers.check_camera_dirs_addIdxLen(dir_area, st.session_state.office, config)
     else:
-        df = helpers.check_camera_dirs(dir_area, config)
+        df = helpers.check_camera_dirs(dir_area, st.session_state.office, config)
     st.sidebar.dataframe(df)
     csv_delete_btn = st.sidebar.button("結果CSVデータを削除する")
     if csv_delete_btn:

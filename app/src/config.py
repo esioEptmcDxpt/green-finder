@@ -106,6 +106,10 @@ class appProperties:
         return self.config['format_func']['camera_name_to_type']
 
     @property
+    def office_names(self):
+        return self.config['format_func']['office_names']
+
+    @property
     def rail_names(self):
         return self.config['format_func']['rail_names']
 
