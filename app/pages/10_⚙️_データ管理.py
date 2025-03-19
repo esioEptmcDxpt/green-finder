@@ -6,6 +6,7 @@ from concurrent.futures import ThreadPoolExecutor
 import src.helpers as helpers
 import src.visualize as vis
 from src.config import appProperties
+import src.auth as auth
 
 
 @st.dialog("技セ・MCを選択")
@@ -82,7 +83,10 @@ def upload_results(config, office, s3_rail_path):
 
 def data_loader(config):
     # マルチページの設定
-    st.set_page_config(page_title="画像データダウンロード", layout="wide")
+    st.set_page_config(page_title="データ管理", layout="wide")
+    # 認証チェック
+    if not auth.check_authentication():
+        return
     st.sidebar.header("画像データダウンロード")
 
     info_view = st.container()
@@ -227,6 +231,11 @@ def data_loader(config):
     except Exception as e:
         st.error("該当するデータがありません")
         st.error(f"Error message> {e}")
+
+
+    # ログアウトボタン
+    if st.sidebar.button("ログアウト"):
+        auth.logout()
 
 
 if __name__ == "__main__":

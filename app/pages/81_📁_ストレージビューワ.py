@@ -4,6 +4,7 @@ import datetime
 import pandas as pd
 from pathlib import Path
 from src.config import appProperties
+import src.auth as auth
 
 
 def get_directory_size(path):
@@ -90,6 +91,14 @@ def storage_viewer(config):
     Args:
         config (object): 設定ファイル
     """
+    st.set_page_config(page_title="ストレージビューワ", page_icon="📁",)
+    # 認証チェック
+    if not auth.check_authentication():
+        return
+
+    st.sidebar.title("何をしますか？")
+    st.sidebar.success("👆アプリを選択してください")
+
     st.title("ストレージビューワ")
     st.write("コンテナ上のファイルを表示します")
     
@@ -199,6 +208,10 @@ def storage_viewer(config):
             st.code(disk_info)
         except:
             st.warning("ディスク情報の取得に失敗しました")
+    
+    # ログアウトボタン
+    if st.sidebar.button("ログアウト"):
+        auth.logout()
 
 
 if __name__ == "__main__":

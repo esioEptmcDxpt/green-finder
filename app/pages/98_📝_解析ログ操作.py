@@ -6,11 +6,15 @@ import pygwalker as pyg
 import pandas as pd
 from src.config import appProperties
 import src.logger as my_logger
+import src.auth as auth
 
 
 def log_management(config):
     # マルチページの設定
     st.set_page_config(page_title="解析ログ操作", layout="wide")
+    # 認証チェック
+    if not auth.check_authentication():
+        return
     st.sidebar.header("トロリ線摩耗検出システム")
 
     # メイン処理
@@ -72,6 +76,10 @@ def log_management(config):
                 log_view.write("※再度ログを見るときは、チェックを外すか、画面をリロードしてください")
                 my_logger.reset_logging()
                 st.stop()
+
+    # ログアウトボタン
+    if st.sidebar.button("ログアウト"):
+        auth.logout()
 
     return
 

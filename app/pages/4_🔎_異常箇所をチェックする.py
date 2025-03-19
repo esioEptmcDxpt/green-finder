@@ -3,6 +3,7 @@ from PIL import Image
 import src.helpers as helpers
 import src.visualize as vis
 from src.config import appProperties
+import src.auth as auth
 
 import os
 import re
@@ -157,6 +158,9 @@ def find_indices(word_list, target_string):
 def eda_tool(config):
     # マルチページの設定
     st.set_page_config(page_title="異常値箇所チェック", layout="wide")
+    # 認証チェック
+    if not auth.check_authentication():
+        return
     st.sidebar.header("異常箇所チェックツール")
     
     # メインページのコンテナを配置する
@@ -299,6 +303,10 @@ def eda_tool(config):
             vis.download_image(out_img, out_img_name)
     
     st.write("# 連結画像を出力する")
+
+    # ログアウトボタン
+    if st.sidebar.button("ログアウト"):
+        auth.logout()
 
     return
 

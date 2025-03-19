@@ -4,6 +4,7 @@ import copy
 import streamlit as st
 import src.helpers as helpers
 import src.visualize as vis
+import src.auth as auth
 from src.kalman_calc import track_kalman
 from src.similar_pixel_calc import track_pixel
 from src.config import appProperties
@@ -26,6 +27,9 @@ def set_office(_config, office_default):
 def ohc_wear_analysis(config):
     # マルチページの設定
     st.set_page_config(page_title="トロリ線摩耗検出システム", layout="centered")
+    # 認証チェック
+    if not auth.check_authentication():
+        return
     st.sidebar.header("トロリ線摩耗検出システム")
 
     # メインページのコンテナを配置する
@@ -455,6 +459,11 @@ def ohc_wear_analysis(config):
     #     image_name = image_path.split('/')[-1]
     #     # image_list_for_view.append([idx + 1, image_name])
     #     st.text(f"{idx + 1},{image_name}")
+
+    # ログアウトボタン
+    if st.sidebar.button("ログアウト"):
+        auth.logout()
+
 
 
 if __name__ == "__main__":

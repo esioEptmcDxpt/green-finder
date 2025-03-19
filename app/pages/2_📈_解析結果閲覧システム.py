@@ -1,6 +1,7 @@
 import streamlit as st
 import src.helpers as helpers
 import src.visualize as vis
+import src.auth as auth
 from src.config import appProperties
 import os
 import io
@@ -27,6 +28,9 @@ def result_image_view(config):
     """
     # マルチページの設定
     st.set_page_config(page_title="解析結果ビューワー", layout="wide")
+    # 認証チェック
+    if not auth.check_authentication():
+        return
     st.sidebar.header("解析結果閲覧システム")
 
     # メインページのコンテナを配置する
@@ -376,6 +380,10 @@ def result_image_view(config):
     else:
         df = helpers.check_camera_dirs(dir_area, st.session_state.office, config)
     st.sidebar.dataframe(df)
+
+    # ログアウトボタン
+    if st.sidebar.button("ログアウト"):
+        auth.logout()
 
 
 if __name__ == "__main__":
