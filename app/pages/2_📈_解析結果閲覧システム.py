@@ -26,11 +26,16 @@ def result_image_view(config):
     Args:
         config: ymlファイルを読み込んだ設定値
     """
-    # マルチページの設定
     st.set_page_config(page_title="解析結果ビューワー", layout="wide")
-    # 認証チェック
-    if not auth.check_authentication():
+
+    # 認証マネージャーの初期化
+    auth_manager = auth.AuthenticationManager()
+    # 認証処理とUI表示
+    is_authenticated = auth_manager.authenticate_page(title="トロリ線摩耗判定支援システム")
+    # 認証済みの場合のみコンテンツを表示
+    if not is_authenticated:
         return
+
     st.sidebar.header("解析結果閲覧システム")
 
     # メインページのコンテナを配置する
@@ -40,10 +45,6 @@ def result_image_view(config):
     row2 = st.container()
     graph_view = st.empty()
 
-    # デフォルトの技セを設定
-    # 仮に設定： Cognito ユーザ名から取得する用に変更する
-    office_default = "takasaki"
-
     # 箇所名を選択
     if 'office' not in st.session_state:
         st.session_state.office = None
@@ -51,7 +52,7 @@ def result_image_view(config):
     # 技セ・MCを選択
     if "office_dialog" not in st.session_state:
         if st.sidebar.button("技セ・MCを選択"):
-            set_office(config, office_default)
+            set_office(config, st.session_state['name'])
 
     # 選択された技セ・MCを表示
     if not st.session_state.office:
@@ -59,9 +60,6 @@ def result_image_view(config):
         st.stop()
     else:
         st.sidebar.write(f"選択箇所: {helpers.get_office_message(config, st.session_state.office)}")
-
-    # st.session_state.office = f"{office_name}/{mc_name}"
-    # st.session_state.office = helpers.set_office(config)
 
     # 線区フォルダの選択
     images_path = helpers.list_imagespath_nonCache(f"{config.image_dir}/{st.session_state.office}")

@@ -127,6 +127,10 @@ def get_office_names_jp(_config):
     return [v["name"] for k, v in _config.office_names.items()]
 
 @st.cache_data
+def get_office_name_jp(_config, office_name):
+    return _config.office_names[office_name]["name"]
+
+@st.cache_data
 def get_office_name(_config, office_name_jp):
     return [k for k, v in _config.office_names.items() if v["name"] == office_name_jp][0]
 

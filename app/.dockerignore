@@ -25,3 +25,4 @@ images
 output
 utils
 tests
+.streamlit/secrets.toml.example

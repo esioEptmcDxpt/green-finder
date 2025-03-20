@@ -227,10 +227,11 @@ class kalman(trolley):
                 self.last_brightness[edge_id] = (0.5 * current_brightness + 0.5 * last_brightness)
 
     # @my_logger
-    def infer_trolley_edge(self, image_path):
+    def infer_trolley_edge(self, image_path, office=None):
         """ 各x座標とエッジIDを元にカルマンフィルタの計算を実施
         Args:
             image_path (str): 画像ファイルのパス
+            office (str): オフィス名 (例: "shinagawa/shinagawa")
         """
         self.initialize_measurement()
         img = np.array(Image.open(image_path))

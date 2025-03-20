@@ -1,23 +1,35 @@
 import streamlit as st
 import src.helpers as helpers
 import src.auth as auth
+import src.visualize as visualize
 from src.config import appProperties
+import time
 
 
 def main(config):
     st.set_page_config(page_title="Hello", page_icon="🖐",)
-    # 認証チェック
-    if not auth.check_authentication():
+
+    # 認証マネージャーの初期化
+    auth_manager = auth.AuthenticationManager()
+    # 認証処理とUI表示
+    is_authenticated = auth_manager.authenticate_page(title="トロリ線摩耗判定支援システム")
+    # 認証済みの場合のみコンテンツを表示
+    if not is_authenticated:
         return
     
-    # 認証済みの場合、通常のアプリケーション表示
-    readme_text = st.markdown(helpers.read_markdown_file(config.readme_md))
-    st.sidebar.title("何をしますか？")
-    st.sidebar.success("👆アプリを選択してください")
+    # サイドバーに追加のナビゲーション
+    with st.sidebar:
+        st.title("何をしますか？")
+        st.success("👆アプリを選択してください")
     
-    # ログアウトボタン
-    if st.sidebar.button("ログアウト"):
-        auth.logout()
+    # ようこそページを表示
+    visualize.display_welcome_page()
+
+    # (管理用) ユーザ情報を作成
+    # st.sidebar.title("管理用")
+    # st.sidebar.write("ユーザ情報を作成します。すべてのユーザ情報がCSVファイルに従って初期化されるので注意して使用してください。")
+    # if st.sidebar.button("ユーザ情報を作成"):
+    #     auth.create_yml()
 
 
 if __name__ == "__main__":

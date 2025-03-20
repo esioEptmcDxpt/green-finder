@@ -6,6 +6,7 @@ from pythonjsonlogger import jsonlogger
 import pandas as pd
 from dateutil import tz
 import src.helpers as helpers
+import streamlit as st
 
 
 def my_logger(func):
@@ -24,8 +25,40 @@ def my_logger(func):
     return wrapper
 
 
-def setup_logging(log_level=logging.INFO):
+def get_log_path(office=None, date=None):
+    """ ログファイルのパスを取得する
+    Args:
+        office(str): オフィス名 (例: "shinagawa/shinagawa")
+        date(str): 日付（指定しない場合は今日の日付）
+    Return:
+        file_path(str): ログファイルのパス
+    """
+    # 日付が指定されていない場合は今日の日付を使用
+    if date is None:
+        date = time.strftime('%Y%m%d', time.localtime())
+    
+    # ファイル名の作成
+    filename = f"cis_{date}.log"
+    
+    if office is None:
+        # オフィスが指定されていない場合はルートに保存
+        return filename
+    
+    # オフィス情報からログディレクトリのパスを構築
+    log_dir = os.path.join("logs", office)
+    
+    # ディレクトリが存在しなければ作成
+    os.makedirs(log_dir, exist_ok=True)
+    
+    # ログファイルのパスを返す
+    return os.path.join(log_dir, filename)
+
+
+def setup_logging(log_level=logging.INFO, office=None):
     """ ロギングの初期設定を実行
+    Args:
+        log_level(int): ログレベル
+        office(str): オフィス名 (例: "shinagawa/shinagawa")
     """
     handlers = []
     formatter = jsonlogger.JsonFormatter("%(levelname)%(exc_info)%(message)")
@@ -35,10 +68,14 @@ def setup_logging(log_level=logging.INFO):
     # sh.setLevel(log_level)
     # handlers.append(sh)
 
-    file_path = "tts.log"
+    file_path = get_log_path(office)
 
     # 既存のログファイルが無かったら作成する
     if not os.path.exists(file_path):
+        # ディレクトリも確認して作成（親ディレクトリが存在する場合のみ）
+        parent_dir = os.path.dirname(file_path)
+        if parent_dir:  # 親ディレクトリが空でない場合のみmakedirsを実行
+            os.makedirs(parent_dir, exist_ok=True)
         with open(file_path, "w") as f:
             pass  # 空のファイルを作成
 
@@ -51,27 +88,38 @@ def setup_logging(log_level=logging.INFO):
     logging.basicConfig(level=log_level, handlers=handlers, force=True)
     
 
-def reset_logging():
+def reset_logging(office=None, date=None):
     """ 既存のログファイルを初期化する
+    Args:
+        office(str): オフィス名 (例: "shinagawa/shinagawa")
+        date(str): 日付（指定しない場合は今日の日付）
     """
-    fpath = "tts.log"
-    # tts.logを初期化する
+    fpath = get_log_path(office, date)
+    # ログファイルを初期化する
     with open(fpath, "w") as f:
         f.write("")
     st.error("ログファイルを削除しました")
     st.stop()
 
 
-def load_logs(fpath):
+def load_logs(office=None, date=None):
     """ ログファイルをデータフレームとして読み込む
     Args:
-        fpath(str): ログファイルのパス
+        office(str): オフィス名 (例: "shinagawa/shinagawa")
+        date(str): 日付（指定しない場合は今日の日付）
     Return:
         df(DataFrame): ログファイルを読み込んだデータフレーム
     """
+    # ログファイルのパスを取得
+    fpath = get_log_path(office, date)
+    
+    # ログファイルが存在しない場合は空のデータフレームを返す
+    if not os.path.exists(fpath):
+        return pd.DataFrame()
+    
     # ログファイルを読み込む
     logs = []
-    with open('tts.log', 'r') as f:
+    with open(fpath, 'r') as f:
         for line in f:
             try:
                 log = eval(line)
@@ -85,6 +133,10 @@ def load_logs(fpath):
 def preprocess_log_data(df):
     # 最初にデータフレームのコピーを作成
     df = df.copy()
+    
+    # データフレームが空の場合は空のデータフレームを返す
+    if df.empty:
+        return df
 
     df['start_time'] = pd.to_datetime(df['start_time'])
 
@@ -107,7 +159,7 @@ def preprocess_log_data(df):
     return df.copy()
 
 
-def put_log(level, message, start, method, image_path, trolley_id, idx, count, error_message=None):
+def put_log(level, message, start, method, image_path, trolley_id, idx, count, error_message=None, office=None):
     """ ログファイルに記録する
     Args:
         level(str): ログのレベル
@@ -118,9 +170,12 @@ def put_log(level, message, start, method, image_path, trolley_id, idx, count, e
         trolley_id(str): トロリーID
         idx(int): 画像インデックス
         count(int): 何枚目の画像を処理したときのログか
-        kiro_dict(dict): キロ程情報（車モニから取得）
         error_message(str): エラーメッセージ
+        office(str): オフィス名 (例: "shinagawa/shinagawa")
     """
+    # ログ設定を適用（officeパラメータを追加）
+    setup_logging(office=office)
+    
     logger = logging.getLogger()
 
     image_name = image_path.split('/')[-1]

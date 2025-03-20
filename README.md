@@ -4,18 +4,57 @@
 
 基本的には、　 AWS にコンテナ化してデプロイすることを想定しています。ただし、ローカル環境や SageMaker Notebook instance でも直接 Python(streamlit) で動作することも可能です。
 
-## デプロイ方法
+## アプリの更新方法
 
-1. hogehoge
-2. fugafuga
-3. ...
+最初にリポジトリをクローンします。
+プライベートリポジトリのため、認証情報は管理者に問い合わせること。
+
+```bash
+git clone https://github.com/ESIO-EPTMC-DXPT/contact-wire-inspection-system.git
+cd ./contact-wire-inspection-system
+```
+
+### ECRにコンテナをプッシュ
+
+アプリを更新したら、ECR に更新後のコンテナイメージをプッシュします。（プロジェクトのルートディレクトリで実行すること）
+
+```bash
+source ecr-push.sh
+```
 
 ## ローカル環境での利用方法
 
-- `README_forStreamlit.ipynb` を開く
-- セルを選択したら、 `Shift + Enter` を 5 回くらい連打する
-- アプリが起動した URL がファイル上に表示されるのでアクセスする
-- アプリ自体の使い方は、電管セ公開のリファレンスガイドを確認する
+1. シークレット情報を準備する
+   以下を参考に、 `app/.streamlit/secrets.toml` を作成します。
+
+全て AWS Cognito の設定値なので、マネジメントコンソールにアクセスして確認しましょう。不明な場合は、管理者に問い合わせてください。
+
+```toml
+[cognito]
+client_id = "<your-client-id>"
+client_secret = "<your-client-secret>"
+aws_region = "ap-northeast-1"
+user_pool_id = "<your-user-pool-id>"
+domain = "<your-cognito-domain>"
+redirect_uri = "http://localhost:8501"
+```
+
+2. アプリ実行用のコンテナを起動する
+
+認証情報を設定したら、アプリ実行用のコンテナを起動します。
+
+```bash
+docker-compose up
+```
+
+2. アプリにアクセスする
+
+アプリがローカルホスト (http://localhost:8501) で起動するので、ブラウザでアクセスします。
+
+3. アプリを終了する
+
+コンテナでアプリを実行中は、ターミナルに標準出力が表示されています。
+アプリを終了するときは `Ctrl + C` を押してください。
 
 ## (開発用)ディレクトリ構造
 

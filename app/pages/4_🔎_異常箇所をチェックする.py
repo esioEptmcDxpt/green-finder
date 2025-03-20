@@ -158,9 +158,15 @@ def find_indices(word_list, target_string):
 def eda_tool(config):
     # マルチページの設定
     st.set_page_config(page_title="異常値箇所チェック", layout="wide")
-    # 認証チェック
-    if not auth.check_authentication():
+
+    # 認証マネージャーの初期化
+    auth_manager = auth.AuthenticationManager()
+    # 認証処理とUI表示
+    is_authenticated = auth_manager.authenticate_page(title="トロリ線摩耗判定支援システム")
+    # 認証済みの場合のみコンテンツを表示
+    if not is_authenticated:
         return
+
     st.sidebar.header("異常箇所チェックツール")
     
     # メインページのコンテナを配置する
@@ -176,9 +182,6 @@ def eda_tool(config):
     img_sorry = Image.open('icons/sorry_panda.jpg')
     main_view.image(img_sorry, caption='We are working very hard on the program!')
 
-    # デフォルトの技セを設定
-    # 仮に設定： Cognito ユーザ名から取得する用に変更する
-    office_default = "takasaki"
 
     # 箇所名を選択
     if 'office' not in st.session_state:
@@ -187,7 +190,7 @@ def eda_tool(config):
     # 技セ・MCを選択
     if "office_dialog" not in st.session_state:
         if st.sidebar.button("技セ・MCを選択"):
-            set_office(config, office_default)
+            set_office(config, st.session_state['name'])
 
     # 選択された技セ・MCを表示
     if not st.session_state.office:
@@ -200,7 +203,7 @@ def eda_tool(config):
     # images_path = helpers.list_imagespath(config.image_dir)
     # 他ページでの結果を反映するためnonCacheを使用
     images_path = helpers.list_imagespath_nonCache(config.image_dir)
-    
+
     # 画像保管線区の選択
     st.sidebar.markdown("# ___Step1___ 線区を選択")
 
@@ -303,10 +306,6 @@ def eda_tool(config):
             vis.download_image(out_img, out_img_name)
     
     st.write("# 連結画像を出力する")
-
-    # ログアウトボタン
-    if st.sidebar.button("ログアウト"):
-        auth.logout()
 
     return
 

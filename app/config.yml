@@ -132,6 +132,10 @@ format_func:
     低(左): HD31
     低(右): HD32
   office_names:
+    esiodxpt:
+      name: 電力技術管理センター(DXPT)
+      mc:
+        esiodxpt: 電力技術管理センター(DXPT)
     shinagawa:
       name: 品川電力設備技術センター
       mc:
@@ -139,7 +143,7 @@ format_func:
     shinjuku:
       name: 新宿電力設備技術センター
       mc:
-        shinagawa: 品川電力設備技術センター
+        shinjuku: 新宿電力設備技術センター
     ueno:
       name: 上野電力設備技術センター
       mc:

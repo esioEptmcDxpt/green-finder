@@ -7,19 +7,76 @@ import pandas as pd
 from src.config import appProperties
 import src.logger as my_logger
 import src.auth as auth
+import src.helpers as helpers
+import os
+import datetime
+
+
+@st.dialog("技セ・MCを選択")
+def set_office(_config, office_default):
+    office_names = helpers.get_office_names_jp(_config)
+    office_default_jp = _config.office_names[office_default]["name"]
+    office_names_default_index = office_names.index(office_default_jp)
+    office_name_jp = st.selectbox("技セを選択", office_names, index=office_names_default_index)
+    office_name = helpers.get_office_name(_config, office_name_jp)
+    mc_name_jp = st.selectbox("MCを選択", helpers.get_mc_names_jp(_config, office_name_jp))
+    mc_name = helpers.get_mc_name(_config, office_name_jp, mc_name_jp)
+    if st.button("設定"):
+        st.session_state.office = f"{office_name}/{mc_name}"
+        st.rerun()
 
 
 def log_management(config):
     # マルチページの設定
     st.set_page_config(page_title="解析ログ操作", layout="wide")
-    # 認証チェック
-    if not auth.check_authentication():
+
+    # 認証マネージャーの初期化
+    auth_manager = auth.AuthenticationManager()
+    # 認証処理とUI表示
+    is_authenticated = auth_manager.authenticate_page(title="トロリ線摩耗判定支援システム")
+    # 認証済みの場合のみコンテンツを表示
+    if not is_authenticated:
         return
+
     st.sidebar.header("トロリ線摩耗検出システム")
 
+    # 箇所名を選択
+    if 'office' not in st.session_state:
+        st.session_state.office = None
+
+    # 技セ・MCを選択
+    if "office_dialog" not in st.session_state:
+        if st.sidebar.button("技セ・MCを選択"):
+            set_office(config, st.session_state['name'])
+
+    # 選択された技セ・MCを表示
+    if not st.session_state.office:
+        st.sidebar.error("技セ・MCを選択してください")
+        st.stop()
+    else:
+        st.sidebar.write(f"選択箇所: {helpers.get_office_message(config, st.session_state.office)}")
+
     # メイン処理
-    fpath = st.sidebar.text_input("ログファイル名", value="cis.log")
-    df = my_logger.load_logs(fpath)
+    # 現在の日付をデフォルトとして設定
+    today = datetime.date.today()
+    selected_date = st.sidebar.date_input(
+        "ログ日付を選択", 
+        value=today,
+        max_value=today
+    )
+    date_str = selected_date.strftime('%Y%m%d')
+
+    # 選択された日付に基づいてログファイルのパスを取得
+    log_path = my_logger.get_log_path(office=st.session_state.office, date=date_str)
+    st.sidebar.info(f"解析ログファイル: {log_path}")
+
+    # ログファイルの存在確認
+    if not os.path.exists(log_path):
+        st.warning(f"ログファイルが存在しません: {log_path}")
+        st.stop()
+    
+    # ログの読み込み
+    df = my_logger.load_logs(office=st.session_state.office, date=date_str)
     if len(df.columns) < 2:
         st.warning("ログがありません")
         st.stop()
@@ -74,12 +131,8 @@ def log_management(config):
             if submit:
                 log_view.error("デバッグ用 ログを削除しました💥")
                 log_view.write("※再度ログを見るときは、チェックを外すか、画面をリロードしてください")
-                my_logger.reset_logging()
+                my_logger.reset_logging(office=st.session_state.office)
                 st.stop()
-
-    # ログアウトボタン
-    if st.sidebar.button("ログアウト"):
-        auth.logout()
 
     return
 

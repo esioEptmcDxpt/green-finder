@@ -85,15 +85,159 @@ def get_file_info(path):
         }
 
 
+def is_binary_file(file_path, sample_size=1024):
+    """ファイルがバイナリかテキストかを判定する
+
+    Args:
+        file_path (str): ファイルパス
+        sample_size (int): 判定に使用するバイト数
+
+    Returns:
+        bool: バイナリファイルの場合True
+    """
+    # よく知られているテキストファイルの拡張子リスト
+    text_extensions = [
+        '.txt', '.py', '.js', '.html', '.css', '.json', '.xml', '.md', '.csv', 
+        '.yml', '.yaml', '.ini', '.cfg', '.conf', '.sh', '.bat', '.ps1', 
+        '.java', '.c', '.cpp', '.h', '.hpp', '.cs', '.go', '.rs', '.rb', '.php',
+        '.ts', '.jsx', '.tsx', '.vue', '.gradle', '.properties', '.toml',
+        '.gitignore', '.dockerignore', '.env'
+    ]
+    
+    # 拡張子がないがテキストファイルとして扱うファイル名
+    text_filenames = ['Dockerfile', 'Makefile', 'README', 'LICENSE', 'Jenkinsfile']
+    
+    # 拡張子またはファイル名でテキストファイルかチェック
+    file_ext = os.path.splitext(file_path)[1].lower()
+    file_name = os.path.basename(file_path)
+    
+    if file_ext in text_extensions or file_name in text_filenames:
+        return False
+    
+    # 拡張子での判定ができない場合はコンテンツを確認
+    try:
+        with open(file_path, 'rb') as f:
+            sample = f.read(sample_size)
+            # NULL文字があるか確認
+            if b'\x00' in sample:
+                return True
+                
+            # テキストとして解釈できるか試みる
+            try:
+                sample.decode('utf-8')
+                return False
+            except UnicodeDecodeError:
+                # 別のエンコーディングを試す
+                try:
+                    sample.decode('shift-jis')
+                    return False
+                except UnicodeDecodeError:
+                    try:
+                        sample.decode('euc-jp')
+                        return False
+                    except UnicodeDecodeError:
+                        return True
+    except Exception:
+        return True  # エラーが発生した場合はバイナリ扱い
+
+
+def get_language_from_extension(file_path):
+    """ファイルの拡張子から言語を推測する
+
+    Args:
+        file_path (str): ファイルパス
+
+    Returns:
+        str: 言語識別子 (Streamlitが認識できる形式)
+    """
+    # 拡張子と言語のマッピング
+    extension_to_language = {
+        '.py': 'python',
+        '.js': 'javascript',
+        '.html': 'html',
+        '.css': 'css',
+        '.java': 'java',
+        '.c': 'c',
+        '.cpp': 'cpp',
+        '.h': 'c',
+        '.hpp': 'cpp',
+        '.cs': 'csharp',
+        '.go': 'go',
+        '.rs': 'rust',
+        '.rb': 'ruby',
+        '.php': 'php',
+        '.ts': 'typescript',
+        '.jsx': 'jsx',
+        '.tsx': 'tsx',
+        '.json': 'json',
+        '.xml': 'xml',
+        '.md': 'markdown',
+        '.sql': 'sql',
+        '.sh': 'bash',
+        '.bat': 'batch',
+        '.ps1': 'powershell',
+        '.yaml': 'yaml',
+        '.yml': 'yaml',
+        '.ini': 'ini',
+        '.conf': 'ini',
+        '.toml': 'toml',
+        '.dockerfile': 'dockerfile',
+    }
+    
+    # ファイル名ベースの特殊ケース
+    filename_to_language = {
+        'Dockerfile': 'dockerfile',
+        'Makefile': 'makefile',
+        'docker-compose.yml': 'yaml',
+        'docker-compose.yaml': 'yaml',
+    }
+    
+    file_name = os.path.basename(file_path)
+    file_ext = os.path.splitext(file_path)[1].lower()
+    
+    # まずファイル名で特殊ケースをチェック
+    if file_name in filename_to_language:
+        return filename_to_language[file_name]
+    
+    # 次に拡張子をチェック
+    if file_ext in extension_to_language:
+        return extension_to_language[file_ext]
+    
+    # 該当しない場合はNoneを返す
+    return None
+
+
+def is_code_file(file_path):
+    """コードファイルかどうかを判定する
+
+    Args:
+        file_path (str): ファイルパス
+
+    Returns:
+        bool: コードファイルの場合True
+    """
+    return get_language_from_extension(file_path) is not None
+
+
 def storage_viewer(config):
     """(開発用) コンテナ上のファイルを表示する
 
     Args:
         config (object): 設定ファイル
     """
-    st.set_page_config(page_title="ストレージビューワ", page_icon="📁",)
-    # 認証チェック
-    if not auth.check_authentication():
+    st.set_page_config(page_title="ストレージビューワ", page_icon="📁", layout="wide")
+
+    # 認証マネージャーの初期化
+    auth_manager = auth.AuthenticationManager()
+    # 認証処理とUI表示
+    is_authenticated = auth_manager.authenticate_page(title="トロリ線摩耗判定支援システム")
+    # 認証済みの場合のみコンテンツを表示
+    if not is_authenticated:
+        return
+    
+    if st.session_state['name'] != 'esiodxpt':
+        st.error("このページは開発者向けのため利用できません")
+        st.info("利用を希望する場合は、管理者までお問い合わせください")
         return
 
     st.sidebar.title("何をしますか？")
@@ -118,9 +262,9 @@ def storage_viewer(config):
             st.session_state.current_path = new_path
     
     with col2:
-        if st.button("親ディレクトリへ"):
+        if st.button("⇧ 親ディレクトリへ", key="parent_dir_button1"):
             st.session_state.current_path = str(Path(st.session_state.current_path).parent)
-            st.experimental_rerun()
+            st.rerun()
 
     # フィルタリングオプション
     with st.expander("フィルタリングオプション"):
@@ -186,12 +330,66 @@ def storage_viewer(config):
         if dir_items:
             dir_names = [i["名前"] for i in dir_items]
             selected_dir = st.selectbox("選択してください", dir_names)
-            if st.button("移動"):
+            col1, col2 = st.columns([1, 5])
+            if col1.button("移動", key="move_button"):
                 selected_path = os.path.join(st.session_state.current_path, selected_dir)
                 st.session_state.current_path = selected_path
-                st.experimental_rerun()
+                st.rerun()
+            if col2.button("⇧ 親ディレクトリへ", key="parent_dir_button2"):
+                st.session_state.current_path = str(Path(st.session_state.current_path).parent)
+                st.rerun()
         else:
             st.info("このディレクトリには下位フォルダがありません")
+
+        # ファイル内容表示機能
+        st.write("### ファイルの内容を表示")
+        file_items = [i for i in items if i["タイプ"] == "ファイル"]
+        if file_items:
+            file_names = [i["名前"] for i in file_items]
+            selected_file = st.selectbox("ファイルを選択", file_names, key="file_selector")
+            
+            if selected_file:
+                selected_path = os.path.join(st.session_state.current_path, selected_file)
+                file_size = os.path.getsize(selected_path)
+                
+                col1, col2 = st.columns([1, 2])
+                with col1:
+                    st.write(f"ファイルサイズ: {format_size(file_size)}")
+                
+                # 大きなファイルの場合は警告と部分表示オプション
+                max_display_size = 1024 * 1024  # 1MB
+                display_limit = st.slider("表示する最大バイト数", 1024, 1024*1024, min(100*1024, file_size))
+                
+                if is_binary_file(selected_path):
+                    st.warning("バイナリファイルのため内容を表示できません")
+                    if st.button("それでも表示する（16進数表示）"):
+                        try:
+                            with open(selected_path, 'rb') as f:
+                                content = f.read(display_limit)
+                                hex_content = content.hex(' ')
+                                st.code(hex_content)
+                        except Exception as e:
+                            st.error(f"ファイルの読み込みに失敗しました: {str(e)}")
+                else:
+                    try:
+                        with open(selected_path, 'r', encoding='utf-8', errors='replace') as f:
+                            content = f.read(display_limit if file_size > max_display_size else file_size)
+                            
+                            # ファイルサイズの警告
+                            if file_size > max_display_size:
+                                st.warning(f"大きなファイルです。先頭の{format_size(display_limit)}のみ表示します。")
+                            
+                            # コードファイルの場合はシンタックスハイライトを適用
+                            language = get_language_from_extension(selected_path)
+                            if language:
+                                st.code(content, language=language)
+                            else:
+                                st.text_area("ファイル内容", content, height=400)
+                                
+                    except Exception as e:
+                        st.error(f"ファイルの読み込みに失敗しました: {str(e)}")
+        else:
+            st.info("このディレクトリには表示可能なファイルがありません")
 
     except Exception as e:
         st.error(f"エラーが発生しました: {str(e)}")
@@ -208,10 +406,7 @@ def storage_viewer(config):
             st.code(disk_info)
         except:
             st.warning("ディスク情報の取得に失敗しました")
-    
-    # ログアウトボタン
-    if st.sidebar.button("ログアウト"):
-        auth.logout()
+
 
 
 if __name__ == "__main__":

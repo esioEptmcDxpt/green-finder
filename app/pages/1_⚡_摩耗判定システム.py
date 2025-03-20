@@ -25,21 +25,22 @@ def set_office(_config, office_default):
 
 
 def ohc_wear_analysis(config):
-    # マルチページの設定
     st.set_page_config(page_title="トロリ線摩耗検出システム", layout="centered")
-    # 認証チェック
-    if not auth.check_authentication():
+
+    # 認証マネージャーの初期化
+    auth_manager = auth.AuthenticationManager()
+    # 認証処理とUI表示
+    is_authenticated = auth_manager.authenticate_page(title="トロリ線摩耗判定支援システム")
+    # 認証済みの場合のみコンテンツを表示
+    if not is_authenticated:
         return
+
     st.sidebar.header("トロリ線摩耗検出システム")
 
     # メインページのコンテナを配置する
     main_view = st.container()
     camera_view = st.empty()
     log_view = st.container()
-
-    # デフォルトの技セを設定
-    # 仮に設定： Cognito ユーザ名から取得する用に変更する
-    office_default = "takasaki"
 
     # 箇所名を選択
     if 'office' not in st.session_state:
@@ -48,7 +49,7 @@ def ohc_wear_analysis(config):
     # 技セ・MCを選択
     if "office_dialog" not in st.session_state:
         if st.sidebar.button("技セ・MCを選択"):
-            set_office(config, office_default)
+            set_office(config, st.session_state['name'])
 
     # 選択された技セ・MCを表示
     if not st.session_state.office:
@@ -296,10 +297,11 @@ def ohc_wear_analysis(config):
                 candidate_init = helpers.detect_init_edge(cam_img, x_init)    # x_initに対応
                 candidate_len = len(candidate_init)
 
-            # num_init = form_support_line.number_input("初期値候補を選択してください", 1, candidate_len)
-            num_init = form.number_input("初期値候補を選択してください", 1, candidate_len) - 1
-            # num_init = num_init -1
-            # init_edge_submit = form_support_line.form_submit_button("📈自動で初期値を入力する")
+            if candidate_len > 0:
+                num_init = form.number_input("初期値候補を選択してください", 1, candidate_len) - 1
+            else:
+                form.error("初期値候補がありません。設定を変えてください")
+                num_init = 0  # デフォルト値を設定
             init_edge_submit = form.form_submit_button("📈自動で初期値を入力する")
             if init_edge_submit and candidate_len != 0:
                 vis.draw_marker(candidate_init, num_init, cam_img, col1, x_init)    # x_initに対応
@@ -459,10 +461,6 @@ def ohc_wear_analysis(config):
     #     image_name = image_path.split('/')[-1]
     #     # image_list_for_view.append([idx + 1, image_name])
     #     st.text(f"{idx + 1},{image_name}")
-
-    # ログアウトボタン
-    if st.sidebar.button("ログアウト"):
-        auth.logout()
 
 
 

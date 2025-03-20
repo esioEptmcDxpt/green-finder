@@ -6,6 +6,7 @@ opencv-python
 opencv-contrib-python
 matplotlib==3.5.3
 streamlit==1.43.0
+streamlit-authenticator==0.4.2
 pykalman==0.9.5
 pillow==9.4.0
 plotly==5.24.1

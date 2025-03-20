@@ -32,7 +32,7 @@ def track_kalman(outpath, camera_num, office, base_images, df_csv, idx, test_num
     config = appProperties('config.yml')
     y_l = y_init_l
     y_u = y_init_u
-    my_logger.setup_logging()    # logging設定を実行
+    my_logger.setup_logging(office=office)    # officeパラメータを追加
     # logger = logging.getLogger()    # ロガーを作成
     method = "kalman"    # 分析法を記録
     start = time.time()    # 処理の開始時刻を記録
@@ -105,7 +105,8 @@ def track_kalman(outpath, camera_num, office, base_images, df_csv, idx, test_num
                     start,
                     method,
                     image_path, trolley_id, idx, count,
-                    error_message
+                    error_message,
+                    office=office
                 )
                 break
             finally:
@@ -179,7 +180,8 @@ def track_kalman(outpath, camera_num, office, base_images, df_csv, idx, test_num
                     start,
                     method,
                     image_path, trolley_id, idx, count,
-                    error_message
+                    error_message,
+                    office=office
                 )
                 break
             finally:
@@ -245,7 +247,8 @@ def track_kalman(outpath, camera_num, office, base_images, df_csv, idx, test_num
                     start,
                     method,
                     image_path, trolley_id, idx, count,
-                    kalman_instance.trolley_end_reason[0] + "_" + error_message
+                    kalman_instance.trolley_end_reason[0] + "_" + error_message,
+                    office=office
                 )
 
             elif kalman_instance.error_flg == 2:
@@ -262,7 +265,8 @@ def track_kalman(outpath, camera_num, office, base_images, df_csv, idx, test_num
                     start,
                     method,
                     image_path, trolley_id, idx, count,
-                    kalman_instance.trolley_end_reason[0] + "_"  + error_message
+                    kalman_instance.trolley_end_reason[0] + "_"  + error_message,
+                    office=office
                 )
 
             elif kalman_instance.error_flg == 3:
@@ -279,7 +283,8 @@ def track_kalman(outpath, camera_num, office, base_images, df_csv, idx, test_num
                     start,
                     method,
                     image_path, trolley_id, idx, count,
-                    kalman_instance.trolley_end_reason[0] + "_"  + error_message
+                    kalman_instance.trolley_end_reason[0] + "_"  + error_message,
+                    office=office
                 )
             break
 
@@ -289,7 +294,8 @@ def track_kalman(outpath, camera_num, office, base_images, df_csv, idx, test_num
             "Analysis Complete",
             start,
             method,
-            image_path, trolley_id, idx, count
+            image_path, trolley_id, idx, count,
+            office=office
         )
 
     # エラー無く完了したらバルーン

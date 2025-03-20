@@ -1,0 +1,112 @@
+api_key: zcxz04434bq5q73icved1fs0ocaltj5d
+cookie:
+  expiry_days: 30
+  key: esio_cis_key
+  name: esio_cis_cookie
+credentials:
+  usernames:
+    akita:
+      email: hoge@jreast.co.jp
+      failed_login_attempts: 0
+      logged_in: false
+      name: akita
+      password: $2b$12$Yf2q0rBc4ptz9OyKfV86mOqc1OqUW6n8XmaHYW4E5Rwu.zCZsd3CG
+      password_reset_required: false
+    chiba:
+      email: hoge@jreast.co.jp
+      failed_login_attempts: 0
+      logged_in: false
+      name: chiba
+      password: $2b$12$wL7Ys5hNdiC5y4/OiBj5KO3LKSFUdvqAu0W7empJFbZaru1ejhlu2
+      password_reset_required: false
+    esiodxpt:
+      email: k-nagayama@jreast.co.jp
+      failed_login_attempts: 0
+      logged_in: false
+      name: esiodxpt
+      password: $2b$12$Jq.5mU6u2QwdKdb4K45YyepvoAbSitYBBjnIppZqQSGABWu/eOdd.
+      password_reset_required: false
+    hachioji:
+      email: hoge@jreast.co.jp
+      failed_login_attempts: 0
+      logged_in: false
+      name: hachioji
+      password: $2b$12$2PQAKKfDn7YqGtfgsH0.eeeLpm6CFSou1T/ISulXXfEGe6.TkVuB.
+      password_reset_required: false
+    mito:
+      email: hoge@jreast.co.jp
+      failed_login_attempts: 0
+      logged_in: false
+      name: mito
+      password: $2b$12$ySbpUKIDDQERbWJYmLRlWemQ8tDCrE8ibjlqx8zBNKfVjTyGWEVgK
+      password_reset_required: false
+    morioka:
+      email: hoge@jreast.co.jp
+      failed_login_attempts: 0
+      logged_in: false
+      name: morioka
+      password: $2b$12$Mv2CCp7BZnqP9LRboMBR/uzXPHBGKulRFcMJwfqSW6GeFLo22NDrq
+      password_reset_required: false
+    nagano:
+      email: hoge@jreast.co.jp
+      failed_login_attempts: 0
+      logged_in: false
+      name: nagano
+      password: $2b$12$XBTe5PFkZTeMaX.koYyCi.fshsJwzxfXmcYFPwo6vLDshSyHoEoWS
+      password_reset_required: false
+    niigata:
+      email: hoge@jreast.co.jp
+      failed_login_attempts: 0
+      logged_in: false
+      name: niigata
+      password: $2b$12$OWCq6Y/CR313qviXYQNv/OL4vDIaMn8b2nLE0k8k1x.SoMBnT5t6W
+      password_reset_required: false
+    oomiya:
+      email: hoge@jreast.co.jp
+      failed_login_attempts: 0
+      logged_in: false
+      name: oomiya
+      password: $2b$12$6QkJ7y2d9dKhrjfI6ROfvuHbCnqmza0zk3oEJJrBA803LDZpI2ody
+      password_reset_required: false
+    sendai:
+      email: hoge@jreast.co.jp
+      failed_login_attempts: 0
+      logged_in: false
+      name: sendai
+      password: $2b$12$WGbiDYgkW.m8ezMUCQ1ew.EOoOMsymFJTDe.6ZVvDcc.sTImt9iJq
+      password_reset_required: false
+    shinagawa:
+      email: hoge@jreast.co.jp
+      failed_login_attempts: 0
+      logged_in: false
+      name: shinagawa
+      password: $2b$12$T5HnzXYweR5y6BHvCQOONerp.Cndg3OQ8.10IlH3yRq3CC3k2v3y.
+      password_reset_required: false
+    shinjuku:
+      email: hoge@jreast.co.jp
+      failed_login_attempts: 0
+      logged_in: false
+      name: shinjuku
+      password: $2b$12$yquTYP5xDeUbWcX40fp2oOsS1zFmEEZrqGY81aw6ZQWxrGAl5FqtK
+      password_reset_required: false
+    takasaki:
+      email: hoge@jreast.co.jp
+      failed_login_attempts: 0
+      logged_in: false
+      name: takasaki
+      password: $2b$12$NHM.ivyRfOdibjtL2kr5.euJCFYDQL0xDE4SNtCsQZ/ksEugbGc0i
+      password_reset_required: false
+    ueno:
+      email: hoge@jreast.co.jp
+      failed_login_attempts: 0
+      logged_in: false
+      name: ueno
+      password: $2b$12$WV1R6MRlaoyRUWrHFpOYVO6GZ1TCnkhqQfkAq5dO4zz9t0UTNtXc.
+      password_reset_required: false
+    yokohama:
+      email: hoge@jreast.co.jp
+      failed_login_attempts: 0
+      logged_in: false
+      name: yokohama
+      password: $2b$12$pm0etcuR441GMF5BWhkpU.KR9XY.F5ppIHpCUiyd369lRwniZEZme
+      password_reset_required: false

@@ -11,6 +11,9 @@ app/TDM/
 app/trolley_line_analysis.egg-info/
 .dev/
 
+# Stramlit
+app/.streamlit/secrets.toml
+
 # Python
 __pycache__/
 *.py[cod]

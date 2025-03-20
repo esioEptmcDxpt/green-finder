@@ -84,17 +84,19 @@ def upload_results(config, office, s3_rail_path):
 def data_loader(config):
     # マルチページの設定
     st.set_page_config(page_title="データ管理", layout="wide")
-    # 認証チェック
-    if not auth.check_authentication():
+
+    # 認証マネージャーの初期化
+    auth_manager = auth.AuthenticationManager()
+    # 認証処理とUI表示
+    is_authenticated = auth_manager.authenticate_page(title="トロリ線摩耗判定支援システム")
+    # 認証済みの場合のみコンテンツを表示
+    if not is_authenticated:
         return
+
     st.sidebar.header("画像データダウンロード")
 
     info_view = st.container()
     df_view = st.container()
-
-    # デフォルトの技セを設定
-    # 仮に設定： Cognito ユーザ名から取得する用に変更する
-    office_default = "takasaki"
 
     # 箇所名を選択
     if 'office' not in st.session_state:
@@ -103,7 +105,7 @@ def data_loader(config):
     # 技セ・MCを選択
     if "office_dialog" not in st.session_state:
         if st.sidebar.button("技セ・MCを選択"):
-            set_office(config, office_default)
+            set_office(config, st.session_state['name'])
 
     # 選択された技セ・MCを表示
     if not st.session_state.office:
@@ -231,11 +233,6 @@ def data_loader(config):
     except Exception as e:
         st.error("該当するデータがありません")
         st.error(f"Error message> {e}")
-
-
-    # ログアウトボタン
-    if st.sidebar.button("ログアウト"):
-        auth.logout()
 
 
 if __name__ == "__main__":

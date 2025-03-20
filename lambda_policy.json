@@ -1,0 +1,27 @@
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Effect": "Allow",
+      "Action": [
+        "logs:CreateLogGroup",
+        "logs:CreateLogStream",
+        "logs:PutLogEvents"
+      ],
+      "Resource": "arn:aws:logs:*:*:*"
+    },
+    {
+      "Effect": "Allow",
+      "Action": [
+        "cognito-idp:InitiateAuth",
+        "cognito-idp:RespondToAuthChallenge",
+        "cognito-idp:GetUser",
+        "cognito-idp:RevokeToken",
+        "cognito-idp:AdminGetUser",
+        "cognito-idp:AdminInitiateAuth",
+        "cognito-idp:AdminRespondToAuthChallenge"
+      ],
+      "Resource": "arn:aws:cognito-idp:ap-northeast-1:*:userpool/ap-northeast-1_OPZscsccQ"
+    }
+  ]
+}
