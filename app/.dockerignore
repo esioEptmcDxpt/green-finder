@@ -25,4 +25,6 @@ images
 output
 utils
 tests
+logs
+TDM
 .streamlit/secrets.toml.example

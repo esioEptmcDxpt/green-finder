@@ -179,7 +179,7 @@ def put_log(level, message, start, method, image_path, trolley_id, idx, count, e
     logger = logging.getLogger()
 
     image_name = image_path.split('/')[-1]
-    dir_area, camera_num = image_path.split("/")[1:3]
+    dir_area, camera_num = image_path.split("/")[3:5]
 
     extra = {
         "log_level": level.upper(),

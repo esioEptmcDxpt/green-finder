@@ -9,8 +9,8 @@ aws ecr get-login-password --region ap-northeast-1 | docker login --username AWS
 # (エラーが出る場合用) 既存のコンテナがあれば一度削除
 # docker-compose down
 
-# プラットフォームを明示的に指定してビルド（重要な変更点）
-docker buildx build --platform linux/amd64 -t esio-cis:latest .
+# プラットフォームを明示的に指定してビルド（ARM64に変更）
+docker buildx build --platform linux/arm64 -t esio-cis:latest .
 # イメージをタグ付け
 docker tag esio-cis:latest 326497581172.dkr.ecr.ap-northeast-1.amazonaws.com/esio-cis:latest
 # イメージをECRにプッシュ

@@ -79,6 +79,9 @@ class AuthenticationManager:
             if self.api_key:
                 auth_config['api_key'] = self.api_key
             
+            # オフラインモードを追加（GitHubへの接続を回避）
+            # auth_config['cloud_bypass'] = True
+            
             st.session_state['authenticator'] = stauth.Authenticate(**auth_config)
         
         self.authenticator = st.session_state['authenticator']
