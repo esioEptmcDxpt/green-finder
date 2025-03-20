@@ -28,3 +28,4 @@ tests
 logs
 TDM
 .streamlit/secrets.toml.example
+graph_recent.html

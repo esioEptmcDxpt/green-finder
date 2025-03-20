@@ -300,8 +300,18 @@ def result_image_view(config):
                 st.error("解析結果がありません")
             else:
                 st.image(out_img)
-                out_img_name = f"downloaded_image_{idx}-{idx + concat_nums - 1}_analized.png"          # 2024.5.21
-                vis.download_image(out_img, out_img_name)                                          # 2024.5.21
+                out_img_name = f"downloaded_image_{idx}-{idx + concat_nums - 1}_analized.png"
+                vis.download_image(out_img, out_img_name)
+                
+                # 2つの画像をまとめてダウンロードするボタンを追加
+                st.write("複数ファイルのダウンロード:")
+                vis.download_images_zip(
+                    cam_img, 
+                    cam_img_name, 
+                    out_img, 
+                    out_img_name, 
+                    f"images_{idx}-{idx + concat_nums - 1}.zip"
+                )
         if graph_add_flag:
             with st.spinner("グラフ作成中"):
                 if ix_view_range_start <= ix_view_range_end:
@@ -333,6 +343,17 @@ def result_image_view(config):
                     st.error("# 🙇🏻‍♂️ グラフを作成できませんでした。")
                 else:
                     graph_view.bokeh_chart(grid, use_container_width=True)
+                    
+                    # 画像2つとHTMLファイルをまとめてダウンロードするボタンを追加
+                    st.write("画像と解析グラフをまとめてダウンロード:")
+                    vis.download_images_and_html_zip(
+                        cam_img, 
+                        cam_img_name, 
+                        out_img, 
+                        out_img_name, 
+                        'graph_recent.html',
+                        f"images_graph_{idx}-{idx + concat_nums - 1}.zip"
+                    )
                 # for matplotlib
                 # fig, (ax1, ax2, ax3, ax4) = vis.plot_fig_plt(
                 #     config,

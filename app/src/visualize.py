@@ -19,6 +19,7 @@ import io
 import plotly
 import plotly.graph_objs as go
 from plotly.subplots import make_subplots
+import zipfile
 
 
 # @st.cache_data(hash_funcs={matplotlib.figure.Figure: lambda _: None})
@@ -1076,4 +1077,81 @@ def display_welcome_page():
             st.image(image_path, use_container_width=True)
         except Exception as e:
             st.warning(f"画像の読み込みに失敗しました: {e}")
+    
+
+def download_files_as_zip(files_data, zip_filename):
+    """
+    複数のファイルをZIPにまとめてダウンロードする
+    
+    Args:
+        files_data (list): ファイルデータのリスト [(ファイル名, ファイルデータ, MIMEタイプ), ...]
+        zip_filename (str): ダウンロードするZIPファイル名
+    """
+    # メモリ上にZIPファイルを作成
+    zip_buffer = io.BytesIO()
+    with zipfile.ZipFile(zip_buffer, 'a', zipfile.ZIP_DEFLATED, False) as zip_file:
+        for filename, data, mime_type in files_data:
+            if isinstance(data, Image.Image):
+                # PILイメージの場合は一度バイトに変換
+                img_byte_arr = io.BytesIO()
+                data.save(img_byte_arr, format='PNG')
+                zip_file.writestr(filename, img_byte_arr.getvalue())
+            elif isinstance(data, str) and mime_type == 'text/html':
+                # HTMLテキストデータの場合
+                zip_file.writestr(filename, data.encode('utf-8'))
+            else:
+                # バイナリデータの場合
+                zip_file.writestr(filename, data)
+    
+    # ZIPファイルをダウンロード
+    st.download_button(
+        label=f"ファイルをZIPでダウンロード ({len(files_data)}ファイル)",
+        data=zip_buffer.getvalue(),
+        file_name=zip_filename,
+        mime="application/zip"
+    )
+
+
+def download_images_zip(img1, img1_name, img2, img2_name, zip_name="downloaded_images.zip"):
+    """
+    2つの画像をZIPファイルにまとめてダウンロードする
+    
+    Args:
+        img1 (PIL.Image): 1つ目の画像
+        img1_name (str): 1つ目の画像ファイル名
+        img2 (PIL.Image): 2つ目の画像
+        img2_name (str): 2つ目の画像ファイル名
+        zip_name (str): ダウンロードするZIPファイル名
+    """
+    files_data = [
+        (img1_name, img1, "image/png"),
+        (img2_name, img2, "image/png")
+    ]
+    download_files_as_zip(files_data, zip_name)
+
+
+def download_images_and_html_zip(img1, img1_name, img2, img2_name, html_path, zip_name="analysis_result.zip"):
+    """
+    2つの画像とHTMLファイルをZIPファイルにまとめてダウンロードする
+    
+    Args:
+        img1 (PIL.Image): 1つ目の画像
+        img1_name (str): 1つ目の画像ファイル名
+        img2 (PIL.Image): 2つ目の画像
+        img2_name (str): 2つ目の画像ファイル名
+        html_path (str): HTMLファイルのパス
+        zip_name (str): ダウンロードするZIPファイル名
+    """
+    try:
+        with open(html_path, 'r', encoding='utf-8') as f:
+            html_data = f.read()
+            
+        files_data = [
+            (img1_name, img1, "image/png"),
+            (img2_name, img2, "image/png"),
+            (os.path.basename(html_path), html_data, "text/html")
+        ]
+        download_files_as_zip(files_data, zip_name)
+    except Exception as e:
+        st.error(f"HTMLファイルの読み込みに失敗しました: {e}")
     
