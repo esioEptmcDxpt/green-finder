@@ -1070,19 +1070,16 @@ def display_welcome_page():
         st.image('icons/cis_page-eye-catch.jpg', use_container_width=True)
     except Exception:
         try:
-            # 絶対パスで試行
-            import os
             base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
             image_path = os.path.join(base_dir, 'icons', 'cis_page-eye-catch.jpg')
             st.image(image_path, use_container_width=True)
         except Exception as e:
             st.warning(f"画像の読み込みに失敗しました: {e}")
-    
 
 def download_files_as_zip(files_data, zip_filename):
     """
     複数のファイルをZIPにまとめてダウンロードする
-    
+
     Args:
         files_data (list): ファイルデータのリスト [(ファイル名, ファイルデータ, MIMEタイプ), ...]
         zip_filename (str): ダウンロードするZIPファイル名

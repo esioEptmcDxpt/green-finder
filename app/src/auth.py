@@ -15,6 +15,7 @@ import json
 import urllib3
 from requests.adapters import HTTPAdapter
 from urllib3.util.retry import Retry
+import secrets
 
 
 class AuthenticationManager:
@@ -44,6 +45,10 @@ class AuthenticationManager:
         # リセット後のユーザー名保存
         if 'reset_username' not in st.session_state:
             st.session_state['reset_username'] = None
+        
+        # セッション識別子の初期化
+        if 'session_id' not in st.session_state:
+            st.session_state['session_id'] = secrets.token_hex(16)
         
         # ユーザー情報の読み込み
         self.load_user_info()
