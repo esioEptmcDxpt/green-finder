@@ -303,6 +303,57 @@ def get_columns_from_csv(bucket_name, columns_csv_key):
     return columns_df.columns.tolist()
 
 
+def delete_s3_dir(bucket, s3_dir):
+    """S3のディレクトリ（プレフィックス）とその中のファイルをすべて削除する
+    
+    Args:
+        bucket (str): S3バケット名
+        s3_dir (str): 削除対象のS3プレフィックス
+    """
+    try:
+        s3 = boto3.resource('s3')
+        bucket = s3.Bucket(bucket)
+        bucket.objects.filter(Prefix=s3_dir).delete()
+        return True
+    except Exception as e:
+        print(f"S3ディレクトリの削除に失敗しました: {e}")
+        return False
+
+def delete_s3_file(bucket, s3_path):
+    """S3の特定のファイルを削除する
+    
+    Args:
+        bucket (str): S3バケット名
+        s3_path (str): 削除対象のS3ファイルパス
+    """
+    try:
+        s3 = boto3.client('s3')
+        s3.delete_object(Bucket=bucket, Key=s3_path)
+        return True
+    except Exception as e:
+        print(f"S3ファイルの削除に失敗しました: {e}")
+        return False
+
+
+def check_s3_dir_exists(bucket, s3_dir):
+    """S3上の指定ディレクトリ（プレフィックス）が存在するか確認する
+    
+    Args:
+        bucket (str): S3バケット名
+        s3_dir (str): 確認対象のS3プレフィックス
+    
+    Returns:
+        bool: ディレクトリが存在すればTrue
+    """
+    try:
+        s3_client = boto3.client('s3')
+        response = s3_client.list_objects_v2(Bucket=bucket, Prefix=s3_dir, MaxKeys=1)
+        return 'Contents' in response
+    except Exception as e:
+        print(f"S3ディレクトリの確認に失敗しました: {e}")
+        return False
+
+
 def get_KiroTei_dict(config, df):
     """ 走行日・線区ごとのキロ程補正情報を辞書に記録する
     """

@@ -49,15 +49,37 @@ def download_images(config, office, s3_rail_path):
     st.write(f"(参考)処理時間> {prc_time}")
 
 
-def delete_images(config, office, ebs_rail_path):
-    """ システム上に保存されている画像データを削除する
+def delete_data(config, office, ebs_rail_path):
+    """ システム上に保存されている画像データと関連する解析結果、画像キロ程インデックスを削除する
     Args:
         config(object): 設定ファイル
         ebs_rail_path(str): ダウンロード対象のパス
     """
-    with st.spinner("CISに保存されている画像を削除中"):
-        helpers.imgs_dir_remove(f"{config.image_dir}/{office}/{ebs_rail_path}/")
-    st.warning("CISに保存されている画像データを削除しました")
+    with st.spinner("CISに保存されているデータを削除中"):
+        deleted_items = []
+        
+        # 画像データを削除
+        image_path = f"{config.image_dir}/{office}/{ebs_rail_path}/"
+        if os.path.exists(image_path):
+            helpers.imgs_dir_remove(image_path)
+            deleted_items.append("画像データ")
+        
+        # 解析結果を削除
+        output_path = f"{config.output_dir}/{office}/{ebs_rail_path}/"
+        if os.path.exists(output_path):
+            helpers.imgs_dir_remove(output_path)
+            deleted_items.append("解析結果")
+            
+        # 画像キロ程インデックスを削除
+        tdm_path = f"{config.tdm_dir}/{office}/{ebs_rail_path}.json"
+        if os.path.exists(tdm_path):
+            helpers.file_remove(tdm_path)
+            deleted_items.append("画像キロ程インデックス")
+        
+        if deleted_items:
+            st.warning(f"CISに保存されている{', '.join(deleted_items)}を削除しました")
+        else:
+            st.info("CISに削除対象のデータが見つかりませんでした")
 
 
 def upload_results(config, office, s3_rail_path):
@@ -82,6 +104,53 @@ def upload_results(config, office, s3_rail_path):
     dt02 = datetime.datetime.now()
     prc_time = dt02 - dt01
     st.write(f"(参考)処理時間> {prc_time}")
+
+
+def delete_s3_data(config, office, rail_path, delete_type):
+    """S3に保存されているデータを削除する
+    
+    Args:
+        config (object): 設定ファイル
+        office (str): 技セ/MCの指定
+        rail_path (str): 削除対象のパス
+        delete_type (str): 削除タイプ（'images', 'results', 'both'）
+    """
+    dt01 = datetime.datetime.now()
+    deleted_any = False
+    
+    with st.spinner("S3からデータを削除中"):
+        if delete_type in ['images', 'both']:
+            # 画像データを削除
+            s3_dir = f"{config.image_dir.replace('efs/', '')}/{office}/{rail_path}/"
+            if helpers.check_s3_dir_exists(config.bucket, s3_dir):
+                success = helpers.delete_s3_dir(config.bucket, s3_dir)
+                if success:
+                    st.success("S3から画像データを削除しました")
+                    deleted_any = True
+                else:
+                    st.error("S3からの画像データ削除に失敗しました")
+            else:
+                st.info("S3に削除対象の画像データが見つかりませんでした")
+                
+        if delete_type in ['results', 'both']:
+            # 解析結果を削除
+            s3_dir = f"{config.output_dir.replace('efs/', '')}/{office}/{rail_path}/"
+            if helpers.check_s3_dir_exists(config.bucket, s3_dir):
+                success = helpers.delete_s3_dir(config.bucket, s3_dir)
+                if success:
+                    st.success("S3から解析結果を削除しました")
+                    deleted_any = True
+                else:
+                    st.error("S3からの解析結果削除に失敗しました")
+            else:
+                st.info("S3に削除対象の解析結果が見つかりませんでした")
+    
+    dt02 = datetime.datetime.now()
+    prc_time = dt02 - dt01
+    st.write(f"(参考)処理時間> {prc_time}")
+    
+    return deleted_any
+
 
 def data_loader(config):
     # マルチページの設定
@@ -122,15 +191,14 @@ def data_loader(config):
     else:
         st.sidebar.write(f"選択箇所: {helpers.get_office_message(config, st.session_state.office)}")
 
-    modes = ("画像をダウンロード", "不要なファイルを削除", "解析結果をアップロード")    # アップロード機能が追加できたら有効化する
-    # modes = ("画像をダウンロード", "不要なファイルを削除")
+    modes = ("画像をダウンロード", "データを削除", "解析結果をアップロード")
     mode = st.sidebar.radio("操作方法を選択", modes)
 
     if modes.index(mode) == 0:
         mode_info = "# 画像データをダウンロード"
         mode_type = "ダウンロード"
     elif modes.index(mode) == 1:
-        mode_info = "# 不要な画像を削除する"
+        mode_info = "# データを削除する"
         mode_type = "削除"
     elif modes.index(mode) == 2:
         mode_info = "# 画像データをアップロード"
@@ -145,6 +213,17 @@ def data_loader(config):
 
     # 線区を選択
     info_view.write(mode_info)
+
+    # 削除モードの場合の処理を変更
+    if modes.index(mode) == 1:
+        # 削除方法のオプションを追加
+        info_view.error("### ⚠️ 削除対象を選択してください")
+        delete_options = ["__アプリ(CIS)__ の __データ__ を削除", "__サーバ(S3)__ の __画像データ__ を削除", "__サーバ(S3)__ の __解析結果__ を削除", "__サーバ(S3)__ の __画像＆解析結果__ をすべて削除", "__アプリ(CIS)__ と __サーバ(S3)__ の __画像＆解析結果__ をすべて削除"]
+        delete_option = info_view.radio("削除する場所と対象を選択　※選んだ線区フォルダに関係するデータのみ削除します", delete_options)
+
+        # 削除対象がS3を含むかどうかを判定
+        is_s3_delete = "__サーバ(S3)__" in delete_option
+
     is_search_box_visible = st.sidebar.toggle("検索ボックスを表示する", key="search_check")
     if is_search_box_visible:
         # 線名を指定
@@ -153,15 +232,23 @@ def data_loader(config):
         # 線別を指定
         rail_type_jpn = st.sidebar.selectbox("線別を選択", list(config.rail_type_names.values()), key="type_key")
         rail_type = [key for key, value in config.rail_type_names.items() if value == rail_type_jpn][0]
-        if modes.index(mode) == 0:
+        
+        # モードに応じてリスト取得方法を変更
+        if modes.index(mode) == 0 or (modes.index(mode) == 1 and is_s3_delete):
+            # ダウンロードモード、またはS3削除モードの場合はS3からリスト取得
             rail_list = helpers.get_s3_dir_list(f"{config.image_dir.replace('efs/', '')}/{st.session_state.office}", config.bucket)
-        elif modes.index(mode) == 1 or modes.index(mode) == 2:
+        else:
+            # その他のモードはローカルからリスト取得
             rail_list = helpers.list_imagespath_nonCache(f"{config.image_dir}/{st.session_state.office}")
+        
         target_rail_list = [item for item in rail_list if item.split('_')[0] == rail_key and rail_type in item]
     else:
-        if modes.index(mode) == 0:
+        # モードに応じてリスト取得方法を変更
+        if modes.index(mode) == 0 or (modes.index(mode) == 1 and is_s3_delete):
+            # ダウンロードモード、またはS3削除モードの場合はS3からリスト取得
             target_rail_list = helpers.get_s3_dir_list(f"{config.image_dir.replace('efs/', '')}/{st.session_state.office}", config.bucket)
         elif modes.index(mode) == 1 or modes.index(mode) == 2:
+            # その他の場合はローカルからリスト取得
             target_rail_list = helpers.list_imagespath_nonCache(f"{config.image_dir}/{st.session_state.office}")
         else:
             target_rail_list = []
@@ -198,15 +285,39 @@ def data_loader(config):
             st.error("線区フォルダを選択してください")
             return
 
-        info_view.write("## ___Step2___ 問題なければ👇を押す")
+        info_view.divider()
         if modes.index(mode) == 1:
-            info_view.write("⚠️ CISに保存されているデータを削除します（サーバ(S3)のデータは削除されません）")
+            info_view.write("## ___Step2___ 削除対象を確認してから👇️を押す")
+        else:
+            info_view.write("## ___Step2___ 問題なければ👇を押す")
+
+        if modes.index(mode) == 1:
+            if delete_option == "__アプリ(CIS)__ の __データ__ を削除":
+                info_view.write("⚠️ CISに保存されている画像データ、解析結果、画像キロ程インデックスを削除します（サーバ(S3)のデータは削除されません）")
+            elif delete_option == "__サーバ(S3)__ の __画像データ__ を削除":
+                info_view.write("⚠️ S3サーバーに保存されている画像データを削除します（CISのデータは削除されません）")
+            elif delete_option == "__サーバ(S3)__ の __解析結果__ を削除":
+                info_view.write("⚠️ S3サーバーに保存されている解析結果を削除します（CISのデータは削除されません）")
+            elif delete_option == "__サーバ(S3)__ の __画像＆解析結果__ をすべて削除":
+                info_view.write("⚠️ S3サーバーに保存されている画像データと解析結果をすべて削除します（CISのデータは削除されません）")
+            elif delete_option == "__アプリ(CIS)__ と __サーバ(S3)__ の __画像＆解析結果__ をすべて削除":
+                info_view.write("⚠️ CISとS3サーバーに保存されているすべてのデータを削除します（この操作は元に戻せません）")
         if info_view.button(f"線区フォルダのデータを{mode_type}する"):
             with info_view:
                 if modes.index(mode) == 0:
                     download_images(config, st.session_state.office, rail_path)
                 elif modes.index(mode) == 1:
-                    delete_images(config, st.session_state.office, rail_path)
+                    if delete_option == "__アプリ(CIS)__ の __データ__ を削除":
+                        delete_data(config, st.session_state.office, rail_path)
+                    elif delete_option == "__サーバ(S3)__ の __画像データ__ を削除":
+                        delete_s3_data(config, st.session_state.office, rail_path, 'images')
+                    elif delete_option == "__サーバ(S3)__ の __解析結果__ を削除":
+                        delete_s3_data(config, st.session_state.office, rail_path, 'results')
+                    elif delete_option == "__サーバ(S3)__ の __画像＆解析結果__ をすべて削除":
+                        delete_s3_data(config, st.session_state.office, rail_path, 'both')
+                    elif delete_option == "__アプリ(CIS)__ と __サーバ(S3)__ の __画像＆解析結果__ をすべて削除":
+                        delete_data(config, st.session_state.office, rail_path)
+                        delete_s3_data(config, st.session_state.office, rail_path, 'both')
                 elif modes.index(mode) == 2:
                     upload_results(config, st.session_state.office, rail_path)
         if modes.index(mode) == 0:
