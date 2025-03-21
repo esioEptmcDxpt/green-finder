@@ -6,7 +6,7 @@ import pygwalker as pyg
 import pandas as pd
 from src.config import appProperties
 import src.logger as my_logger
-import src.auth as auth
+import src.auth_aws as auth
 import src.helpers as helpers
 import os
 import datetime
@@ -38,6 +38,9 @@ def log_management(config):
     if not is_authenticated:
         return
 
+    # 認証情報からユーザー名を取得
+    username = auth_manager.authenticator.get_username()
+
     st.sidebar.header("トロリ線摩耗検出システム")
 
     # 箇所名を選択
@@ -47,7 +50,7 @@ def log_management(config):
     # 技セ・MCを選択
     if "office_dialog" not in st.session_state:
         if st.sidebar.button("技セ・MCを選択"):
-            set_office(config, st.session_state['name'])
+            set_office(config, username)
 
     # 選択された技セ・MCを表示
     if not st.session_state.office:
@@ -67,7 +70,7 @@ def log_management(config):
     date_str = selected_date.strftime('%Y%m%d')
 
     # 選択された日付に基づいてログファイルのパスを取得
-    log_path = my_logger.get_log_path(office=st.session_state.office, date=date_str)
+    log_path = my_logger.get_log_path(office=st.session_state.office, date=date_str, config=config)
     st.sidebar.info(f"解析ログファイル: {log_path}")
 
     # ログファイルの存在確認
@@ -76,7 +79,7 @@ def log_management(config):
         st.stop()
     
     # ログの読み込み
-    df = my_logger.load_logs(office=st.session_state.office, date=date_str)
+    df = my_logger.load_logs(office=st.session_state.office, date=date_str, config=config)
     if len(df.columns) < 2:
         st.warning("ログがありません")
         st.stop()
@@ -131,7 +134,7 @@ def log_management(config):
             if submit:
                 log_view.error("デバッグ用 ログを削除しました💥")
                 log_view.write("※再度ログを見るときは、チェックを外すか、画面をリロードしてください")
-                my_logger.reset_logging(office=st.session_state.office)
+                my_logger.reset_logging(office=st.session_state.office, config=config)
                 st.stop()
 
     return

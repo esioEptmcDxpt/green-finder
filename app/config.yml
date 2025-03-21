@@ -1,9 +1,10 @@
 default:
-  image_dir: images
-  output_dir: output
+  image_dir: efs/images
+  output_dir: efs/output
   kiro_dir: img2kiro
   csv_fname: rail
-  tdm_dir: TDM
+  tdm_dir: efs/TDM
+  log_dir: efs/logs
   bucket: contact-wire-inspection-system
   kiro_prefix: img-location-table
   kiro_columns_name: TDM_GazoFileIndex_ColumnsName.csv

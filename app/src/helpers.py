@@ -336,15 +336,16 @@ def set_imgKiro(config, dir_area, office, df_tdm, KiroTei_dict):
     for camera_num in config.camera_types:
         # カメラフォルダ内の画像ファイルを取得
         image_dir = f"{config.image_dir}/{office}/{dir_area}/{camera_num}/"
-        # print(image_dir)
+        # st.write(f"image_dir: {image_dir}")
         base_images = list_images(image_dir)
-        # print(f"Image counts:{len(list_images)}")
+        # st.write(f"Image counts:{len(base_images)}")
 
         # 補正後の KiroTei_delta を呼び出すためのキーを取得
         image_name = base_images[0].split('/')[-1]
+        # st.write(f"image_name: {image_name}")
         date = df_tdm[df_tdm[f'GazoFileName{camera_num}'] == image_name.split(".")[0]].iloc[0]['SokuteiDate']
         ekicd = df_tdm[df_tdm[f'GazoFileName{camera_num}'] == image_name.split(".")[0]].iloc[0]['EkiCd']
-        # print(f"debug>>> {dir_area} {camera_num} >>> {date=}, {ekicd=}")
+        # st.write(f"debug>>> {dir_area} {camera_num} >>> {date=}, {ekicd=}")
 
         # 画像ファイル名に対応するキロ程を抽出して辞書型で記録する
         imgKilo_temp = {}
@@ -430,7 +431,7 @@ def get_img2kiro(config, dir_area, office, base_images, csv_files):
     meas_idx = image_name.split("_")[1]               # 年度通番
     meas_senku = dir_area.split('_')[0]               # 線区
     meas_kukan = dir_area.split('_')[2]               # 区間
-    # print(f"測定年度: {meas_year}  年度通番: {meas_idx}  線区: {meas_senku}  区間: {meas_kukan}")
+    # st.write(f"測定年度: {meas_year}  年度通番: {meas_idx}  線区: {meas_senku}  区間: {meas_kukan}")
 
     # 手持ち線区フォルダと一致するCSVをS3から探す
     if_get_csv_file = False

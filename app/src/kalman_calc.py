@@ -32,7 +32,7 @@ def track_kalman(outpath, camera_num, office, base_images, df_csv, idx, test_num
     config = appProperties('config.yml')
     y_l = y_init_l
     y_u = y_init_u
-    my_logger.setup_logging(office=office)    # officeパラメータを追加
+    my_logger.setup_logging(office=office, config=config)    # officeパラメータを追加
     # logger = logging.getLogger()    # ロガーを作成
     method = "kalman"    # 分析法を記録
     start = time.time()    # 処理の開始時刻を記録
@@ -45,7 +45,7 @@ def track_kalman(outpath, camera_num, office, base_images, df_csv, idx, test_num
 
     # 画像ファイルとキロ程を紐づけるためのJSONファイルを辞書として読み込む
     if kiro_data:
-        dir_area = base_images[idx].split("/")[3]    # image_pathから線区情報を読取る
+        dir_area = base_images[idx].split("/")[4]    # image_pathから線区情報を読取る
         with open(f"{config.tdm_dir}/{office}/{dir_area}.json", 'r') as file:
             kiro_dict = json.load(file)
         # 画像ファイル名がkiro_dictに含まれる範囲をリストで取得 [idx_head, idx_tail]
@@ -60,7 +60,7 @@ def track_kalman(outpath, camera_num, office, base_images, df_csv, idx, test_num
     for image_path in base_images[idx:(idx + test_num)]:
         # 解析条件を記録
         image_name = image_path.split('/')[-1]
-        dir_area, camera_num = image_path.split("/")[3:5]    # image_pathから線区情報を読取る
+        dir_area, camera_num = image_path.split("/")[4:6]    # image_pathから線区情報を読取る
         # 結果保存用のCSVファイル(rail)の保存パスを指定
         image_name_noExtension = os.path.splitext(os.path.basename(image_name))[0]
         rail_fpath = f"{outpath}/{config.csv_fname}_{image_name_noExtension}.csv"
@@ -106,7 +106,8 @@ def track_kalman(outpath, camera_num, office, base_images, df_csv, idx, test_num
                     method,
                     image_path, trolley_id, idx, count,
                     error_message,
-                    office=office
+                    office=office,
+                    config=config
                 )
                 break
             finally:
@@ -181,7 +182,8 @@ def track_kalman(outpath, camera_num, office, base_images, df_csv, idx, test_num
                     method,
                     image_path, trolley_id, idx, count,
                     error_message,
-                    office=office
+                    office=office,
+                    config=config
                 )
                 break
             finally:
@@ -248,7 +250,8 @@ def track_kalman(outpath, camera_num, office, base_images, df_csv, idx, test_num
                     method,
                     image_path, trolley_id, idx, count,
                     kalman_instance.trolley_end_reason[0] + "_" + error_message,
-                    office=office
+                    office=office,
+                    config=config
                 )
 
             elif kalman_instance.error_flg == 2:
@@ -266,7 +269,8 @@ def track_kalman(outpath, camera_num, office, base_images, df_csv, idx, test_num
                     method,
                     image_path, trolley_id, idx, count,
                     kalman_instance.trolley_end_reason[0] + "_"  + error_message,
-                    office=office
+                    office=office,
+                    config=config
                 )
 
             elif kalman_instance.error_flg == 3:
@@ -284,7 +288,8 @@ def track_kalman(outpath, camera_num, office, base_images, df_csv, idx, test_num
                     method,
                     image_path, trolley_id, idx, count,
                     kalman_instance.trolley_end_reason[0] + "_"  + error_message,
-                    office=office
+                    office=office,
+                    config=config
                 )
             break
 
@@ -295,7 +300,8 @@ def track_kalman(outpath, camera_num, office, base_images, df_csv, idx, test_num
             start,
             method,
             image_path, trolley_id, idx, count,
-            office=office
+            office=office,
+            config=config
         )
 
     # エラー無く完了したらバルーン

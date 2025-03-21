@@ -5,10 +5,12 @@
 tts.log
 
 # 作業用フォルダ
+efs/
 app/images/
 app/output/
 app/TDM/
 app/trolley_line_analysis.egg-info/
+app/logs/
 .dev/
 
 # Stramlit

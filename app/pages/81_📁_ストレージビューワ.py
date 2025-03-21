@@ -4,7 +4,7 @@ import datetime
 import pandas as pd
 from pathlib import Path
 from src.config import appProperties
-import src.auth as auth
+import src.auth_aws as auth
 
 
 def get_directory_size(path):
@@ -235,7 +235,11 @@ def storage_viewer(config):
     if not is_authenticated:
         return
     
-    if st.session_state['name'] != 'esiodxpt':
+    # 認証情報からユーザー名を取得
+    username = auth_manager.authenticator.get_username()
+    
+    # 開発者チェック
+    if username != 'esiodxpt':
         st.error("このページは開発者向けのため利用できません")
         st.info("利用を希望する場合は、管理者までお問い合わせください")
         return

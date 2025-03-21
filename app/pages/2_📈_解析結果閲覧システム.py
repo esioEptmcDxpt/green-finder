@@ -1,7 +1,7 @@
 import streamlit as st
 import src.helpers as helpers
 import src.visualize as vis
-import src.auth as auth
+import src.auth_aws as auth
 from src.config import appProperties
 import os
 import io
@@ -35,6 +35,10 @@ def result_image_view(config):
     # 認証済みの場合のみコンテンツを表示
     if not is_authenticated:
         return
+        # pass    # ローカル環境でテストする場合に有効化する。デプロイ前には必ずコメントアウトすること
+
+    # 認証情報からユーザー名を取得
+    username = auth_manager.authenticator.get_username()
 
     st.sidebar.header("解析結果閲覧システム")
 
@@ -52,7 +56,7 @@ def result_image_view(config):
     # 技セ・MCを選択
     if "office_dialog" not in st.session_state:
         if st.sidebar.button("技セ・MCを選択"):
-            set_office(config, st.session_state['name'])
+            set_office(config, username)
 
     # 選択された技セ・MCを表示
     if not st.session_state.office:
@@ -373,36 +377,38 @@ def result_image_view(config):
 
     # 解析結果があるかをサイドバーに表示する
     st.sidebar.markdown("# 参考 結果有無👇")
-    # try:                                                                     # 2024.5.22 -->
-    #     with open(rail_fpath) as csv:
-    #         st.sidebar.download_button(
-    #             label="CSVファイルをダウンロード",
-    #             data=csv,
-    #             file_name=dir_area + "_" + camera_num + "_output.csv",
-    #             mime="text/csv"
-    #         )
-    # except Exception as e:
     exist_csv = helpers.search_csv(outpath)
     if not exist_csv:
-        st.sidebar.error("CSVファイルがありません")
-        # st.sidebar.write(f"Error> {e}")                                       # --> 2024.5.22
-    csv_delete_btn = st.sidebar.button("結果CSVデータを削除する")
-    if csv_delete_btn:
-        if os.path.exists(rail_fpath):
-            helpers.file_remove(rail_fpath)
-            st.error("CSVファイルを削除しました")
-        else:
-            st.error("削除するCSVファイルがありません")
+        st.sidebar.error("CSVファイルがありません。別の線区・カメラを選択してください。")
+    else:
+        csv_downloader = st.sidebar.checkbox("ダウンロード用CSVファイルを準備する✔")
+        if csv_downloader:
+            with st.spinner("一生懸命CSVを準備しています🐭"):
+                df_csv = helpers.rail_csv_concat(outpath)
+                csv_data = df_csv.to_csv(index=False).encode('utf-8-sig')
+            try:
+                with open(rail_fpath) as csv:
+                    st.sidebar.download_button(
+                        label="CSVファイルをダウンロード",
+                        data=csv_data,
+                        file_name=dir_area + "_" + camera_num + "_output.csv",
+                        mime="text/csv"
+                    )
+            except Exception as e:
+                st.sidebar.error("解析後にCSVをダウンロードできます")                                   # --> 2024.5.22
     idx_result_check = st.sidebar.checkbox("解析済みインデックスを表示する", value=True)
     if idx_result_check:
         df = helpers.check_camera_dirs_addIdxLen(dir_area, st.session_state.office, config)
     else:
         df = helpers.check_camera_dirs(dir_area, st.session_state.office, config)
     st.sidebar.dataframe(df)
-
-    # ログアウトボタン
-    if st.sidebar.button("ログアウト"):
-        auth.logout()
+    csv_delete_btn = st.sidebar.button("結果CSVデータを削除する")
+    if csv_delete_btn:
+        if os.path.exists(rail_fpath):
+            helpers.file_remove(rail_fpath)
+            main_view.error("CSVファイルを削除しました")
+        else:
+            main_view.error("削除するCSVファイルがありません")
 
 
 if __name__ == "__main__":

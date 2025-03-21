@@ -54,6 +54,10 @@ class appProperties:
         return self.config['default']['tdm_dir']
 
     @property
+    def log_dir(self):
+        return self.config['default']['log_dir']
+
+    @property
     def bucket(self):
         return self.config['default']['bucket']
     

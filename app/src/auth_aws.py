@@ -9,6 +9,8 @@ import boto3
 import base64
 import src.helpers as helpers
 from src.config import appProperties
+from collections import OrderedDict
+import uuid
 
 
 # Cognitoの設定を.streamlit/secrets.tomlから読み込む
@@ -19,6 +21,11 @@ def get_cognito_config():
         return None
     
     return st.secrets['cognito']
+
+def generate_unique_id():
+    """一意のIDを生成する"""
+    # 新しいUUIDを生成
+    return str(uuid.uuid4())
 
 class CognitoAuthenticator:
     def __init__(self):
@@ -44,19 +51,35 @@ class CognitoAuthenticator:
         )
         
         # セッション状態の初期化
-        if 'token' not in st.session_state:
-            st.session_state.token = None
+        # セッション識別子の管理
+        if 'browser_id' not in st.session_state:
+            st.session_state.browser_id = generate_unique_id()
+        self.browser_id = st.session_state.browser_id
+        
+        # トークン情報用のセッションキーを作成
+        self.token_key = f"token_{self.browser_id}"
+        
+        # セッション状態を初期化
+        if self.token_key not in st.session_state:
+            st.session_state[self.token_key] = None
 
     def is_authenticated(self):
         """認証済みかどうかを確認"""
-        return 'token' in st.session_state and st.session_state.token is not None
+        return self.token_key in st.session_state and st.session_state[self.token_key] is not None
 
     def handle_callback(self):
         """認証コールバックを処理"""
         query_params = st.query_params
         
-        if 'code' in query_params:
+        if 'code' in query_params and 'state' in query_params:
             code = query_params['code']
+            state = query_params['state']
+            
+            # stateパラメータの検証（セキュリティ強化）
+            expected_state = f"state_{self.browser_id}"
+            if not state.startswith("state_"):
+                st.error("無効な認証リクエストです。")
+                return False
             
             try:
                 # トークンエンドポイントを取得
@@ -93,8 +116,8 @@ class CognitoAuthenticator:
                     st.error(f"トークンの取得に失敗しました: {token_response.text}")
                     return False
                 
-                # トークンをセッションに保存
-                st.session_state.token = token_response.json()
+                # トークンをセッション固有のキーに保存
+                st.session_state[self.token_key] = token_response.json()
                 # クエリパラメータをクリア
                 st.query_params.clear()
                 return True
@@ -107,27 +130,26 @@ class CognitoAuthenticator:
 
     def login(self):
         """ログインボタンを表示"""
-        # ドメインの確認と適切なURL構築
-        if self.domain.startswith('http'):
-            # すでにプロトコルが含まれている場合はそのまま使用
-            cognito_domain = self.domain
-        else:
-            # プロトコルがない場合はhttpsを追加
-            cognito_domain = f"https://{self.domain}"
+        # AWS Cognito形式でのドメイン構築
+        cognito_domain = f"https://{self.aws_region.lower()}{self.user_pool_id.split('_')[1].lower()}.auth.{self.aws_region}.amazoncognito.com"
         
-        # 認証URLを構築
-        params = {
-            'client_id': self.client_id,
-            'response_type': 'code',
-            'scope': 'email openid phone',
-            'redirect_uri': self.redirect_uri
-        }
+        # セッションIDをステート値に追加して、コールバック時に同一セッションと識別できるようにする
+        state_value = f"state_{self.browser_id}"
         
-        # Cognitoのログイン画面へのURLを生成
-        login_url = f"{cognito_domain}/login?{urlencode(params)}"
+        # パラメータを正確な順序で構築（順序を維持するためにOrderedDictを使用）
+        params = OrderedDict([
+            ('client_id', self.client_id),
+            ('redirect_uri', self.redirect_uri),
+            ('response_type', 'code'),
+            ('scope', 'email openid phone'),
+            ('state', state_value)
+        ])
         
-        # デバッグ用にURLを表示（必要に応じてコメントアウト）
-        # st.write(f"DEBUG - ログインURL: {login_url}")
+        # URLをエンコード（URLEncodeする代わりに手動で構築）
+        query_string = "&".join([f"{k}={requests.utils.quote(v)}" for k, v in params.items()])
+        
+        # Cognitoのログイン画面へのURL
+        login_url = f"{cognito_domain}/login?{query_string}"
         
         # aタグを使用してリンク機能を実装
         login_button_html = f"""
@@ -205,7 +227,7 @@ class CognitoAuthenticator:
         
         try:
             # アクセストークンを取得
-            access_token = st.session_state.token.get('access_token')
+            access_token = st.session_state[self.token_key].get('access_token')
             if not access_token:
                 return False
             
@@ -213,7 +235,7 @@ class CognitoAuthenticator:
             # 代わりにID情報をデコードして有効期限を確認する方法に変更
             try:
                 # ID トークンがある場合はそれを使用
-                id_token = st.session_state.token.get('id_token')
+                id_token = st.session_state[self.token_key].get('id_token')
                 if id_token:
                     # ID トークンの検証はクライアント側では期限切れチェックのみ
                     # 実際のトークン検証はCognitoが行う
@@ -235,10 +257,10 @@ class CognitoAuthenticator:
 
     def logout(self):
         """ログアウト処理"""
-        if 'token' in st.session_state and st.session_state.token:
+        if self.token_key in st.session_state and st.session_state[self.token_key]:
             try:
                 # リフレッシュトークンがある場合、トークンを無効化
-                refresh_token = st.session_state.token.get('refresh_token')
+                refresh_token = st.session_state[self.token_key].get('refresh_token')
                 if refresh_token:
                     self.cognito_idp.revoke_token(
                         ClientId=self.client_id,
@@ -248,10 +270,12 @@ class CognitoAuthenticator:
             except Exception as e:
                 st.error(f"ログアウト処理中にエラーが発生しました: {str(e)}")
         
-        # セッション変数をクリア
-        for key in list(st.session_state.keys()):
-            del st.session_state[key]
-        st.rerun()  # ページを再読み込み
+        # このセッション専用のトークンをクリア
+        if self.token_key in st.session_state:
+            del st.session_state[self.token_key]
+        
+        # ページを再読み込み
+        st.rerun()
 
     def get_user_info(self):
         """ユーザー情報を取得"""
@@ -260,12 +284,9 @@ class CognitoAuthenticator:
         
         try:
             # IDトークンからユーザー情報を取得する方法に変更
-            id_token = st.session_state.token.get('id_token')
+            id_token = st.session_state[self.token_key].get('id_token')
             if not id_token:
                 return None
-            
-            # IDトークンはJWTなので、このトークンの情報を使用する
-            # トークンの検証はCognito側で行われるため、ここでは行わない
             
             # JWTの2番目の部分（ペイロード）を取得してデコード
             token_parts = id_token.split('.')
@@ -306,6 +327,25 @@ class CognitoAuthenticator:
             st.error(f"ユーザー情報取得エラー: {str(e)}")
             return None
 
+    def get_username(self):
+        """ユーザー名（ログインID）を取得
+        
+        Returns:
+            str: ユーザー名、取得できない場合はNone
+        """
+        user_info = self.get_user_info()
+        if not user_info:
+            return None
+            
+        attrs = user_info.get('attributes', {})
+        # ユーザー名（ログインID）を優先的に使用
+        if 'cognito_username' in attrs:
+            return attrs['cognito_username']
+        elif 'preferred_username' in attrs:
+            return attrs['preferred_username']
+        else:
+            return user_info.get('username')
+
     def render_sidebar_logout(self, username=None):
         """サイドバーのログアウトボタン表示"""
         # ユーザー情報を取得
@@ -326,6 +366,7 @@ class CognitoAuthenticator:
         if display_name:
             config = appProperties('config.yml')
             st.write(f"ログイン: {helpers.get_office_name_jp(config, display_name)}")
+            st.markdown(f"<span style='color: gray; font-size: 0.8rem;'>Session ID: {self.browser_id[:8]}...</span>", unsafe_allow_html=True)
         
         # ログアウトボタン
         if st.button('ログアウト', key='logout_button'):

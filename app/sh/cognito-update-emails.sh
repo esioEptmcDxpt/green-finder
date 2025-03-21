@@ -1,6 +1,6 @@
 # メールアドレス更新スクリプト
-# (参考)source sh/cognito-update-emails.sh で実行可能
-# (参考)このスクリプトに実行権限を付与する場合は、予め chmod +x sh/cognito-update-emails.sh を実行しておく
+# (参考)source app/sh/cognito-update-emails.sh で実行可能
+# (参考)このスクリプトに実行権限を付与する場合は、予め chmod +x app/sh/cognito-update-emails.sh を実行しておく
 
 USER_POOL_ID="ap-northeast-1_OPZscsccQ"  # ユーザープールIDを指定
 
@@ -12,7 +12,7 @@ USERS=(
   "yokohama,piyo@jreast.co.jp"
   "hachioji,piko@jreast.co.jp"
   "oomiya,fusu@jreast.co.jp"
-  "takasaki,teke@jreast.co.jp"
+  "takasaki,yamazawa@jreast.co.jp"
   "mito,hogu@jreast.co.jp"
   "chiba,degu@jreast.co.jp"
   "nagano,suge@jreast.co.jp"

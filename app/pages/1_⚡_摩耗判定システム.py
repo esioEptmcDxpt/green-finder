@@ -4,7 +4,7 @@ import copy
 import streamlit as st
 import src.helpers as helpers
 import src.visualize as vis
-import src.auth as auth
+import src.auth_aws as auth
 from src.kalman_calc import track_kalman
 from src.similar_pixel_calc import track_pixel
 from src.config import appProperties
@@ -34,6 +34,10 @@ def ohc_wear_analysis(config):
     # 認証済みの場合のみコンテンツを表示
     if not is_authenticated:
         return
+        # pass    # ローカル環境でテストする場合に有効化する。デプロイ前には必ずコメントアウトすること
+
+    # 認証情報からユーザー名を取得
+    username = auth_manager.authenticator.get_username()
 
     st.sidebar.header("トロリ線摩耗検出システム")
 
@@ -49,7 +53,7 @@ def ohc_wear_analysis(config):
     # 技セ・MCを選択
     if "office_dialog" not in st.session_state:
         if st.sidebar.button("技セ・MCを選択"):
-            set_office(config, st.session_state['name'])
+            set_office(config, username)
 
     # 選択された技セ・MCを表示
     if not st.session_state.office:
@@ -99,7 +103,7 @@ def ohc_wear_analysis(config):
         st.session_state.previous_dir_area = dir_area
 
     if dir_area is None:
-        st.error("No frames fit the criteria. Please select different label or number.")
+        st.error("線区のフォルダ・画像がありません。👈️ データ管理 を選択して データをダウンロードしてください。")
         st.stop()
 
     # 選択された線区情報を表示する
@@ -422,22 +426,25 @@ def ohc_wear_analysis(config):
 
     # 解析結果があるかをサイドバーに表示する
     st.sidebar.markdown("# 参考 結果有無👇")
-    csv_downloader = st.sidebar.checkbox("CSVファイルをダウンロード")
-    if csv_downloader:
-        with st.spinner("一生懸命CSVを準備しています🐭"):
-            df_csv = helpers.rail_csv_concat(outpath)
-            csv_data = df_csv.to_csv(index=False).encode('utf-8-sig')
-        try:
-            with open(rail_fpath) as csv:
-                st.sidebar.download_button(
-                    label="CSVファイルをダウンロード",
-                    data=csv_data,
-                    file_name=dir_area + "_" + camera_num + "_output.csv",
-                    mime="text/csv"
-                )
-        except Exception as e:
-            st.sidebar.error("解析後にCSVをダウンロードできます")
-            # st.sidebar.write(f"Error> {e}")
+    exist_csv = helpers.search_csv(outpath)
+    if not exist_csv:
+        st.sidebar.error("CSVファイルがありません。別の線区・カメラを選択してください。")
+    else:
+        csv_downloader = st.sidebar.checkbox("ダウンロード用CSVファイルを準備する✔")
+        if csv_downloader:
+            with st.spinner("一生懸命CSVを準備しています🐭"):
+                df_csv = helpers.rail_csv_concat(outpath)
+                csv_data = df_csv.to_csv(index=False).encode('utf-8-sig')
+            try:
+                with open(rail_fpath) as csv:
+                    st.sidebar.download_button(
+                        label="CSVファイルをダウンロード",
+                        data=csv_data,
+                        file_name=dir_area + "_" + camera_num + "_output.csv",
+                        mime="text/csv"
+                    )
+            except Exception as e:
+                st.sidebar.error("解析後にCSVをダウンロードできます")
     idx_result_check = st.sidebar.checkbox("解析済みインデックスを表示する", value=True)
     if idx_result_check:
         df = helpers.check_camera_dirs_addIdxLen(dir_area, st.session_state.office, config)
@@ -450,10 +457,10 @@ def ohc_wear_analysis(config):
             # helpers.file_remove(rail_fpath)
             helpers.imgs_dir_remove(outpath)
             st.session_state.current_idx = 1
-            log_view.error("CSVファイルを削除しました")
-            log_view.button("はじめから解析する")
+            main_view.error("CSVファイルを削除しました")
+            main_view.button("はじめから解析する")
         else:
-            log_view.error("削除するCSVファイルがありません")
+            main_view.error("削除するCSVファイルがありません")
 
     # st.write("画像ファイルリスト👇")
     # # image_list_for_view = []

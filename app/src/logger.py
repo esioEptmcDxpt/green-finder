@@ -7,6 +7,7 @@ import pandas as pd
 from dateutil import tz
 import src.helpers as helpers
 import streamlit as st
+from src.config import appProperties
 
 
 def my_logger(func):
@@ -25,7 +26,7 @@ def my_logger(func):
     return wrapper
 
 
-def get_log_path(office=None, date=None):
+def get_log_path(office=None, date=None, config=None):
     """ ログファイルのパスを取得する
     Args:
         office(str): オフィス名 (例: "shinagawa/shinagawa")
@@ -45,7 +46,7 @@ def get_log_path(office=None, date=None):
         return filename
     
     # オフィス情報からログディレクトリのパスを構築
-    log_dir = os.path.join("logs", office)
+    log_dir = os.path.join(config.log_dir, office)
     
     # ディレクトリが存在しなければ作成
     os.makedirs(log_dir, exist_ok=True)
@@ -54,7 +55,7 @@ def get_log_path(office=None, date=None):
     return os.path.join(log_dir, filename)
 
 
-def setup_logging(log_level=logging.INFO, office=None):
+def setup_logging(log_level=logging.INFO, office=None, config=None):
     """ ロギングの初期設定を実行
     Args:
         log_level(int): ログレベル
@@ -68,7 +69,7 @@ def setup_logging(log_level=logging.INFO, office=None):
     # sh.setLevel(log_level)
     # handlers.append(sh)
 
-    file_path = get_log_path(office)
+    file_path = get_log_path(office, config=config)
 
     # 既存のログファイルが無かったら作成する
     if not os.path.exists(file_path):
@@ -88,13 +89,13 @@ def setup_logging(log_level=logging.INFO, office=None):
     logging.basicConfig(level=log_level, handlers=handlers, force=True)
     
 
-def reset_logging(office=None, date=None):
+def reset_logging(office=None, date=None, config=None):
     """ 既存のログファイルを初期化する
     Args:
         office(str): オフィス名 (例: "shinagawa/shinagawa")
         date(str): 日付（指定しない場合は今日の日付）
     """
-    fpath = get_log_path(office, date)
+    fpath = get_log_path(office, date, config)
     # ログファイルを初期化する
     with open(fpath, "w") as f:
         f.write("")
@@ -102,7 +103,7 @@ def reset_logging(office=None, date=None):
     st.stop()
 
 
-def load_logs(office=None, date=None):
+def load_logs(office=None, date=None, config=None):
     """ ログファイルをデータフレームとして読み込む
     Args:
         office(str): オフィス名 (例: "shinagawa/shinagawa")
@@ -111,7 +112,7 @@ def load_logs(office=None, date=None):
         df(DataFrame): ログファイルを読み込んだデータフレーム
     """
     # ログファイルのパスを取得
-    fpath = get_log_path(office, date)
+    fpath = get_log_path(office, date, config)
     
     # ログファイルが存在しない場合は空のデータフレームを返す
     if not os.path.exists(fpath):
@@ -159,7 +160,7 @@ def preprocess_log_data(df):
     return df.copy()
 
 
-def put_log(level, message, start, method, image_path, trolley_id, idx, count, error_message=None, office=None):
+def put_log(level, message, start, method, image_path, trolley_id, idx, count, error_message=None, office=None, config=None):
     """ ログファイルに記録する
     Args:
         level(str): ログのレベル
@@ -174,7 +175,7 @@ def put_log(level, message, start, method, image_path, trolley_id, idx, count, e
         office(str): オフィス名 (例: "shinagawa/shinagawa")
     """
     # ログ設定を適用（officeパラメータを追加）
-    setup_logging(office=office)
+    setup_logging(office=office, config=config)
     
     logger = logging.getLogger()
 

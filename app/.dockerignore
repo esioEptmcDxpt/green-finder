@@ -16,11 +16,13 @@ coverage.xml
 *.log
 .pytest_cache
 .env
+.env.example
 .venv
 .DS_Store
 *.ipynb
 **/.ipynb_checkpoints
 **/.ipynb_checkpoints/*
+efs
 images
 output
 utils
@@ -28,4 +30,6 @@ tests
 logs
 TDM
 .streamlit/secrets.toml.example
+.streamlit/user_info.csv
+.streamlit/user_info.yml
 graph_recent.html

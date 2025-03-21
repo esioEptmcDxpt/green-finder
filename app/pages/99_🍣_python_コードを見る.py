@@ -1,6 +1,6 @@
 import streamlit as st
 import src.helpers as helpers
-import src.auth as auth
+import src.auth_aws as auth
 
 
 def show_code():
@@ -15,6 +15,9 @@ def show_code():
     # 認証済みの場合のみコンテンツを表示
     if not is_authenticated:
         return
+
+    # 認証情報からユーザー名を取得
+    username = auth_manager.authenticator.get_username()
 
     st.sidebar.header("摩耗判定プログラムのコードを表示しています。")
     dir_select = st.sidebar.selectbox("対象ディレクトリを選択", ["pages", "src"])

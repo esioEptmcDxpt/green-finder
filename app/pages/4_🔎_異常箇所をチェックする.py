@@ -3,7 +3,7 @@ from PIL import Image
 import src.helpers as helpers
 import src.visualize as vis
 from src.config import appProperties
-import src.auth as auth
+import src.auth_aws as auth
 
 import os
 import re
@@ -167,6 +167,9 @@ def eda_tool(config):
     if not is_authenticated:
         return
 
+    # 認証情報からユーザー名を取得
+    username = auth_manager.authenticator.get_username()
+
     st.sidebar.header("異常箇所チェックツール")
     
     # メインページのコンテナを配置する
@@ -190,7 +193,7 @@ def eda_tool(config):
     # 技セ・MCを選択
     if "office_dialog" not in st.session_state:
         if st.sidebar.button("技セ・MCを選択"):
-            set_office(config, st.session_state['name'])
+            set_office(config, username)
 
     # 選択された技セ・MCを表示
     if not st.session_state.office:

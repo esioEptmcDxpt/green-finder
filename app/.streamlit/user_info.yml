@@ -22,7 +22,7 @@ credentials:
     esiodxpt:
       email: k-nagayama@jreast.co.jp
       failed_login_attempts: 0
-      logged_in: true
+      logged_in: false
       name: esiodxpt
       password: $2b$12$Jq.5mU6u2QwdKdb4K45YyepvoAbSitYBBjnIppZqQSGABWu/eOdd.
       password_reset_required: false
