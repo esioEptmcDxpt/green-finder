@@ -247,7 +247,7 @@ def storage_viewer(config):
         config (object): 設定ファイル
     """
     st.set_page_config(page_title="ストレージビューワ", page_icon="📁", layout="wide")
-
+    st.logo("icons/cis_page-eye-catch.jpg", size="large")
     # 認証マネージャーの初期化
     auth_manager = auth.AuthenticationManager()
     # 認証処理とUI表示
@@ -295,7 +295,7 @@ def storage_viewer(config):
     with st.expander("フィルタリングオプション"):
         col1, col2 = st.columns(2)
         with col1:
-            show_hidden = st.checkbox("隠しファイルを表示", value=False)
+            show_hidden = st.toggle("隠しファイルを表示", value=False)
             file_filter = st.text_input("ファイル名フィルタ（部分一致）")
         with col2:
             file_types = st.multiselect(
@@ -383,7 +383,7 @@ def storage_viewer(config):
                     st.write(f"タイプ: {selected_type}")
                 
                 # 削除確認UI
-                delete_confirmation = st.checkbox("削除を確認する", key="delete_confirm")
+                delete_confirmation = st.toggle("削除を確認する", key="delete_confirm")
                 if delete_confirmation:
                     st.warning(f"⚠️ **注意**: {selected_item} ({selected_type}) を完全に削除します。この操作は元に戻せません！")
                     if selected_type == "ディレクトリ":

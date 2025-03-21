@@ -29,7 +29,7 @@ def set_office(_config, office_default):
 def log_management(config):
     # マルチページの設定
     st.set_page_config(page_title="解析ログ操作", layout="wide")
-
+    st.logo("icons/cis_page-eye-catch.jpg", size="large")
     # 認証マネージャーの初期化
     auth_manager = auth.AuthenticationManager()
     # 認証処理とUI表示
@@ -126,7 +126,7 @@ def log_management(config):
     )
 
     # 解析ログをリセットする
-    log_reset_button = st.sidebar.checkbox("解析ログを削除する", value=False, key="log_reset")
+    log_reset_button = st.sidebar.toggle("解析ログを削除する", value=False, key="log_reset")
     if log_reset_button:
         with log_view.form("log_reset_form"):
             st.error("元に戻せません 本当に削除しますか？？")

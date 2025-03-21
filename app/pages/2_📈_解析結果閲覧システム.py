@@ -27,6 +27,7 @@ def result_image_view(config):
         config: ymlファイルを読み込んだ設定値
     """
     st.set_page_config(page_title="解析結果ビューワー", layout="wide")
+    st.logo("icons/cis_page-eye-catch.jpg", size="large")
 
     # 認証マネージャーの初期化
     auth_manager = auth.AuthenticationManager()
@@ -72,7 +73,7 @@ def result_image_view(config):
     st.sidebar.write(f"解析対象の線区フォルダを指定👉️")
 
     # 検索ボックスによる対象フォルダの絞り込み
-    dir_search = st.sidebar.checkbox("検索ボックス表示", value=False)
+    dir_search = st.sidebar.toggle("検索ボックス表示", value=False)
     if dir_search:
         dir_area_key = main_view.text_input("線区 検索キーワード(英語で入力)").lower()
         images_path_filtered = [path for path in images_path if dir_area_key in path.lower()]
@@ -117,7 +118,7 @@ def result_image_view(config):
 
     # グラフ作成フォーム
     st.sidebar.markdown("# ___Step2___ グラフを表示する")
-    ix_set_flag = st.sidebar.checkbox("横方向の表示範囲を指定", value=False)
+    ix_set_flag = st.sidebar.toggle("横方向の表示範囲を指定", value=False)
     form_graph = st.sidebar.form(key="graph_init")
     graph_height = form_graph.number_input("グラフの表示高さを指定する(単位:px)",
                                            min_value=1,
@@ -151,7 +152,7 @@ def result_image_view(config):
 
     # 連結画像の表示
     st.sidebar.markdown("# ___Step3___ 連結した画像を表示する")
-    graph_add_flag = st.sidebar.checkbox("グラフも表示する", value=False)
+    graph_add_flag = st.sidebar.toggle("グラフも表示する", value=False)
     form_concat = st.sidebar.form(key="img_concat_setup")
     # 画像結合フォーム
     if graph_add_flag:
@@ -381,7 +382,7 @@ def result_image_view(config):
     if not exist_csv:
         st.sidebar.error("CSVファイルがありません。別の線区・カメラを選択してください。")
     else:
-        csv_downloader = st.sidebar.checkbox("ダウンロード用CSVファイルを準備する✔")
+        csv_downloader = st.sidebar.toggle("ダウンロード用CSVファイルを準備する✔")
         if csv_downloader:
             with st.spinner("一生懸命CSVを準備しています🐭"):
                 df_csv = helpers.rail_csv_concat(outpath)
@@ -396,7 +397,7 @@ def result_image_view(config):
                     )
             except Exception as e:
                 st.sidebar.error("解析後にCSVをダウンロードできます")                                   # --> 2024.5.22
-    idx_result_check = st.sidebar.checkbox("解析済みインデックスを表示する", value=True)
+    idx_result_check = st.sidebar.toggle("解析済みインデックスを表示する", value=True)
     if idx_result_check:
         df = helpers.check_camera_dirs_addIdxLen(dir_area, st.session_state.office, config)
     else:

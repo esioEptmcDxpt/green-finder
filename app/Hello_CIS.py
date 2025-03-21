@@ -8,7 +8,8 @@ import time
 
 
 def main(config):
-    st.set_page_config(page_title="CIS トロリ線摩耗判定支援システム", page_icon="🖐",)
+    st.set_page_config(page_title="CIS トロリ線摩耗判定支援システム", page_icon="🚋",)
+    st.logo("icons/cis_page-eye-catch.jpg", size="large")
 
     # 認証マネージャーの初期化
     auth_manager = auth_aws.AuthenticationManager()

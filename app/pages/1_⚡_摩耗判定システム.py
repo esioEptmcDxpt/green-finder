@@ -26,6 +26,7 @@ def set_office(_config, office_default):
 
 def ohc_wear_analysis(config):
     st.set_page_config(page_title="トロリ線摩耗検出システム", layout="centered")
+    st.logo("icons/cis_page-eye-catch.jpg", size="large")
 
     # 認証マネージャーの初期化
     auth_manager = auth.AuthenticationManager()
@@ -71,7 +72,7 @@ def ohc_wear_analysis(config):
     st.sidebar.write(f"解析対象の線区フォルダを指定👉️")
 
     # 検索ボックスによる対象フォルダの絞り込み
-    dir_search = st.sidebar.checkbox("検索ボックス表示", value=False)
+    dir_search = st.sidebar.toggle("検索ボックス表示", value=False)
     if dir_search:
         dir_area_key = main_view.text_input("線区 検索キーワード(英語で入力)").lower()
         images_path_filtered = [path for path in images_path if dir_area_key in path.lower()]
@@ -152,7 +153,7 @@ def ohc_wear_analysis(config):
     rail_fpath = f"{outpath}/{config.csv_fname}_{image_name_noExtension}.csv"
 
     # 表示中の画像、カメラ番号を対象に、トロリーIDを指定して結果を削除する
-    result_del = st.sidebar.checkbox("表示中の結果を削除", value=False, key='result_del')
+    result_del = st.sidebar.toggle("表示中の結果を削除", value=False, key='result_del')
     if result_del:
         result_del_form = st.sidebar.form("(💣注意 結果削除)")
         del_trolley_id = result_del_form.selectbox("トロリ線のIDを入力してください", config.trolley_ids)
@@ -205,14 +206,14 @@ def ohc_wear_analysis(config):
     # trace_method = "カルマンフィルタ"
 
     # キロ程情報の使用有無
-    kiro_data = st.sidebar.checkbox("キロ程情報を使用", value=True)
+    kiro_data = st.sidebar.toggle("キロ程情報を使用", value=True)
 
     # メモリ付き画像を表示
-    support_line = st.sidebar.checkbox("補助線を使用")
+    support_line = st.sidebar.toggle("補助線を使用")
     if support_line:
         # 補助線を使用する場合
         form_support_line = st.sidebar.form(key="support_line_form")
-        result_line_draw = form_support_line.checkbox("結果を重ねて描画", value=True)
+        result_line_draw = form_support_line.toggle("結果を重ねて描画", value=True)
         form_support_line.write(" 0 にすると線を表示しません")
         hori_pos = form_support_line.number_input("補助線の横位置", 0, 999, 0)
         # 選択したシステムによって横線の本数を変更
@@ -233,7 +234,7 @@ def ohc_wear_analysis(config):
             log_view.pyplot(fig)
     else:
         form_graph_img = st.sidebar.form(key="graph_img_form")
-        result_line_draw = form_graph_img.checkbox("結果を重ねて描画", value=True)
+        result_line_draw = form_graph_img.toggle("結果を重ねて描画", value=True)
         # 補助線を使用しない場合
         hori_pos = 0
         vert_pos = [0, 0]
@@ -284,7 +285,7 @@ def ohc_wear_analysis(config):
     # カルマンフィルタを実行
     elif trace_method == "カルマンフィルタ":
         # カルマンフィルタの初期値設定
-        detect_edge = st.sidebar.checkbox("自動で初期値を入力しますか？", value=True)
+        detect_edge = st.sidebar.toggle("自動で初期値を入力しますか？", value=True)
         # form_support_line = st.sidebar.form(key="detect_edge_form")    # 試作（初期エッジ自動検出）用フォーム
         # form_detect = st.sidebar.form(key="kalman_init_detect")
         form = st.sidebar.form(key="kalman_init")
@@ -430,7 +431,7 @@ def ohc_wear_analysis(config):
     if not exist_csv:
         st.sidebar.error("CSVファイルがありません。別の線区・カメラを選択してください。")
     else:
-        csv_downloader = st.sidebar.checkbox("ダウンロード用CSVファイルを準備する✔")
+        csv_downloader = st.sidebar.toggle("ダウンロード用CSVファイルを準備する✔")
         if csv_downloader:
             with st.spinner("一生懸命CSVを準備しています🐭"):
                 df_csv = helpers.rail_csv_concat(outpath)
@@ -445,7 +446,7 @@ def ohc_wear_analysis(config):
                     )
             except Exception as e:
                 st.sidebar.error("解析後にCSVをダウンロードできます")
-    idx_result_check = st.sidebar.checkbox("解析済みインデックスを表示する", value=True)
+    idx_result_check = st.sidebar.toggle("解析済みインデックスを表示する", value=True)
     if idx_result_check:
         df = helpers.check_camera_dirs_addIdxLen(dir_area, st.session_state.office, config)
     else:

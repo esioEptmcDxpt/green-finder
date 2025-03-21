@@ -86,6 +86,7 @@ def upload_results(config, office, s3_rail_path):
 def data_loader(config):
     # マルチページの設定
     st.set_page_config(page_title="データ管理", layout="wide")
+    st.logo("icons/cis_page-eye-catch.jpg", size="large")
 
     # 認証マネージャーの初期化
     auth_manager = auth.AuthenticationManager()
@@ -144,7 +145,7 @@ def data_loader(config):
 
     # 線区を選択
     info_view.write(mode_info)
-    is_search_box_visible = st.sidebar.checkbox("検索ボックスを表示する", key="search_check")
+    is_search_box_visible = st.sidebar.toggle("検索ボックスを表示する", key="search_check")
     if is_search_box_visible:
         # 線名を指定
         rail_key_jpn = st.sidebar.selectbox("線区を選択", list(config.rail_names.values()), key="rail_key")
