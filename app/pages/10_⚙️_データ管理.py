@@ -75,7 +75,7 @@ def upload_results(config, office, s3_rail_path):
         with ThreadPoolExecutor(max_workers=10) as executor:
             for folder in config.camera_types:
                 s3_dir = f"{config.output_dir.replace('efs/', '')}/{office}/{s3_rail_path}/{folder}"
-                ebs_dir = "./"
+                ebs_dir = "./efs/"
                 executor.submit(helpers.upload_dir, config.bucket, s3_dir, ebs_dir)
 
     st.success("解析結果をS3にアップロードしました")
@@ -121,8 +121,8 @@ def data_loader(config):
     else:
         st.sidebar.write(f"選択箇所: {helpers.get_office_message(config, st.session_state.office)}")
 
-    # modes = ("画像をダウンロード", "不要なファイルを削除", "解析結果をアップロード")    # アップロード機能が追加できたら有効化する
-    modes = ("画像をダウンロード", "不要なファイルを削除")
+    modes = ("画像をダウンロード", "不要なファイルを削除", "解析結果をアップロード")    # アップロード機能が追加できたら有効化する
+    # modes = ("画像をダウンロード", "不要なファイルを削除")
     mode = st.sidebar.radio("操作方法を選択", modes)
 
     if modes.index(mode) == 0:
@@ -229,8 +229,12 @@ def data_loader(config):
     start_date = col1.date_input("期間を指定(始)", datetime.date(2024,4,1))
     end_date = col2.date_input("期間を指定(終)", datetime.date(2024,6,30))
     try:
-        S3_rail_list = helpers.get_s3_dir_list(f"{config.image_dir.replace('efs/', '')}/{st.session_state.office}", config.bucket)
-        EBS_rail_list = helpers.list_imagespath_nonCache(f"{config.image_dir}/{st.session_state.office}")
+        if not modes.index(mode) == 2:
+            S3_rail_list = helpers.get_s3_dir_list(f"{config.image_dir.replace('efs/', '')}/{st.session_state.office}", config.bucket)
+            EBS_rail_list = helpers.list_imagespath_nonCache(f"{config.image_dir}/{st.session_state.office}")
+        else:
+            S3_rail_list = helpers.get_s3_dir_list(f"{config.output_dir.replace('efs/', '')}/{st.session_state.office}", config.bucket)
+            EBS_rail_list = helpers.list_imagespath_nonCache(f"{config.output_dir}/{st.session_state.office}")
         df = helpers.S3_EBS_imgs_dir_Compare(S3_rail_list, EBS_rail_list, df_key, start_date, end_date)
         st.dataframe(df, use_container_width=True)
     except Exception as e:

@@ -2,6 +2,7 @@ import streamlit as st
 import os
 import datetime
 import pandas as pd
+import shutil
 from pathlib import Path
 from src.config import appProperties
 import src.auth_aws as auth
@@ -219,6 +220,26 @@ def is_code_file(file_path):
     return get_language_from_extension(file_path) is not None
 
 
+def delete_item(path):
+    """ファイルまたはディレクトリを削除する
+
+    Args:
+        path (str): 削除対象のパス
+
+    Returns:
+        bool: 削除成功時True
+    """
+    try:
+        if os.path.isdir(path):
+            shutil.rmtree(path)
+        else:
+            os.remove(path)
+        return True
+    except Exception as e:
+        st.error(f"削除に失敗しました: {str(e)}")
+        return False
+
+
 def storage_viewer(config):
     """(開発用) コンテナ上のファイルを表示する
 
@@ -344,6 +365,38 @@ def storage_viewer(config):
                 st.rerun()
         else:
             st.info("このディレクトリには下位フォルダがありません")
+
+        # ファイル/ディレクトリ削除機能
+        st.write("### ファイル/ディレクトリの削除")
+        all_items = [i for i in items]
+        if all_items:
+            item_names = [i["名前"] for i in all_items]
+            selected_item = st.selectbox("削除するアイテムを選択", item_names, key="delete_selector")
+            
+            if selected_item:
+                selected_path = os.path.join(st.session_state.current_path, selected_item)
+                selected_type = "ディレクトリ" if os.path.isdir(selected_path) else "ファイル"
+                
+                col1, col2 = st.columns([1, 2])
+                with col1:
+                    st.write(f"選択中: {selected_item}")
+                    st.write(f"タイプ: {selected_type}")
+                
+                # 削除確認UI
+                delete_confirmation = st.checkbox("削除を確認する", key="delete_confirm")
+                if delete_confirmation:
+                    st.warning(f"⚠️ **注意**: {selected_item} ({selected_type}) を完全に削除します。この操作は元に戻せません！")
+                    if selected_type == "ディレクトリ":
+                        dir_size = get_directory_size(selected_path)
+                        st.info(f"ディレクトリサイズ: {format_size(dir_size)}")
+                        
+                    if st.button("🗑️ 削除を実行", key="execute_delete"):
+                        if delete_item(selected_path):
+                            st.success(f"{selected_item} を削除しました")
+                            # 削除が成功したら、ページを再読み込み
+                            st.rerun()
+        else:
+            st.info("このディレクトリには削除可能なアイテムがありません")
 
         # ファイル内容表示機能
         st.write("### ファイルの内容を表示")

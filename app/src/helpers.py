@@ -526,17 +526,24 @@ def download_dir(bucket, prefix, local):
 
 
 def upload_dir(bucket, prefix, local):
-    """ バケット内の指定したプレフィックスを持つすべてのオブジェクトをアップロードします。
+    """ ローカルディレクトリ内のすべてのファイルをS3バケットにアップロードします。
     Args:
         bucket (str): バケット名
         prefix (str): S3のフォルダパス
-                      (例) imgs/Chuo_01_Tokyo-St_up_20230201_knight/
+                      (例) output/chuo/Chuo_01_Tokyo-St_up_20230201_knight/HD11
         local  (str): ローカルディレクトリへのパス
-                      (例) ./
+                      (例) ./efs/
     """
     client = boto3.client('s3')
-    csv_list = glob.glob(f"{local}/*.csv")
-    csv_list.sort()
+    local_dir = local + prefix
+    if not os.path.exists(local_dir):
+        return
+    for root, dirs, files in os.walk(local_dir):
+        for file in files:
+            local_file_path = os.path.join(root, file)
+            relative_path = os.path.relpath(local_file_path, local)
+            s3_key = relative_path
+            client.upload_file(local_file_path, bucket, s3_key)
 
 
 def download_file_from_s3(bucket_name, key, download_path):
