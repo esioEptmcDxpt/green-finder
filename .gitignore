@@ -1,0 +1,48 @@
+# 環境変数ファイル
+.env
+
+# ログファイル
+tts.log
+
+# 作業用フォルダ
+app/trolley_line_analysis.egg-info/
+.dev/
+
+# 開発中の一時ファイル
+app/graph_recent.html
+app/efs
+app/images/
+app/output/
+app/TDM/
+app/logs/
+
+# Stramlit
+app/.streamlit/secrets.toml
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# TypeScript / CDK
+*.js
+!jest.config.js
+*.d.ts
+node_modules
+.cdk.staging
+cdk.out
