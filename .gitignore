@@ -5,13 +5,16 @@
 tts.log
 
 # 作業用フォルダ
-efs/
+app/trolley_line_analysis.egg-info/
+.dev/
+
+# 開発中の一時ファイル
+app/graph_recent.html
+app/efs
 app/images/
 app/output/
 app/TDM/
-app/trolley_line_analysis.egg-info/
 app/logs/
-.dev/
 
 # Stramlit
 app/.streamlit/secrets.toml

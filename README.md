@@ -1,5 +1,7 @@
 <div markdown="1" align="center">
-<h1>Contact-wire Inspection System ~ トロリ線摩耗判定支援システム ~</h1>
+<h1>Contact-wire Inspection System
+
+〜 トロリ線摩耗判定支援システム 〜</h1>
 
 このシステムは、検測車(East-i)で撮影した電車線金具モニタリング画像を利用して、トロリ線の局部摩耗を探索することをサポートするアプリです。
 
@@ -25,94 +27,151 @@
 
 # 開発者向け
 
-## アプリの更新方法
+## コードをリポジトリから Clone する
 
 最初にリポジトリをクローンします。
-プライベートリポジトリのため、認証情報は管理者に問い合わせること。
+プライベートリポジトリのため、http接続でCloneするにはTokenが必要になります。
+
+GitHubのTokenを取得する方法は[参考になるサイト](https://dev.classmethod.jp/articles/github-personal-access-tokens/)か、[GitHubの公式ドキュメント](https://docs.github.com/jp/authentication/keeping-your-account-and-data-secure/creating-a-personal-access-token)を参照して、設定した後に、以下のコマンドを実行します。
 
 ```bash
 git clone https://github.com/ESIO-EPTMC-DXPT/contact-wire-inspection-system.git
 cd ./contact-wire-inspection-system
 ```
 
-### ECRにコンテナをプッシュ
+## リポジトリの構造を確認する
 
-アプリを更新したら、ECR に更新後のコンテナイメージをプッシュします。（プロジェクトのルートディレクトリで実行すること）
-
-```bash
-source ecr-push.sh
-```
-
-## ローカル環境での利用方法
-
-1. シークレット情報を準備する
-   以下を参考に、 `app/.streamlit/secrets.toml` を作成します。
-
-全て AWS Cognito の設定値なので、マネジメントコンソールにアクセスして確認しましょう。不明な場合は、管理者に問い合わせてください。
-
-```toml
-[cognito]
-client_id = "<your-client-id>"
-client_secret = "<your-client-secret>"
-aws_region = "ap-northeast-1"
-user_pool_id = "<your-user-pool-id>"
-domain = "<your-cognito-domain>"
-redirect_uri = "http://localhost:8501"
-```
-
-2. アプリ実行用のコンテナを起動する
-
-認証情報を設定したら、アプリ実行用のコンテナを起動します。
-
-```bash
-docker-compose up
-```
-
-2. アプリにアクセスする
-
-アプリがローカルホスト (http://localhost:8501) で起動するので、ブラウザでアクセスします。
-
-3. アプリを終了する
-
-コンテナでアプリを実行中は、ターミナルに標準出力が表示されています。
-アプリを終了するときは `Ctrl + C` を押してください。
-
-## (開発用)ディレクトリ構造
+リポジトリ内のファイルは以下のようになっています。
+現在はStreamlitアプリをコンテナ化して利用しているため、ほとんど app ディレクトリのみを利用しています。
 
 ```
 .
-├── README.md                            # Readme
-├── README_forStreamlit.ipynb            # 使い方の説明＆実行用　　　　※不要であれば削除する
-├── Hello_OHC_System.py               # Streamlit スタートページ
-├── pages                                # Streamlit 各コードのメインファイル
-│   ├── 1_⚡_摩耗判定システム.py          # 摩耗判定メインファイル
-│   ├── 2_📸_出力画像をチェックする.py    # 結果画像を表示　（機能改修のため、一時的に無効化中）
-│   ├── 3_📈_解析データをチェックする.py   # 結果をCSV出力し、グラフを表示
-│   ├── 4_🔎_異常箇所をチェックする.py    # 異常摩耗箇所をチェックする　※未実装
-│   ├── 98_📝_解析ログ操作.py            # 摩耗判定システムの操作ログを確認する
-│   └── 99_🍣_python_コードを見る.py     # (おまけ) コード参照用
-├── config.yml                           # appの各種設定値格納ファイル
-├── src
-│   ├── __init__.py                      # 読み込み用初期化ファイル
-│   ├── kalman_calc.py                   # カルマンフィルタ計算用のラッパーファイル
-│   ├── similar_pixel_calc.py            # 類似ピクセル計算用のラッパーファイル
-│   ├── trolley.py                       # トロリ線パラメータ用クラス用ファイル
-│   ├── visualize.py                     # 可視化用ファイル
-│   ├── config.py                        # 設定パラメータ処理用ファイル
-│   ├── helpers.py                       # 読み込み・リストなどのUtil処理用ファイル
-│   ├── kalman.py                        # カルマンフィルタの計算用コアクラス用ファイル
-│   └── similar_pixel.py                 # 類似ピクセルの計算用コアクラス用ファイル
-├── imgs                                 # 画像ファイル
-├── output                               # 出力ファイル
-├── TDM                                  # 画像ファイル名→キロ程変換情報を管理
-├── test                                 # テスト用ディレクトリ
-│   └── test.py                          # テスト用ファイル
-└── utils                                # データ検証用
+├── README.md                             # Readme
+├── app                                   # Streamlitアプリのディレクトリ
+|   ├── CIS_App.py                        # Streamlitアプリのメインファイル
+|   ├── Dockerfile                        # コンテナイメージファイル
+|   ├── docker-compose.yml                # コンテナの起動用ファイル
+|   ├── requirements.txt                  # 依存パッケージのリスト
+|   ├── .streamlit                        # streamlitの設定ファイル
+|   ├── config.yml                        # アプリの設定ファイル
+|   ├── pages                             # 各機能ごとのディレクトリ
+|   |    ├── 1_⚡_摩耗判定システム.py         # 摩耗判定メインファイル
+|   |    ├── 2_📈_解析結果閲覧システム.py     # グラフ・画像を出力
+|   |    ├── 4_🔎_異常箇所をチェックする.py   # 異常摩耗箇所をチェックする　※未実装
+|   |    ├── 10_⚙️_データ管理.py             # データ管理メインファイル
+|   |    ├── 81_📁_ストレージビューワ.py      # ローカルファイル操作（開発者用）
+|   |    ├── 98_📝_解析ログ操作.py           # 操作ログを確認する
+|   |    └── 99_🍣_python_コードを見る.py    # (おまけ) コード参照用
+|   ├── efs                               # ファイルシステムのマウントポイント (自動作成)
+|   |    ├── images                       # 画像ファイル
+|   |    ├── output                       # 出力ファイル
+|   |    ├── logs                         # ログファイル
+|   |    └── TDM                          # 画像ファイル名→キロ程変換情報を管理
+|   ├── src                               # コードのソースファイル
+|   |    ├── kalman_calc.py               # カルマンフィルタ計算用のラッパーファイル
+|   |    ├── kalman.py                    # カルマンフィルタの計算用コアクラス用ファイル
+|   |    ├── similar_pixel_calc.py        # 類似ピクセル計算用のラッパーファイル
+|   |    ├── similar_pixel.py             # 類似ピクセルの計算用コアクラス用ファイル
+|   |    ├── trolley.py                   # トロリ線パラメータ用クラス用ファイル
+|   |    ├── helpers.py                   # 読み込み・リストなどのUtil処理用ファイル
+|   |    ├── visualize.py                 # 可視化用ファイル
+|   |    ├── config.py                    # 設定パラメータ処理用ファイル
+|   |    ├── logger.py                    # ログ用ファイル
+|   |    ├── auth_aws.py                  # 認証用ファイル(Cognito用)
+|   |    ├── auth.py                      # 認証用ファイル(Streamlit-Authenticator用)
+|   |    ├── create_yml.py                # ユーザー情報用ファイル(Streamlit-Authenticator)
+|   |    └── get_strun_url.py             # ストリングURL用ファイル(Jupyter-notebook用)
+|   ├── sh/                               # 管理用のスクリプト
+|   └── README_forStreamlit.ipynb         # 使い方の説明＆実行用　※コンテナ化により不要
+├── docs/                                 # ドキュメント
+├── ecr-push.sh                           # ECRにコンテナをプッシュするスクリプト
+├── bin/                                  # cdk用（作成中）
+├── lib/                                  # cdk用（作成中）
+├── cdk.json                              # cdk用設定ファイル（作成中）
+.
+.
+.
 ```
 
-## (開発用)改善点の要点：
+## ローカル環境でコンテナを起動してテストする
 
-今後のアプリ化を容易にしつつ、継続的な改変を行うため、以下に留意して改善
+(前提) AWS CLI の設定は完了していることを確認してください。
+
+アプリへのログイン認証に AWS Cognito を利用しています。 `app/.streamlit/secrets.toml` に認証情報を設定しますが、ECS 環境用の内容となっているため、ローカル用に以下のように設定します。
+ただし、ECR にプッシュする前に必ず元に戻しましょう。
+
+```toml
+[cognito]
+redirect_uri = "http://localhost:8501"
+```
+
+コンテナを起動するときには、 app ディレクトリで以下のコマンドを実行します。
+
+```bash
+docker-compose build --no-cache
+docker-compose up
+```
+
+ターミナル上で Docker コンテナが起動したら、 `http://localhost:8501` にアクセスしてアプリを確認します。
+コンテナを停止するときは、 `ctrl + c` で停止します。
+
+ターミナル上でコンテナを動作させずに、バックグラウンドで実行したいときは、以下のコマンドを実行します。
+
+```bash
+docker-compose up -d
+```
+
+コンテナを停止するときは、以下のコマンドを実行します。
+
+```bash
+docker-compose down
+```
+
+### (参考) Docker コンテナで使用するコマンドのメモ
+
+```bash
+# コンテナを停止して削除
+docker-compose down
+
+# コンテナイメージを再ビルド
+docker-compose build --no-cache
+
+# コンテナを起動
+docker-compose up
+
+# コンテナを起動（バックグラウンドで実行）
+docker-compose up -d
+
+```
+
+定期的なお掃除用のコマンド
+（コンテナイメージでストレージを圧迫しないため）
+
+```bash
+# システム全体（未使用のコンテナ含む）のクリーンアップ
+docker system prune -a --force
+# 使用していないコンテナイメージを削除
+docker image prune
+
+# 使用していないシステムリソースの削除
+docker system prune
+
+# 強制的に全てのコンテナイメージを削除するときに実行する。
+docker rmi $(docker images -q)
+```
+
+## ECRにコンテナをプッシュする
+
+開発が完了したら、 `app/.streamlit/secrets.toml` を元に戻した後、以下のスクリプトを実行して ECR にコンテナをプッシュします。
+このコマンドはプロジェクトのルートディレクトリ（ `contact-wire-inspection-system` ）で実行します。
+
+```bash
+source ./ecr-push.sh
+```
+
+## (開発用)メモ
+
+今後のアプリ化を容易にしつつ、継続的な改変を行うため、以下に留意して改善していく。
 
 参考文献：
 
