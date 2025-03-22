@@ -199,7 +199,7 @@ class CognitoAuthenticator:
                 if self.handle_callback():
                     st.success("ログインに成功しました！")
                     # 3秒後にページを再読み込み
-                    time.sleep(3)
+                    time.sleep(1)
                     st.rerun()  # ページを再読み込み
                 else:
                     st.error("ログインに失敗しました")
