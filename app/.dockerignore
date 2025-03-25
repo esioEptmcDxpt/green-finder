@@ -29,7 +29,10 @@ utils
 tests
 logs
 TDM
+sh
 .streamlit/secrets.toml.example
 .streamlit/user_info.csv
 .streamlit/user_info.yml
 graph_recent.html
+browser_id_storage
+token_storage

@@ -255,7 +255,12 @@ def data_loader(config):
 
     # st.write(target_rail_list)
 
-    info_view.write(f"## ___Step1___ {mode_type}する線区を選択する")
+    if modes.index(mode) == 0:
+        info_view.write(f"## ___Step1___ 画像を{mode_type}する線区を選択する")
+    elif modes.index(mode) == 2:
+        info_view.write(f"## ___Step1___ 解析結果を{mode_type}する線区を選択する")
+    else:
+        info_view.write(f"## ___Step1___ データを{mode_type}する線区を選択する")
     rail_path = info_view.selectbox("線区フォルダ", target_rail_list, key="rail_path")
 
     info_view.warning(f"## ✔ {mode_type}する線区は合っていますか？")

@@ -2,6 +2,7 @@ import os
 import shelve
 import copy
 import matplotlib
+import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import gc
@@ -41,7 +42,7 @@ def plot_fig(im_base, vert_pos, hori_pos):
 
     figsize = mag * (1 + margin) * ypixels / dpi, mag * (1 + margin) * xpixels / dpi
 
-    fig = matplotlib.pyplot.figure(figsize=figsize, dpi=dpi)
+    fig = plt.figure(figsize=figsize, dpi=dpi)
     ax = fig.add_axes([margin, margin, 1 - 2 * margin, 1 - 2 * margin])
     ax.set_yticks(range(0, 2200, 50))
     ax.minorticks_on()
@@ -940,8 +941,8 @@ def plot_fig_plt(config, rail_fpath, camera_num, graph_height, graph_width, grap
         ix_view_range = (int(df['ix'].min()), int(df['ix'].max()))
 
     # グラフ描画エリアを設定
-    fig, (ax1, ax2, ax3, ax4) = matplotlib.pyplot.subplots(4, 1, figsize=(graph_width, graph_height))
-    matplotlib.pyplot.subplots_adjust(hspace=graph_height / 25)    # グラフ間の間隔を調整
+    fig, (ax1, ax2, ax3, ax4) = plt.subplots(4, 1, figsize=(graph_width, graph_height))
+    plt.subplots_adjust(hspace=graph_height / 25)    # グラフ間の間隔を調整
 
     fig.suptitle(title_text)
     ax1.set_ylabel('estimated_edge')

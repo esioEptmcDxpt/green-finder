@@ -160,18 +160,18 @@ def get_office_message(_config, office):
         message = f"{office_name_jp}\n\n{mc_name_jp}"
     return message
 
-# @st.cache
-def rail_message(dir_area, config):
+@st.cache_data
+def rail_message(dir_area, _config):
     str_list = re.split('[_-]', dir_area)
-    rail_name = rail_name_to_jp(str_list[0], config)
-    if str_list[3] == 'St' or str_list[3] == 'st':
-        st_name = station_name_to_jp(str_list[2], config) + '構内'
+    rail_name = rail_name_to_jp(str_list[0], _config)
+    if str_list[2] == 'St' or str_list[2] == 'st':
+        st_name = station_name_to_jp(str_list[2], _config) + '構内'
     else:
-        st_name = station_name_to_jp(str_list[2], config) + '～' + station_name_to_jp(str_list[3], config)
-    updown_name = rail_type_to_jp(str_list[4], config)
-    date_obj = datetime.datetime.strptime(str_list[5], "%Y%m%d")
+        st_name = station_name_to_jp(str_list[1], _config) + '～' + station_name_to_jp(str_list[2], _config)
+    updown_name = rail_type_to_jp(str_list[3], _config)
+    date_obj = datetime.datetime.strptime(str_list[4], "%Y%m%d")
     measurement_date = date_obj.strftime("%Y年%m月%d日")    # # yyyy年mm月dd日形式の文字列に変換
-    measurement_time = rail_type_name_to_jp(str_list[6], config)
+    measurement_time = rail_type_name_to_jp(str_list[5], _config)
     return rail_name, st_name, updown_name, measurement_date, measurement_time
 
 

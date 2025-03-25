@@ -149,7 +149,7 @@ class CognitoAuthenticator:
         query_string = "&".join([f"{k}={requests.utils.quote(v)}" for k, v in params.items()])
         
         # Cognitoのログイン画面へのURL
-        login_url = f"{cognito_domain}/login?{query_string}"
+        login_url = f"{cognito_domain}/login?lang=ja&{query_string}"
         
         # aタグを使用してリンク機能を実装
         login_button_html = f"""
