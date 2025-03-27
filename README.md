@@ -72,3 +72,38 @@ docker-compose down -v
 ``` bash
 docker-compose down --rmi all
 ```
+
+# GitHub の設定
+
+SSHキーを設定する
+
+```bash
+# SSHキーを生成 (選択肢は全て Enter でOK)
+# 必要によりパスワードを設定する
+# パスワードは自分のパスワードに置き換える
+ssh-keygen -t ed25519 -C "your_email@example.com"
+
+# SSHエージェントを起動
+eval "$(ssh-agent -s)"
+
+# SSHキーをエージェントに追加
+ssh-add ~/.ssh/id_ed25519
+
+# 公開キーを表示（これをGitHubに登録）
+cat ~/.ssh/id_ed25519.pub
+```
+
+GitHubの「Settings」→「SSH and GPG keys」→「New SSH key」で公開キーを登録します。
+
+接続テスト(選択肢は yes)
+
+```bash
+ssh -T git@github.com
+```
+
+その後、リモートURLをSSH形式に変更：
+
+```
+git remote set-url origin git@github.com:ESIO-EPTMC-DXPT/green-finder.git
+```
+
