@@ -1,0 +1,8 @@
+streamlit==1.42.2
+streamlit_pills==0.3.0
+pandas==2.2.3
+numpy==2.0.2
+plotly==5.15.0
+geopandas==1.0.1
+shapely==2.0.7
+openpyxl==3.1.5

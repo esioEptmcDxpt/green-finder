@@ -1,0 +1,14 @@
+__pycache__/
+*.py[cod]
+*$py.class
+.env
+.venv
+env/
+venv/
+ENV/
+.git/
+.github/
+.gitignore
+README.md
+
+src/sample_karasuyama.csv
