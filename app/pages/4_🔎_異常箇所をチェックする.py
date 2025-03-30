@@ -54,7 +54,7 @@ def extract_info(file_path):
         return None
 
 
-def analysis_anomaly_df(result_path, output_path):
+def analysis_anomaly_df(result_path, output_path, main_view):
     dir_area = extract_filename_without_extension(output_path)
 
     # 異常検出結果を読み込む
