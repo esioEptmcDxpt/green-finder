@@ -247,7 +247,7 @@ def storage_viewer(config):
         config (object): 設定ファイル
     """
     st.set_page_config(page_title="ストレージビューワ", page_icon="📁", layout="wide")
-    st.logo("icons/cis_page-eye-catch.jpg", size="large")
+    # st.logo("icons/cis_page-eye-catch.jpg", size="large")
     # 認証マネージャーの初期化
     auth_manager = auth.AuthenticationManager()
     # 認証処理とUI表示

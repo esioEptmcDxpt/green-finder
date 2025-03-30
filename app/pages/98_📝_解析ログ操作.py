@@ -29,7 +29,7 @@ def set_office(_config, office_default):
 def log_management(config):
     # マルチページの設定
     st.set_page_config(page_title="解析ログ操作", layout="wide")
-    st.logo("icons/cis_page-eye-catch.jpg", size="large")
+    # st.logo("icons/cis_page-eye-catch.jpg", size="large")
     # 認証マネージャーの初期化
     auth_manager = auth.AuthenticationManager()
     # 認証処理とUI表示

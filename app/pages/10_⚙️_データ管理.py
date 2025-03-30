@@ -155,7 +155,7 @@ def delete_s3_data(config, office, rail_path, delete_type):
 def data_loader(config):
     # マルチページの設定
     st.set_page_config(page_title="データ管理", layout="wide")
-    st.logo("icons/cis_page-eye-catch.jpg", size="large")
+    # st.logo("icons/cis_page-eye-catch.jpg", size="large")
 
     # 認証マネージャーの初期化
     auth_manager = auth.AuthenticationManager()

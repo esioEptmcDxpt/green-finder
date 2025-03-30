@@ -5,11 +5,12 @@ import src.auth_aws as auth_aws
 import src.visualize as visualize
 from src.config import appProperties
 import time
+from PIL import Image
 
 
 def main(config):
     st.set_page_config(page_title="CIS トロリ線摩耗判定支援システム", page_icon="🚋",)
-    st.logo("icons/cis_page-eye-catch.jpg", size="large")
+    # st.logo("icons/cis_page-eye-catch.jpg", size="large")
 
     # 認証マネージャーの初期化
     auth_manager = auth_aws.AuthenticationManager()
