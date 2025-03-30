@@ -26,7 +26,7 @@ def set_office(_config, office_default):
 
 def ohc_wear_analysis(config):
     st.set_page_config(page_title="トロリ線摩耗検出システム", layout="centered")
-    st.logo("icons/cis_page-eye-catch.jpg", size="large")
+    # st.logo("icons/cis_page-eye-catch.jpg", size="large")
 
     # 認証マネージャーの初期化
     auth_manager = auth.AuthenticationManager()
@@ -170,7 +170,7 @@ def ohc_wear_analysis(config):
         st.write("📸カメラ画像")
         cam_img = vis.ohc_image_load(base_images[idx])
         st.write(f"カメラ:{camera_name} {idx + 1}番目の画像")
-        st.image(cam_img)
+        vis.image_to_html(cam_img, width="100%")
         cam_img_name = f"downloaded_image_{idx}.png"
         vis.download_image(cam_img, cam_img_name)
     with col2:
@@ -185,7 +185,7 @@ def ohc_wear_analysis(config):
         if not out_img:
             st.error("解析結果がありません")
         else:
-            st.image(out_img)
+            vis.image_to_html(out_img, width="100%")
             out_img_name = f"downloaded_image_{idx}_analized.png"
             vis.download_image(out_img, out_img_name)
     if out_img:
@@ -231,7 +231,8 @@ def ohc_wear_analysis(config):
                 fig = vis.plot_fig(cam_img, vert_pos, hori_pos)
             else:
                 fig = vis.plot_fig(out_img, vert_pos, hori_pos)
-            log_view.pyplot(fig)
+            with log_view:
+                vis.plot_to_html(fig)
     else:
         form_graph_img = st.sidebar.form(key="graph_img_form")
         result_line_draw = form_graph_img.toggle("結果を重ねて描画", value=True)
@@ -245,7 +246,8 @@ def ohc_wear_analysis(config):
                 fig = vis.plot_fig(cam_img, vert_pos, hori_pos)
             else:
                 fig = vis.plot_fig(out_img, vert_pos, hori_pos)
-            log_view.pyplot(fig)
+            with log_view:
+                vis.plot_to_html(fig)
 
     # ピクセルトレースを実行
     if trace_method == "ピクセルトレース":

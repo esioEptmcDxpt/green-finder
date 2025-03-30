@@ -178,16 +178,13 @@ format_func:
         takasaki: 高崎電力MC
         okegawa: 桶川電力MC
         kumagaya: 熊谷電力MC
-        shibukawa: 渋川電力MC
-        kiryu: 桐生電力MC
     mito:
       name: 水戸電力設備技術センター
       mc:
         mito: 水戸電力MC
         tsuchiura: 土浦電力MC
-        iwaki: 岩瀬電力MC
+        iwaki: いわき電力MC
         haranouchi: 原ノ町電力MC
-        takahama: 高萩電力MC
     chiba:
       name: 千葉電力設備技術センター
       mc:
@@ -196,37 +193,27 @@ format_func:
         shinkoiwa: 新小岩電力MC
         ichinomiya: 一ノ宮電力MC
         kisarazu: 木更津電力MC
-        choshi: 銚子電力MC
-        tateyama: 館山電力MC
+        choshi: 成田電力MC
     nagano:
       name: 長野電力設備技術センター
       mc:
         nagano: 長野電力MC
-        ueda: 上田電力MC
         matsumoto: 松本電力MC
         kamisuwa: 上諏訪電力MC
-        shinanoomachi: 信濃大町電力MC
-        iiyama: 飯山電力MC
     sendai:
       name: 仙台電力設備技術センター
       mc:
         sendai: 仙台電力MC
-        shiroishi: 白石電力MC
         fukushima: 福島電力MC
         koriyama: 郡山電力MC
         yamagata: 山形電力MC
         yonezawa: 米沢電力MC
         shinjo: 新庄電力MC
-        shinshirakawa: 新白河電力MC
-        aizuwakamatsu: 会津若松電力MC
-        furukawa: 古川電力MC
     morioka:
       name: 盛岡電力設備技術センター
       mc:
         morioka: 盛岡電力MC
         ichinoseki: 一ノ関電力MC
-        kitaokami: 北上電力MC
-        hachinohe: 八戸電力MC
         aomori: 青森電力MC
     akita:
       name: 秋田電力設備技術センター
@@ -234,8 +221,6 @@ format_func:
         akita: 秋田電力MC
         omagari: 大曲電力MC
         hirosaki: 弘前電力MC
-        odate: 大館電力MC
-        ugohonjo: 羽後本荘電力MC
     niigata:
       name: 新潟電力設備技術センター
       mc:
@@ -251,7 +236,7 @@ format_func:
     Oito: 大糸線
     Uetsu: 羽越本線
     Hakushin: 白新線
-    Uetsu: 上越線
+    Joetsu: 上越線
     Echigo: 越後線
     Yahiko: 弥彦線
     Hachiko: 八高線
@@ -266,8 +251,6 @@ format_func:
     TohokuHon: 東北本線
     Yamate: 山手線
     SobuHon: 総武本線
-    SobuKanko: 総武緩行
-    SobuKaisoku: 総武快速
     Joban: 常磐線
     Akabane: 赤羽線
     Keiyo: 京葉線
@@ -294,11 +277,96 @@ format_func:
     Tsugaru: 津軽線
     Utsunomiya: 宇都宮線
     KehinTohoku: 京浜東北
+    TokaidoIT: 東海道〔伊東〕
+    TokaidoYK: 東海道〔横須賀〕
+    TokaidoYKU: 東海道〔横須賀地下〕
+    TokaidoF: 東海道〔貨物〕
+    TokaidoFB: 東海道〔貨物支〕
+    TokaidoKRSCF: 東海道〔鎌倉車深沢〕
+    TokaidoKRSCN: 東海道〔鎌倉車長島〕
+    TokaidoPAX: 東海道〔客〕
+    TokaidoKY: 東海道〔京葉〕
+    TokaidoTS: 東海道〔高島〕
+    TokaidoKZRY: 東海道〔国府津電車区〕
+    TokaidoNG: 東海道〔根岸〕
+    TokaidoNGF: 東海道〔根岸貨物〕
+    TokaidoYT: 東海道〔山手〕
+    TokaidoOSB: 東海道〔大崎支線〕
+    TokaidoCO: 東海道〔中央〕
+    TokaidoTM: 東海道〔鶴見〕
+    TokaidoRW: 東海道〔電車〕
+    TokaidoNB: 東海道〔南武〕
+    TokaidoMN: 東海道〔武蔵野〕
+    TokaidoFreight: 東海道貨物〔品鶴〕
+    TohokuF: 東北〔貨物〕
+    TohokuFW: 東北〔回送〕
+    TohokuPAX: 東北〔客〕
+    TohokuEL: 東北〔高架〕
+    TohokuTS: 東北〔高崎〕
+    TohokuSK: 東北〔埼京〕
+    TohokuYT: 東北〔山手〕
+    TohokuJBF: 東北〔常磐貨物〕
+    TohokuJBEL: 東北〔常磐高架〕
+    TohokuJBOV: 東北〔常磐地平〕
+    TohokuMT: 東北〔水戸〕
+    TohokuAB: 東北〔赤羽〕
+    TohokuKG: 東北〔川越〕
+    TohokuOMB: 東北〔大宮支線〕
+    TohokuOV: 東北〔地平〕
+    TohokuCO: 東北〔中央〕
+    TohokuRW: 東北〔電車〕
+    TohokuNK: 東北〔日光〕
+    TohokuRF: 東北〔利府〕
+    TohokuRM: 東北〔両毛〕
+    NegishiF: 根岸〔貨物〕
+    YamateF: 山手〔貨物〕
+    YamateCOL: 山手〔中緩〕
+    YamateCOR: 山手〔中急〕
+    JobanF: 常磐〔貨物〕
+    JobanR: 常磐〔快速〕
+    JobanL: 常磐〔緩行〕
+    JobanSK: 常磐〔新金線〕
+    JobanMSB: 常磐〔南千住支線〕
+    ShinetsuFBO: 信越貨物支線〔外〕
+    ShinetsuFBI: 信越貨物支線〔内〕
+    NaritaAB: 成田線〔我孫子〕
+    NaritaAP: 成田線〔空港〕
+    OmeF: 青梅〔貨物〕
+    OmeI: 青梅〔五日市〕
+    KawagoeF: 川越〔貨物〕
+    SobuET: 総武〔越中島〕
+    SobuR: 総武〔快速〕
+    SobuL: 総武〔緩行〕
+    SobuKM: 総武〔金町〕
+    SobuON: 総武〔小名木川〕
+    SobuSK: 総武〔新金線〕
+    ChuoYH: 中央〔横浜〕
+    ChuoL: 中央〔緩行〕
+    ChuoPAX: 中央〔客〕
+    ChuoR: 中央〔急行〕
+    ChuoYT: 中央〔山手〕
+    ChuoOM: 中央〔青梅〕
+    ChuoRW: 中央〔電車〕
+    ChuoTZ: 中央〔東西〕
+    ChuoNB: 中央〔南武〕
+    ChuoHK: 中央〔八高〕
+    ChuoMN: 中央〔武蔵野〕
+    TsurumiF: 鶴見〔貨物〕
+    TsurumiUSB: 鶴見〔海芝浦支線〕
+    TsurumiOKB: 鶴見〔大川支線〕
+    NambuSB: 南武〔尻手支線〕
+    NambuSL: 南武〔短絡線〕
+    NambuMN: 南武〔武蔵野〕
+    MusashinoKNB: 武蔵野〔国立支線〕
+    MusashinoSAB: 武蔵野〔新秋津支線〕
+    MusashinoNUB: 武蔵野〔西浦和支線〕
+    MusashinoOMB: 武蔵野〔大宮支線〕
+    MusashinoMB: 武蔵野〔馬橋〕
+    MusashinoKKB: 武蔵野〔北小金支線〕
   station_names:
     st: 構内
     NaganoGeneralRSC: 長野総合車両センター
     Nagano: 長野
-    Ueda: 上田
     iiyama: 飯山
     Amori: 安茂里
     Kawanakajima: 川中島
@@ -628,16 +696,13 @@ format_func:
     HigashiFT: 東貨〔タ〕
     Nishiogikubo: 西荻窪
     Ogikubo: 荻窪
-    Asagaya: 阿佐ケ谷
     Iidabashi: 飯田橋
     Suidobashi: 水道橋
     Ochanomizu: 御茶ノ水
     Shinanomachi: 信濃町
     Yotsuya: 四ツ谷
-    Ichigaya: 市ケ谷
     Ookubo: 大久保
     Shinjuku: 新宿
-    Sendagaya: 千駄ケ谷
     Koenji: 高円寺
     Nakano: 中野
     Higashinakano: 東中野
@@ -1097,7 +1162,7 @@ format_func:
     Isohara: 磯原
     Minaminakago: 南中郷
     Takahagi: 高萩
-    Ueda: 植田
+    UedaM: 植田
     Nakoso: 勿来
     Otsuko: 大津港
     Uchigo: 内郷
@@ -1491,6 +1556,11 @@ format_func:
     Sebechi: 瀬辺地
     Gousawa: 郷沢
     Yomogita: 蓬田
+    UedaN: 上田
+    Iiyama: 飯山
+    Shinagawa1: 品川1
+    Shinagawa2: 品川2
+    Furukawa: 古川
   rail_type_names:
     up: 上り線
     down: 下り線

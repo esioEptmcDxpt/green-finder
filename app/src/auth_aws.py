@@ -8,6 +8,7 @@ import os
 import boto3
 import base64
 import src.helpers as helpers
+import src.visualize as vis
 from src.config import appProperties
 from collections import OrderedDict
 import uuid
@@ -149,7 +150,7 @@ class CognitoAuthenticator:
         query_string = "&".join([f"{k}={requests.utils.quote(v)}" for k, v in params.items()])
         
         # Cognitoのログイン画面へのURL
-        login_url = f"{cognito_domain}/login?{query_string}"
+        login_url = f"{cognito_domain}/login?lang=ja&{query_string}"
         
         # aタグを使用してリンク機能を実装
         login_button_html = f"""
@@ -212,7 +213,9 @@ class CognitoAuthenticator:
             # ログインページの画像を表示
             try:
                 cis_image = Image.open('icons/cis_page-eye-catch.jpg')
-                st.image(cis_image, caption='Contact-wire Inspection System')
+                # st.image() の代わりに vis.image_to_html() を使用
+                vis.image_to_html(cis_image, width="100%")
+                st.markdown('Contact-wire Inspection System')
             except Exception as e:
                 st.warning(f"画像の読み込みに失敗しました: {str(e)}")
             

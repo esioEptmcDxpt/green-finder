@@ -7,7 +7,7 @@ def show_code():
     """ 各ページ(Pages内)のPythonファイルのコードを表示する
     """
     st.set_page_config(page_title="show code...", layout="wide")
-    st.logo("icons/cis_page-eye-catch.jpg", size="large")
+    # st.logo("icons/cis_page-eye-catch.jpg", size="large")
 
     # 認証マネージャーの初期化
     auth_manager = auth.AuthenticationManager()

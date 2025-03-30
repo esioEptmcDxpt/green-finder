@@ -7,6 +7,8 @@ tts.log
 # 作業用フォルダ
 app/trolley_line_analysis.egg-info/
 .dev/
+.DS_Store
+**/.DS_Store
 
 # 開発中の一時ファイル
 app/graph_recent.html
@@ -15,6 +17,8 @@ app/images/
 app/output/
 app/TDM/
 app/logs/
+app/browser_id_storage/
+app/token_storage/
 
 # Stramlit
 app/.streamlit/secrets.toml

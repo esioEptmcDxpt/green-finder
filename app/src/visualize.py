@@ -2,6 +2,7 @@ import os
 import shelve
 import copy
 import matplotlib
+import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import gc
@@ -20,6 +21,7 @@ import plotly
 import plotly.graph_objs as go
 from plotly.subplots import make_subplots
 import zipfile
+import base64
 
 
 # @st.cache_data(hash_funcs={matplotlib.figure.Figure: lambda _: None})
@@ -41,7 +43,7 @@ def plot_fig(im_base, vert_pos, hori_pos):
 
     figsize = mag * (1 + margin) * ypixels / dpi, mag * (1 + margin) * xpixels / dpi
 
-    fig = matplotlib.pyplot.figure(figsize=figsize, dpi=dpi)
+    fig = plt.figure(figsize=figsize, dpi=dpi)
     ax = fig.add_axes([margin, margin, 1 - 2 * margin, 1 - 2 * margin])
     ax.set_yticks(range(0, 2200, 50))
     ax.minorticks_on()
@@ -940,8 +942,8 @@ def plot_fig_plt(config, rail_fpath, camera_num, graph_height, graph_width, grap
         ix_view_range = (int(df['ix'].min()), int(df['ix'].max()))
 
     # グラフ描画エリアを設定
-    fig, (ax1, ax2, ax3, ax4) = matplotlib.pyplot.subplots(4, 1, figsize=(graph_width, graph_height))
-    matplotlib.pyplot.subplots_adjust(hspace=graph_height / 25)    # グラフ間の間隔を調整
+    fig, (ax1, ax2, ax3, ax4) = plt.subplots(4, 1, figsize=(graph_width, graph_height))
+    plt.subplots_adjust(hspace=graph_height / 25)    # グラフ間の間隔を調整
 
     fig.suptitle(title_text)
     ax1.set_ylabel('estimated_edge')
@@ -996,35 +998,41 @@ def draw_marker(candidate_init, num, img, col, x_init):
             elif x_init > 500:                                      # x_initに対応
                 iy = round(i / 1.5) * -1                            # x_initに対応
 
-            # img_array[ixu, 0:3] = [255, 0, 0]
-            # img_array[ixu, iy:iy+3] = [255, 0, 0]
             img_array[ixu, x_init:x_init+3] = [255, 0, 0]           # x_initに対応
             img_array[ixu, x_init+iy:x_init+iy+3] = [255, 0, 0]     # x_initに対応
-
-            # img_array[ixl, 0:3] = [255, 0, 0]
-            # img_array[ixl, iy:iy+3] = [255, 0, 0]
             img_array[ixl, x_init:x_init+3] = [255, 0, 0]           # x_initに対応
             img_array[ixl, x_init+iy:x_init+iy+3] = [255, 0, 0]     # x_initに対応
 
         cam_img_mk = Image.fromarray(img_array)
         st.write("📸カメラ画像（自動エッジ検出）")
         st.write(f"{num + 1}番目の候補をマーカーで表示（idx={x_init}）")
-        st.image(cam_img_mk)
+        image_to_html(cam_img_mk, width="100%")
     return
 
 
-def download_image(img, image_name):                                                       # 2024.5.21 -->
+def download_image(img, image_name):
+    """
+    画像をダウンロードするボタンを表示する
+    
+    Args:
+        img (PIL.Image): ダウンロードする画像
+        image_name (str): ダウンロード時のファイル名
+    """
     buf = io.BytesIO()
     img.save(buf, format='PNG')
     byte_im = buf.getvalue()
-    # ダウンロードボタンを設置する
+    
+    # Base64エンコードしたデータをダウンロードボタンに渡す
+    b64_image = base64.b64encode(byte_im).decode()
+    
+    # 画像サイズが大きい場合は直接バイナリを使用
     st.download_button(
         label="画像をダウンロード",
         data=byte_im,
         file_name=image_name,
         mime="image/png"
-    )                                                                                      # --> 2024.5.21
-    
+    )
+
 
 def get_welcome_content():
     """
@@ -1067,12 +1075,15 @@ def display_welcome_page():
     
     # 画像を直接表示
     try:
-        st.image('icons/cis_page-eye-catch.jpg', use_container_width=True)
+        # st.image()の代わりにBase64エンコード方式を使用
+        img = Image.open('icons/cis_page-eye-catch.jpg')
+        image_to_html(img, width="100%")
     except Exception:
         try:
             base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
             image_path = os.path.join(base_dir, 'icons', 'cis_page-eye-catch.jpg')
-            st.image(image_path, use_container_width=True)
+            img = Image.open(image_path)
+            image_to_html(img, width="100%")
         except Exception as e:
             st.warning(f"画像の読み込みに失敗しました: {e}")
 
@@ -1151,4 +1162,56 @@ def download_images_and_html_zip(img1, img1_name, img2, img2_name, html_path, zi
         download_files_as_zip(files_data, zip_name)
     except Exception as e:
         st.error(f"HTMLファイルの読み込みに失敗しました: {e}")
+    
+
+# 画像をBase64エンコードしてHTML表示するための関数を追加
+def image_to_html(img, width=None, caption=None):
+    """
+    PIL画像をBase64エンコードしてHTML形式で表示する
+    
+    Args:
+        img (PIL.Image): 表示する画像
+        width (str): 画像の幅（例: '100%'）
+        caption (str): 画像のキャプション
+    """
+    buffer = io.BytesIO()
+    img.save(buffer, format='PNG')
+    img_str = base64.b64encode(buffer.getvalue()).decode()
+    
+    width_style = f"width: {width};" if width else ""
+    
+    html = f"""
+    <div style="text-align: center;">
+        <img src="data:image/png;base64,{img_str}" style="{width_style}"/>
+    </div>
+    """
+    
+    if caption:
+        html += f"<p>{caption}</p>"
+    
+    html += "</div>"
+    
+    st.markdown(html, unsafe_allow_html=True)
+    
+
+# プロットをHTMLとして表示する関数
+def plot_to_html(fig):
+    """
+    Matplotlibの図をHTMLとして表示
+    
+    Args:
+        fig (matplotlib.figure.Figure): 表示する図
+    """
+    buf = io.BytesIO()
+    fig.savefig(buf, format='png', bbox_inches='tight')
+    buf.seek(0)
+    img_str = base64.b64encode(buf.getvalue()).decode()
+    
+    html = f"""
+    <div style="text-align: center;">
+        <img src="data:image/png;base64,{img_str}" style="width: 100%;"/>
+    </div>
+    """
+    
+    st.markdown(html, unsafe_allow_html=True)
     

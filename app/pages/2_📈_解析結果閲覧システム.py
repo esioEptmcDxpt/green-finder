@@ -27,7 +27,7 @@ def result_image_view(config):
         config: ymlファイルを読み込んだ設定値
     """
     st.set_page_config(page_title="解析結果ビューワー", layout="wide")
-    st.logo("icons/cis_page-eye-catch.jpg", size="large")
+    # st.logo("icons/cis_page-eye-catch.jpg", size="large")
 
     # 認証マネージャーの初期化
     auth_manager = auth.AuthenticationManager()
@@ -275,7 +275,7 @@ def result_image_view(config):
             # cam_img = vis.ohc_image_load(base_images[idx])
             cam_img = vis.ohc_img_concat(base_images, idx - 1, concat_nums, font_size)
             st.write(f"カメラ:{camera_name} {idx}～{idx + concat_nums - 1}までの画像")
-            st.image(cam_img)
+            vis.image_to_html(cam_img, width="100%")
             cam_img_name = f"downloaded_image_{idx}-{idx + concat_nums - 1}.png"
             vis.download_image(cam_img, cam_img_name)
         with row2:
@@ -304,7 +304,7 @@ def result_image_view(config):
             if not out_img:
                 st.error("解析結果がありません")
             else:
-                st.image(out_img)
+                vis.image_to_html(out_img, width="100%")
                 out_img_name = f"downloaded_image_{idx}-{idx + concat_nums - 1}_analized.png"
                 vis.download_image(out_img, out_img_name)
                 

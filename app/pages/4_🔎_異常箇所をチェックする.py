@@ -54,7 +54,7 @@ def extract_info(file_path):
         return None
 
 
-def analysis_anomaly_df(result_path, output_path):
+def analysis_anomaly_df(result_path, output_path, main_view):
     dir_area = extract_filename_without_extension(output_path)
 
     # 異常検出結果を読み込む
@@ -95,7 +95,7 @@ def analysis_anomaly_df(result_path, output_path):
     df_output.loc[df_output['ix'].isin(df['ix']), 'Anomaly'] = True
 
     # グラフを出力する
-    create_graph(df, df_output, output_path)
+    create_graph(df, df_output, output_path, main_view)
 
 
 def create_graph(df, df_output, output_path, main_view):
@@ -134,9 +134,11 @@ def create_graph(df, df_output, output_path, main_view):
     plt.savefig(save_path)
     main_view.write(f"グラフを {save_path} に出力しました")
 
-    # グラフを表示
-    # plt.show()
-    main_view.pyplot(plt)
+    # グラフを表示（st.pyplotの代わりにvis.plot_to_htmlを使用）
+    # main_view.pyplot(plt) の代わりに
+    with main_view:
+        fig = plt.gcf()  # 現在のfigureを取得
+        vis.plot_to_html(fig)
 
 
 def get_file_list():
@@ -158,7 +160,7 @@ def find_indices(word_list, target_string):
 def eda_tool(config):
     # マルチページの設定
     st.set_page_config(page_title="異常値箇所チェック", layout="wide")
-    st.logo("icons/cis_page-eye-catch.jpg", size="large")
+    # st.logo("icons/cis_page-eye-catch.jpg", size="large")
 
     # 認証マネージャーの初期化
     auth_manager = auth.AuthenticationManager()
@@ -184,7 +186,8 @@ def eda_tool(config):
     # 作成中メッセージ
     main_view.warning("# 一生懸命プログラムを作成中です")
     img_sorry = Image.open('icons/sorry_panda.jpg')
-    main_view.image(img_sorry, caption='We are working very hard on the program!')
+    vis.image_to_html(img_sorry, width="100%")
+    main_view.markdown('We are working very hard on the program!')
 
 
     # 箇所名を選択
@@ -274,7 +277,12 @@ def eda_tool(config):
         st.write("# 異常値検出結果")
 
         st.write("## 異常値検出グラフ")
-        st.image(graph_path, caption="検出された外れ値をプロットしています")
+        if graph_path:
+            img_graph = Image.open(graph_path[0])  # リストの場合は最初の要素を使用
+            vis.image_to_html(img_graph, width="100%")
+            st.markdown("検出された外れ値をプロットしています")
+        else:
+            st.error("異常値検出グラフがありません")
 
         st.write("## 異常値検出データ")
         st.selectbox("異常が検出された電柱番号　※重複なし チェック用", pole_nums)
@@ -298,16 +306,9 @@ def eda_tool(config):
             image_name = image_path.split('.')[0]
             rail_fpath = f"{outpath}/{config.csv_fname}_{csv_path}"
             cam_img = vis.ohc_image_load(f"{target_dir}/{image_path}")
-            out_img = vis.out_image_load(rail_fpath, dir_area, camera_num, image_path, cam_img, config, outpath)
+            vis.image_to_html(cam_img, width="100%")
         except Exception as e:
-            out_img = []
             st.write(e)
-        if not out_img:
-            st.error("解析結果がありません")
-        else:
-            st.image(out_img)
-            out_img_name = f"downloaded_image_{image_path}"
-            vis.download_image(out_img, out_img_name)
     
     st.write("# 連結画像を出力する")
 
