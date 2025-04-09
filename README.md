@@ -73,7 +73,7 @@ docker-compose down -v
 docker-compose down --rmi all
 ```
 
-# GitHub の設定
+# GitHub の設定 ( private リポジトリの場合)
 
 SSHキーを設定する
 
