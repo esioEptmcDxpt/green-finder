@@ -70,7 +70,7 @@ def main():
     
     # タイトル表示
     top_view = st.container()
-    top_view.write("""# 🍃🌳 Green Finder""")   
+    top_view.write("""# 🍃🌳 Green Finder Beta""")   
     
     ### サイドバーの設定
     with st.sidebar:
