@@ -73,37 +73,73 @@ docker-compose down -v
 docker-compose down --rmi all
 ```
 
-# GitHub の設定 ( private リポジトリの場合)
+# GitHub の設定
 
-SSHキーを設定する
+## 初めて使う場合の設定 (GitHubでSSH認証を設定する手順)
+
+### 1. SSH鍵を生成する
 
 ```bash
-# SSHキーを生成 (選択肢は全て Enter でOK)
-# 必要によりパスワードを設定する
-# パスワードは自分のパスワードに置き換える
+# SSH鍵を生成（メールアドレスは自分のJoi-Netアドレスに変更してください）
 ssh-keygen -t ed25519 -C "your_email@example.com"
 
-# SSHエージェントを起動
-eval "$(ssh-agent -s)"
-
-# SSHキーをエージェントに追加
-ssh-add ~/.ssh/id_ed25519
-
-# 公開キーを表示（これをGitHubに登録）
-cat ~/.ssh/id_ed25519.pub
+# または、古いシステムでed25519がサポートされていない場合
+ssh-keygen -t rsa -b 4096 -C "your_email@example.com"
 ```
 
-GitHubの「Settings」→「SSH and GPG keys」→「New SSH key」で公開キーを登録します。
+生成時に表示される質問:
+- 鍵の保存場所（デフォルトでOK: Enter）
+- パスフレーズ（任意: セキュリティ向上のため設定推奨）
 
-接続テスト(選択肢は yes)
+### 2. SSH鍵をSSHエージェントに追加する
+
+```bash
+# SSHエージェントをバックグラウンドで起動
+eval "$(ssh-agent -s)"
+
+# SSH鍵をエージェントに追加
+ssh-add ~/.ssh/id_ed25519  # または ~/.ssh/id_rsa
+```
+
+### 3. 公開鍵をGitHubに追加する
+
+```bash
+# 公開鍵をクリップボードにコピー
+cat ~/.ssh/id_ed25519.pub  # または ~/.ssh/id_rsa.pub
+```
+
+表示された内容をコピーして:
+
+1. GitHubにログイン
+2. 右上のプロフィールアイコン → Settings をクリック
+3. 左側のサイドバーで「SSH and GPG keys」をクリック
+4. 「New SSH key」ボタンをクリック
+5. タイトルに識別しやすい名前（例: 「Work Laptop」）を入力
+6. 「Key」フィールドに先ほどコピーした公開鍵を貼り付け
+7. 「Add SSH key」をクリック
+
+### 4. リモートURLをSSH形式に変更する
+
+```bash
+# 現在のリモートURLを確認
+git remote -v
+
+# リモートURLをSSH形式に変更
+git remote set-url origin git@github.com:esioEptmcDxpt/green-finder.git
+```
+
+### 5. 接続をテストする
 
 ```bash
 ssh -T git@github.com
 ```
 
-その後、リモートURLをSSH形式に変更：
+「Hi username! You've successfully authenticated...」というメッセージが表示されれば成功です。
 
-```
-git remote set-url origin git@github.com:ESIO-EPTMC-DXPT/green-finder.git
+### 6. プッシュしてみる
+
+```bash
+git push --set-upstream origin dev-sio
 ```
 
+注意: 初回接続時にホストの信頼性確認メッセージが表示されることがありますが、「yes」と入力して続行してください。
