@@ -49,7 +49,7 @@ def rail_load():
     ## 路線データ
     line = pd.read_csv(path + "tsushosen_line.csv", encoding="shift_jis")    # uploaded_file がある場合、2回読み込まれてしまうため変更
     ## サンプルデータ
-    # data_raw = pd.read_csv(path + "sample_karasuyama.csv", encoding="shift_jis")    # uploaded_file がある場合、2回読み込まれてしまうため変更
+    data_sample = pd.read_csv(path + "sample_karasuyama.csv", encoding="shift_jis")    # uploaded_file がある場合、2回読み込まれてしまうため変更
     
     ### データ下処理
     ## 駅データ
@@ -60,13 +60,13 @@ def rail_load():
     line['geometry'] = line['WKT'].apply(wkt.loads)
     line_gdf = gpd.GeoDataFrame(line, geometry='geometry')
     
-    return kilo, sta, line_gdf
+    return kilo, sta, line_gdf, data_sample
 
 
 @measure_time
 def main():
     # 線路条件をCSVから読み込む
-    kilo, sta, line_gdf = rail_load()
+    kilo, sta, line_gdf, data_sample = rail_load()
     
     # タイトル表示
     top_view = st.container()
@@ -86,7 +86,8 @@ def main():
             ## サンプルデータ
             # data_raw = pd.read_csv(path + "sample_karasuyama.csv", encoding="shift_jis")
             top_view.info('👈サイドバーからデータをアップロードしてください。')
-            return
+            data_raw = data_sample
+            #return
             
         # st.dataframe(data_raw[['測定日']])
         data_raw['date'] = pd.to_datetime(data_raw['測定日']).dt.date
