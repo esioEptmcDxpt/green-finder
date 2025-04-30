@@ -184,6 +184,13 @@ git stage .    # 変更されたファイルをコミットする状態にステ
 git commit -m "hogehoge"    # コメントを追加してコミットします
 ```
 
+初めてコミットするときは、ユーザ名・アドレスの設定が求められるので、設定した後に、もう一度コミットしましょう。
+
+```bash
+git config --global user.name "Your Name"
+git config --global user.email you@example.com
+```
+
 
 ```bash
 git push --set-upstream origin feature/test
