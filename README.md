@@ -191,6 +191,7 @@ git config --global user.name "Your Name"
 git config --global user.email you@example.com
 ```
 
+`git push` を1度実行すると、プッシュ用コマンドが表示されるので、以下のようにコピペして実行します。
 
 ```bash
 git push --set-upstream origin feature/test
