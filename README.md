@@ -97,6 +97,100 @@ cd ./contact-wire-inspection-system
 .
 ```
 
+## はじめて GitHub からクローンするとき
+
+### 1. SSH鍵を生成する
+
+```bash
+# SSH鍵を生成（メールアドレスは自分のJoi-Netアドレスに変更してください）
+ssh-keygen -t ed25519 -C "your_email@example.com"
+
+# または、古いシステムでed25519がサポートされていない場合
+ssh-keygen -t rsa -b 4096 -C "your_email@example.com"
+```
+
+生成時に表示される質問:
+- 鍵の保存場所（デフォルトでOK: Enter）
+- パスフレーズ（任意: セキュリティ向上のため設定推奨、なくてもOK）
+
+### 2. SSH鍵をSSHエージェントに追加する
+
+```bash
+# SSHエージェントをバックグラウンドで起動
+eval "$(ssh-agent -s)"
+
+# SSH鍵をエージェントに追加
+ssh-add ~/.ssh/id_ed25519  # または ~/.ssh/id_rsa
+```
+
+### 3. 公開鍵をGitHubに追加する
+
+```bash
+# 公開鍵をクリップボードにコピー
+cat ~/.ssh/id_ed25519.pub  # または ~/.ssh/id_rsa.pub
+```
+
+表示された内容をコピーして:
+
+1. GitHubにログイン
+2. 右上のプロフィールアイコン → Settings をクリック
+3. 左側のサイドバーで「SSH and GPG keys」をクリック
+4. 「New SSH key」ボタンをクリック
+5. タイトルに識別しやすい名前（例: 「Work Laptop」）を入力
+6. 「Key」フィールドに先ほどコピーした公開鍵を貼り付け
+7. 「Add SSH key」をクリック
+
+### 4. git clone する
+以下のコマンドでリポジトリをクローンします。
+（SSHパスを指定）
+
+途中で確認が求められたら yes にします。
+
+```bash
+git clone git@github.com:esioEptmcDxpt/contact-wire-inspection-system.git
+```
+
+### 5. リモートURLをSSH形式に変更する
+
+```bash
+# 現在のリモートURLを確認
+git remote -v
+
+# リモートURLをSSH形式に変更
+git remote set-url origin git@github.com:esioEptmcDxpt/green-finder.git
+```
+
+### 6. 接続をテストする
+
+```bash
+ssh -T git@github.com
+```
+
+「Hi username! You've successfully authenticated...」というメッセージが表示されれば成功です。
+
+### 7. プッシュしてみる
+
+プッシュする前にブランチを作成して切り替えます。
+
+```bash
+git switch -c feature/test
+```
+
+更新内容をステージングした後、コミットします
+
+```bash
+git add .    # 追加したファイルを全て git の対象に追加する
+git stage .    # 変更されたファイルをコミットする状態にステージングします
+git commit -m "hogehoge"    # コメントを追加してコミットします
+```
+
+
+```bash
+git push --set-upstream origin feature/test
+```
+
+注意: 初回接続時にホストの信頼性確認メッセージが表示されることがありますが、「yes」と入力して続行してください。
+
 ## 認証情報の管理について
 
 このアプリではAWS Cognitoを使用したユーザー認証機能を実装しています。以下は認証に関する重要な情報です。
