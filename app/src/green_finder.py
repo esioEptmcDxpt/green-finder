@@ -48,8 +48,7 @@ def rail_load():
     sta = pd.read_csv(path + "station_lonlat_jre.csv", encoding="shift_jis")
     ## 路線データ
     line = pd.read_csv(path + "tsushosen_line.csv", encoding="shift_jis")    # uploaded_file がある場合、2回読み込まれてしまうため変更
-    ## サンプルデータ
-    data_sample = pd.read_csv(path + "sample_empty.csv", encoding="shift_jis")    # uploaded_file がある場合、2回読み込まれてしまうため変更
+
     
     ### データ下処理
     ## 駅データ
@@ -60,7 +59,7 @@ def rail_load():
     line['geometry'] = line['WKT'].apply(wkt.loads)
     line_gdf = gpd.GeoDataFrame(line, geometry='geometry')
     
-    return kilo, sta, line_gdf, data_sample
+    return kilo, sta, line_gdf
 
 
 @measure_time
@@ -84,7 +83,7 @@ def main():
             data_raw = pd.read_excel(uploaded_file, engine='openpyxl')
         else:
             ## サンプルデータ
-            data_raw = data_sample
+            data_raw = pd.read_csv(path + "sample_empty.csv", encoding="shift_jis")    # uploaded_file がある場合、2回読み込まれてしまうため変更
             top_view.info('👈サイドバーからデータをアップロードしてください。')
             #return
             
@@ -267,8 +266,9 @@ def main():
         ''')
         st.write("""## 🌳 注意点""")
         st.markdown('''
-            -入力するcsvデータは一切加工していないものを用いてください。\n
-        -地図に表示できる（緯度経度と紐づけできる）線名は以下です。入力データとの整合を確認してください。一致する線名が無い場合はエラーとなります。\n
+            -入力するcsvデータは加工（セル結合、列追加削除等）していないものを用いてください。\n
+            -入力データの「キロ程」に数値以外が混ざっていないことを確認してください。（カンマ、ピリオド、英字等があれば削除）\
+            -地図に表示できる（緯度経度と紐づけできる）線名は以下です。入力データとの整合を確認してください。一致する線名が無い場合はエラーとなります。\n
         ''')
         # st.table(pd.DataFrame(kilo['線名'].unique(), columns=['読込可能な線名']))
         st.markdown(kilo[['線名コード','線名']].drop_duplicates(subset='線名コード').style.hide(axis="index").to_html(), unsafe_allow_html=True)
