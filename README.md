@@ -8,7 +8,7 @@
 
 ```bash
 git clone https://github.com/ESIO-EPTMC-DXPT/green-finder.git
-cd g_finder
+cd green-finder
 ```
 
 AWS ECS にデプロイ済みのコードを更新するには、以下のコマンドを実行します。
